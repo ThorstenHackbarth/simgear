@@ -1071,13 +1071,25 @@ public:
         auto &uniforms = compositor->getBuiltinUniforms();
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_TEXTURE_MATRIX]);
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_VIEWPORT]);
+        // SG_UNIFORM_PIXEL_SIZE,
+        // SG_UNIFORM_ASPECT_RATIO,
+        ss->addUniform(uniforms[Compositor::SG_UNIFORM_VIEW_MATRIX]);
+        ss->addUniform(uniforms[Compositor::SG_UNIFORM_VIEW_MATRIX_INV]);
+        // SG_UNIFORM_PROJECTION_MATRIX,
+        // SG_UNIFORM_PROJECTION_MATRIX_INV,
+        // SG_UNIFORM_PREV_VIEW_MATRIX,
+        // SG_UNIFORM_PREV_VIEW_MATRIX_INV,
+        // SG_UNIFORM_PREV_PROJECTION_MATRIX,
+        // SG_UNIFORM_PREV_PROJECTION_MATRIX_INV,
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_CAMERA_POSITION_CART]);
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_CAMERA_POSITION_GEOD]);
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_CAMERA_DISTANCE_TO_EARTH_CENTER]);
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_CAMERA_WORLD_UP]);
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_CAMERA_VIEW_UP]);
+        // SG_UNIFORM_NEAR_FAR,
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_FCOEF]);
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_FOV_SCALE]);
+        // SG_UNIFORM_FOV_CENTER,
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_SUN_DIRECTION]);
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_SUN_DIRECTION_WORLD]);
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_SUN_ZENITH_COSTHETA]);
