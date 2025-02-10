@@ -24,6 +24,9 @@ struct Buffer : public osg::Referenced {
      */
     float width_scale = 0.0f;
     float height_scale = 0.0f;
+
+    /// Whether this is an MVR buffer.
+    bool mvr = false;
 };
 
 Buffer *buildBuffer(Compositor *compositor, const SGPropertyNode *node,
