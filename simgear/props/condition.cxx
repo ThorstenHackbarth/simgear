@@ -15,6 +15,7 @@
 
 #include "props.hxx"
 #include "condition.hxx"
+#include <simgear/misc/strutils.hxx>
 
 
 using std::istream;
@@ -479,7 +480,8 @@ static SGCondition *
 readPropertyCondition( SGPropertyNode *prop_root,
                        const SGPropertyNode *node )
 {
-  return new SGPropertyCondition( prop_root, node->getStringValue().c_str() );
+  const auto s = simgear::strutils::strip(node->getStringValue());
+  return new SGPropertyCondition( prop_root, s.c_str());
 }
 
 static SGCondition *
