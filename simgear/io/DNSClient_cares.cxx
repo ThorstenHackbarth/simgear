@@ -55,7 +55,7 @@ public:
     void query( Request * request ) {
         ares_query(
             this->channel,
-            request->getDn().c_str(),
+            request->getQueryDn().c_str(),
             ARES_CLASS_IN,
             request->getType(),
             callback,
@@ -231,6 +231,18 @@ void SRVRequest::submit( Client * client )
 {
     _start = time(NULL);
 }
+
+std::string SRVRequest::getQueryDn() const
+{
+    std::string reply;
+    if (!_service.empty())
+        reply += '_' + _service + '.';
+    if (!_protocol.empty())
+        reply += '_' + _protocol + '.';
+    reply += _dn;
+    return reply;
+}
+
 
 TXTRequest::TXTRequest( const std::string & dn ) :
         Request(dn)

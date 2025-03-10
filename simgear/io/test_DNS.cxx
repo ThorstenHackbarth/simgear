@@ -164,16 +164,32 @@ void test_nonexiting_NAPTR(DNS::Client& cl, int argc, char** argv)
 
 void test_existing_SRV(DNS::Client& cl, int argc, char** argv)
 {
-    const char* DN = "_fgms._udp.flightgear.org";
-    cout << "test existing SRV: " << DN << endl;
-    DNS::SRVRequest* srvRequest = new DNS::SRVRequest(DN);
-    DNS::Request_ptr r(srvRequest);
-    DNS_MAKE_REQUEST_AND_WAIT(cl, r);
+    {
+      const char* DN = "_fgms._udp.flightgear.org";
+      cout << "test existing SRV: " << DN << endl;
+      DNS::SRVRequest* srvRequest = new DNS::SRVRequest(DN);
+      DNS::Request_ptr r(srvRequest);
+      DNS_MAKE_REQUEST_AND_WAIT(cl, r);
 
-    SG_VERIFY(!srvRequest->entries.empty());
+      SG_VERIFY(!srvRequest->entries.empty());
 
-    for (DNS::SRVRequest::SRV_list::const_iterator it = srvRequest->entries.begin(); it != srvRequest->entries.end(); ++it) {
-        cout << "SRV " << (*it)->priority << " " << (*it)->weight << " " << (*it)->port << " '" << (*it)->target << "'" << endl;
+      for (DNS::SRVRequest::SRV_list::const_iterator it = srvRequest->entries.begin(); it != srvRequest->entries.end(); ++it) {
+          cout << "SRV " << (*it)->priority << " " << (*it)->weight << " " << (*it)->port << " '" << (*it)->target << "'" << endl;
+      }
+    }
+    {
+      const char* DN = "flightgear.org";
+      const char* SERVICE = "fgms";
+      const char* PROTOCOL = "fgms";
+      cout << "test existing SRV: " << DN << " with service " << SERVICE << " and protocol " << PROTOCOL << endl;
+      DNS::SRVRequest* srvRequest = new DNS::SRVRequest(DN, "fgms", "udp" );
+      DNS::Request_ptr r(srvRequest);
+      DNS_MAKE_REQUEST_AND_WAIT(cl, r);
+      SG_VERIFY(!srvRequest->entries.empty());
+
+      for (DNS::SRVRequest::SRV_list::const_iterator it = srvRequest->entries.begin(); it != srvRequest->entries.end(); ++it) {
+          cout << "SRV " << (*it)->priority << " " << (*it)->weight << " " << (*it)->port << " '" << (*it)->target << "'" << endl;
+      }
     }
 }
 

@@ -34,6 +34,7 @@ public:
     Request( const std::string & dn );
     virtual ~Request();
     const std::string& getDn() const { return _dn; }
+    virtual std::string getQueryDn() const { return _dn; }
     int getType() const { return _type; }
     bool isComplete() const { return _complete; }
     bool isTimeout() const;
@@ -87,6 +88,7 @@ class SRVRequest : public Request
 public:
     SRVRequest( const std::string & dn );
     SRVRequest(const std::string& dn, const std::string& service, const std::string& protocol);
+    virtual std::string getQueryDn() const override;
     void submit(Client* client) override;
 
     struct SRV : SGReferenced {
