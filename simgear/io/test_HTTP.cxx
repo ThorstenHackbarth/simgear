@@ -607,6 +607,11 @@ cout << "testing proxy close" << endl;
     }
 
 // pipelining
+// disabled because Curl >= 7.62 default to HTTP/2 multiplexing (which is good)
+// but hence don't worry about HTTP1.x/ pipelining. The test server we use for
+// running these tests only supports HTTP1.x until we find a better solution,
+// so disabling the test for now.
+#if 0
     cout << "testing HTTP 1.1 pipelining" << endl;
 
     {
@@ -641,6 +646,7 @@ cout << "testing proxy close" << endl;
 
         SG_CHECK_EQUAL(testServer.connectCount(), 1);
     }
+#endif
 
 // multiple requests with an HTTP 1.0 server
     {
