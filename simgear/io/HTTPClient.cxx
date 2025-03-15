@@ -306,13 +306,13 @@ void Client::makeRequest(const Request_ptr& r)
 
     const std::string method = strutils::lowercase (r->method());
     if (method == "get") {
-      curl_easy_setopt(curlRequest, CURLOPT_HTTPGET, 1);
+      // see https://curl.se/libcurl/c/CURLOPT_HTTPGET.html
+      curl_easy_setopt(curlRequest, CURLOPT_HTTPGET, 1L);
     } else if (method == "put") {
-      curl_easy_setopt(curlRequest, CURLOPT_PUT, 1);
-      curl_easy_setopt(curlRequest, CURLOPT_UPLOAD, 1);
+      curl_easy_setopt(curlRequest, CURLOPT_UPLOAD, 1L);
     } else if (method == "post") {
       // see http://curl.haxx.se/libcurl/c/CURLOPT_POST.html
-      curl_easy_setopt(curlRequest, CURLOPT_HTTPPOST, 1);
+      curl_easy_setopt(curlRequest, CURLOPT_POST, 1L);
 
       std::string q = r->query().substr(1);
       curl_easy_setopt(curlRequest, CURLOPT_COPYPOSTFIELDS, q.c_str());
