@@ -31,7 +31,9 @@ include (GenerateExportHeader)
 
 # only relevant for building shared libs but let's set it regardless
 set(CMAKE_OSX_RPATH 1)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum OS X deployment version")
+
+# macOS 10.13 needed for C++17 libc++ 
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum OS X deployment version")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)

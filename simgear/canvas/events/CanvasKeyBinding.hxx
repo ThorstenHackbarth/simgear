@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // SPDX-FileCopyrightText: 2023 James Turner <james@flightgear.org>
 
+#include <optional>
 #include <vector>
 
 #include <simgear/canvas/CanvasEvent.hxx>
-#include <simgear/misc/simgear_optional.hxx>
 #include <simgear/structure/SGBinding.hxx>
 
 namespace simgear::canvas {
@@ -45,7 +45,7 @@ private:
     bool modifierMatch(const uint32_t evMods, uint32_t mask) const;
 
     std::string _key;
-    simgear::optional<uint32_t> _keyCode;
+    std::optional<uint32_t> _keyCode;
     int _modifiers = 0;
     Event::Type _eventType = Event::KEY_PRESS;
     SGBindingList _bindings;
