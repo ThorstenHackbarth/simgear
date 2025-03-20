@@ -180,9 +180,9 @@ void test_existing_SRV(DNS::Client& cl, int argc, char** argv)
     {
       const char* DN = "flightgear.org";
       const char* SERVICE = "fgms";
-      const char* PROTOCOL = "fgms";
+      const char* PROTOCOL = "udp";
       cout << "test existing SRV: " << DN << " with service " << SERVICE << " and protocol " << PROTOCOL << endl;
-      DNS::SRVRequest* srvRequest = new DNS::SRVRequest(DN, "fgms", "udp" );
+      DNS::SRVRequest* srvRequest = new DNS::SRVRequest(DN, SERVICE, PROTOCOL);
       DNS::Request_ptr r(srvRequest);
       DNS_MAKE_REQUEST_AND_WAIT(cl, r);
       SG_VERIFY(!srvRequest->entries.empty());
