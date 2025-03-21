@@ -102,7 +102,7 @@ macos-build:
       --fresh
       -D CMAKE_BUILD_TYPE=RelWithDebInfo 
       -D CMAKE_INSTALL_PREFIX=$PREFIX_DIR
-      -D CMAKE_PREFIX_PATH=$CI_PROJECT_DIR/osg-dist
+      -D CMAKE_PREFIX_PATH="$CI_PROJECT_DIR/osg-dist;$CI_PROJECT_DIR/dist"
       -D CMAKE_OSX_ARCHITECTURES="arm64;x86_64"
       -D ENABLE_SIMD=OFF
       -D ENABLE_TESTS:BOOL=OFF # BoostTest isn't build fat, so we need to disable tests on macOS : ho-hum.
@@ -113,6 +113,10 @@ macos-build:
     - project: flightgear/openscenegraph
       job: macos-build
       ref: $OSG_REF
+      artifacts: true
+    - project: flightgear/macos-3rd-party
+      job: macos-build
+      ref: main
       artifacts: true
   artifacts:
     paths:
