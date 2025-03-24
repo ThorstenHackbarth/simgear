@@ -24,6 +24,7 @@
 #include "../material/mipmap.hxx"
 
 #include <algorithm>
+#include <chrono>
 #include <utility>
 #include <vector>
 
