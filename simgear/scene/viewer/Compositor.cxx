@@ -185,26 +185,20 @@ void
 Compositor::update(const osg::Matrix &view_matrix,
                    const osg::Matrix &proj_matrix)
 {
-    // Get the current frame number. Used for render_once passes
-    int frame_number = 0;
-    const osg::FrameStamp *frame_stamp = _view->getFrameStamp();
-    if (frame_stamp) {
-        frame_number = frame_stamp->getFrameNumber();
-    }
-
     // Enable/disable passes by setting or unsetting their graphics context.
     // XXX: Check if this causes threading-related crashes.
     // Also run the update callback for enabled passes.
     for (auto &pass : _passes) {
         osg::Camera* camera = pass->camera;
         bool should_render = (!pass->render_condition || pass->render_condition->test())
-            && (!pass->render_once || frame_number == 0);
+            && (!pass->render_once || !pass->has_ever_rendered);
         if (should_render) {
             // Pass is enabled
             camera->setGraphicsContext(_gc);
             if (pass->update_callback.valid()) {
                 pass->update_callback->updatePass(*pass.get(), view_matrix, proj_matrix);
             }
+            pass->has_ever_rendered = true;
         } else {
             // Pass is disabled
             camera->setGraphicsContext(nullptr);

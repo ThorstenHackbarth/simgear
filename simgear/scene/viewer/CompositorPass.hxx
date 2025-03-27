@@ -48,6 +48,7 @@ struct Pass : public osg::Referenced {
     /** Whether the cull mask is ANDed with the view master camera cull mask. */
     bool                             inherit_cull_mask      = false;
     bool                             render_once            = false;
+    bool                             has_ever_rendered      = false;
     float                            viewport_x_scale       = 0.0f;
     float                            viewport_y_scale       = 0.0f;
     float                            viewport_width_scale   = 0.0f;
