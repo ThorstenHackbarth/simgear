@@ -994,8 +994,10 @@ public:
         camera->setAllowEventFocus(true);
 
         const SGPropertyNode *p_lod_scale = root->getNode("lod-scale");
-        if (p_lod_scale)
+        if (p_lod_scale) {
             camera->setLODScale(p_lod_scale->getFloatValue());
+            pass->has_custom_lod_scale = true;
+        }
 
         const SGPropertyNode *p_clustered = root->getNode("clustered-shading");
         ClusteredShading *clustered = nullptr;

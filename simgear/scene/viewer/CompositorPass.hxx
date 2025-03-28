@@ -55,6 +55,7 @@ struct Pass : public osg::Referenced {
     osg::ref_ptr<osg::Camera>        camera;
     bool                             useMastersSceneData;
     osg::Node::NodeMask              cull_mask;
+    bool                             has_custom_lod_scale = false;
     /** Whether the cull mask is ANDed with the view master camera cull mask. */
     bool                             inherit_cull_mask;
     bool                             render_once;

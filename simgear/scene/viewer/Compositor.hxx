@@ -102,6 +102,8 @@ public:
 
     void               setCullMask(osg::Node::NodeMask cull_mask);
 
+    void               setLODScale(float scale);
+
     osg::View         *getView() const { return _view; }
 
     osg::GraphicsContext *getGraphicsContext() const { return _gc; }

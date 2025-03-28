@@ -506,6 +506,18 @@ Compositor::setCullMask(osg::Node::NodeMask cull_mask)
 }
 
 void
+Compositor::setLODScale(float scale)
+{
+    for (auto &pass: _passes) {
+        // Only change the LOD scale for passes that actually render the scene
+        // and do not have a custom scale.
+        if (pass->useMastersSceneData && !pass->has_custom_lod_scale) {
+            pass->camera->setLODScale(scale);
+        }
+    }
+}
+
+void
 Compositor::addBuffer(const std::string &name, Buffer *buffer)
 {
     _buffers[name] = buffer;
