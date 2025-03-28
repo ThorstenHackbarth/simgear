@@ -36,33 +36,22 @@ class Compositor;
  * enabled or disabled in a coherent way by the user.
  */
 struct Pass : public osg::Referenced {
-    Pass() :
-        collect_lights(false),
-        useMastersSceneData(true),
-        cull_mask(0xffffff),
-        inherit_cull_mask(false),
-        render_once(false),
-        viewport_x_scale(0.0f),
-        viewport_y_scale(0.0f),
-        viewport_width_scale(0.0f),
-        viewport_height_scale(0.0f) {}
-
-    int                              render_order;
+    int                              render_order           = 0;
     std::string                      name;
     std::string                      type;
-    bool                             collect_lights;
+    bool                             collect_lights         = false;
     std::string                      effect_scheme;
     osg::ref_ptr<osg::Camera>        camera;
-    bool                             useMastersSceneData;
-    osg::Node::NodeMask              cull_mask;
-    bool                             has_custom_lod_scale = false;
+    bool                             useMastersSceneData    = true;
+    osg::Node::NodeMask              cull_mask              = 0xffffff;
+    bool                             has_custom_lod_scale   = false;
     /** Whether the cull mask is ANDed with the view master camera cull mask. */
-    bool                             inherit_cull_mask;
-    bool                             render_once;
-    float                            viewport_x_scale;
-    float                            viewport_y_scale;
-    float                            viewport_width_scale;
-    float                            viewport_height_scale;
+    bool                             inherit_cull_mask      = false;
+    bool                             render_once            = false;
+    float                            viewport_x_scale       = 0.0f;
+    float                            viewport_y_scale       = 0.0f;
+    float                            viewport_width_scale   = 0.0f;
+    float                            viewport_height_scale  = 0.0f;
     SGSharedPtr<SGCondition>         render_condition;
 
     osg::ref_ptr<osg::Drawable>      compute_node;
