@@ -16,15 +16,14 @@ namespace compositor {
 class Compositor;
 
 struct Buffer : public osg::Referenced {
-    Buffer() : width_scale(0.0f), height_scale(0.0f) {}
-
     osg::ref_ptr<osg::Texture> texture;
 
     /**
      * The amount to multiply the size of the default framebuffer.
      * A factor of 0.0 means that the buffer has a fixed size.
      */
-    float width_scale, height_scale;
+    float width_scale = 0.0f;
+    float height_scale = 0.0f;
 };
 
 Buffer *buildBuffer(Compositor *compositor, const SGPropertyNode *node,
