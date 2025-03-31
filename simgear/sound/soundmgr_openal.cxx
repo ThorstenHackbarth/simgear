@@ -862,8 +862,12 @@ bool SGSoundMgr::testForError(std::string s, std::string name)
 #ifdef ENABLE_SOUND
     ALenum error = alGetError();
     if (error != AL_NO_ERROR)  {
-       SG_LOG( SG_SOUND, SG_ALERT, "AL Error (" << name << "): "
-                                      << alGetString(error) << " at " << s);
+        const auto errMsg = alGetString(error);
+        if (!errMsg) {
+            SG_LOG(SG_SOUND, SG_ALERT, "AL error (" << name << ") " << error << " (no string defined) at " << s);
+        } else {
+            SG_LOG(SG_SOUND, SG_ALERT, "AL Error (" << name << "): " << errMsg << " at " << s);
+        }
        return true;
     }
 #endif
