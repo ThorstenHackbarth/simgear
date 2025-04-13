@@ -1535,30 +1535,28 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
         // naming convention as the VPB scenery itself.
         SG_LOG(SG_TERRAIN, SG_DEBUG, "Using Photoscenery for " << _fileName << " " << tileID.level << " X" << tileID.x << " Y" << tileID.y);
 
-        SGPath orthotexture;
-
-        osgDB::FilePathList& pathList = _options->getDatabasePathList();
-        bool found = false;
-
-        for (auto iter = pathList.begin(); !found && iter != pathList.end(); ++iter) {
-            orthotexture = SGPath(*iter);
-            orthotexture.append("Orthophotos");
-            orthotexture.append(bucket.gen_vpb_subtile(tileID.level, tileID.x, tileID.y) + ".dds");
-            SG_LOG(SG_TERRAIN, SG_DEBUG, "Looking for phototexture " << orthotexture);
-
-            if (orthotexture.exists()) {
-                found = true;
-                SG_LOG(SG_TERRAIN, SG_DEBUG, "Found phototexture " << orthotexture);
-            }
+        std::string filePath = "Orthophotos/" + bucket.gen_vpb_subtile(tileID.level, tileID.x, tileID.y) + ".dds";
+        std::string archiveFilePath = "Orthophotos/" + bucket.gen_vpb_archive_filename(tileID.level, tileID.x, tileID.y, "subtile") + ".dds";
+        SG_LOG(SG_TERRAIN, SG_DEBUG, "Looking for ortho texture in " << filePath << " and " << archiveFilePath);
+    
+        // Check for the normal file first.  We go straight to the implementation here because we're already deep within
+        // the registry code stack.
+        osgDB::Registry* registry = osgDB::Registry::instance();
+        osgDB::ReaderWriter::ReadResult result = registry->readImageImplementation(filePath, _options);
+        if (result.notFound()) {
+            // Check for the archive file next.  Note we only go down this path on a notFound() to avoid
+            // masking errors.
+            result = registry->readImageImplementation(archiveFilePath, _options);
         }
 
-        if (found) {
+        if (result.success()) {
+            SG_LOG(SG_TERRAIN, SG_DEBUG, "Loaded ortho texture from " << filePath << " or " << archiveFilePath << " " << result.statusMessage());
+            auto orthoImage = result.getImage();
 
             osg::StateSet* landStateset = buffer._landGeode->getOrCreateStateSet();
 
             // Set up the texture with wrapping of UV to reduce black edges at tile boundaries.
-            osg::ref_ptr<osg::Texture2D> texture = SGLoadTexture2D(SGPath(orthotexture), _options, true, true);
-
+            osg::Texture2D* texture = new osg::Texture2D(orthoImage);
             texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
             texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
             landStateset->setTextureAttributeAndModes(0, texture);
@@ -1592,7 +1590,7 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
             seaStateset->addUniform(new osg::Uniform(VPBTechnique::MODEL_OFFSET, (osg::Vec3f) buffer._transform->getMatrix().getTrans()));
             atlas->addUniforms(seaStateset);
         } else {
-            SG_LOG(SG_TERRAIN, SG_DEBUG, "Unable to find " << orthotexture);
+            SG_LOG(SG_TERRAIN, SG_DEBUG, "Unable to find ortho texture in " << filePath << " or " << archiveFilePath << " " << result.statusMessage());
             photoScenery = false;
         }
     }
