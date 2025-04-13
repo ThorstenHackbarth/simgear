@@ -1558,7 +1558,8 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
             osg::StateSet* landStateset = buffer._landGeode->getOrCreateStateSet();
 
             // Set up the texture with wrapping of UV to reduce black edges at tile boundaries.
-            osg::Texture2D* texture = SGLoadTexture2D(SGPath(orthotexture), _options, true, true);
+            osg::ref_ptr<osg::Texture2D> texture = SGLoadTexture2D(SGPath(orthotexture), _options, true, true);
+
             texture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
             texture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
             landStateset->setTextureAttributeAndModes(0, texture);
@@ -2398,6 +2399,7 @@ bool VPBTechnique::checkAgainstElevationConstraints(osg::Vec3d origin, osg::Vec3
 
 bool VPBTechnique::checkAgainstWaterConstraints(BufferData& buffer, osg::Vec2d point)
 {
+    if (! buffer._waterRasterTexture) return false;
     osg::Image* waterRaster = buffer._waterRasterTexture->getImage();
     if (waterRaster && waterRaster->getColor(point).b() > 0.05f) {
         // B channel contains water information.
