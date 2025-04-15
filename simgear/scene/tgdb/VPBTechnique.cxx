@@ -58,7 +58,6 @@
 #include "VPBTechnique.hxx"
 #include "VPBBufferData.hxx"
 #include "VPBMaterialHandler.hxx"
-#include "VPBRasterRenderer.hxx"
 #include "VPBLineFeatureRenderer.hxx"
 
 using namespace osgTerrain;
@@ -1565,6 +1564,10 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
             landStateset->setTextureAttributeAndModes(0, texture);
             landStateset->setTextureAttributeAndModes(1, atlas->getImage(), osg::StateAttribute::ON);
 
+            // Get a coastline texture, if available.
+            buffer._waterRasterTexture = getCoastlineTexture(bucket);
+            landStateset->setTextureAttributeAndModes(7, buffer._waterRasterTexture, osg::StateAttribute::ON);
+            
             // Generate a water texture so we can use the water shader
             osg::ref_ptr<osg::Texture2D> waterTexture  = new osg::Texture2D;
             waterTexture->setImage(generateWaterTexture(atlas));
@@ -1574,10 +1577,8 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
             waterTexture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
             waterTexture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
             waterTexture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
-            // Overload of the coast texture
-            landStateset->setTextureAttributeAndModes(7, waterTexture);
-            
-            
+            landStateset->setTextureAttributeAndModes(8, waterTexture);
+
             landStateset->addUniform(new osg::Uniform(VPBTechnique::PHOTO_SCENERY, true));
             landStateset->addUniform(new osg::Uniform(VPBTechnique::MODEL_OFFSET, (osg::Vec3f) buffer._transform->getMatrix().getTrans()));
             atlas->addUniforms(landStateset);
@@ -1585,7 +1586,8 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
             osg::StateSet* seaStateset = buffer._seaGeode->getOrCreateStateSet();
             seaStateset->setTextureAttributeAndModes(0, texture);
             seaStateset->setTextureAttributeAndModes(1, atlas->getImage(), osg::StateAttribute::ON);
-            seaStateset->setTextureAttributeAndModes(7, waterTexture);
+            seaStateset->setTextureAttributeAndModes(7, buffer._waterRasterTexture, osg::StateAttribute::ON);
+            seaStateset->setTextureAttributeAndModes(8, waterTexture);
             seaStateset->addUniform(new osg::Uniform(VPBTechnique::PHOTO_SCENERY, true));
             seaStateset->addUniform(new osg::Uniform(VPBTechnique::MODEL_OFFSET, (osg::Vec3f) buffer._transform->getMatrix().getTrans()));
             atlas->addUniforms(seaStateset);
@@ -1648,38 +1650,9 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
         texture2D->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
         texture2D->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
 
-        // Look for a pre-generated coastline texture.  There are two possible locations
-        //  - Inside the vpb directory adjacent to this tile file.
-        //  - Inside a 1x1 degree zipped file, which we can access using OSGs archive loader.
+        buffer._waterRasterTexture = getCoastlineTexture(bucket);
+
         osg::StateSet* landStateset = buffer._landGeode->getOrCreateStateSet();
-        std::string filePath = "vpb/" + bucket.gen_vpb_filename(tileID.level, tileID.x, tileID.y, "coastline") + ".png";
-        std::string archiveFilePath = "vpb/" + bucket.gen_vpb_archive_filename(tileID.level, tileID.x, tileID.y, "coastline") + ".png";
-        SG_LOG(SG_TERRAIN, SG_DEBUG, "Looking for coastline texture in " << filePath << " and " << archiveFilePath);
-
-        // Check for the normal file first.  We go straight to the implementation here because we're already deep within
-        // the registry code stack.
-        osgDB::Registry* registry = osgDB::Registry::instance();
-        osgDB::ReaderWriter::ReadResult result = registry->readImageImplementation(filePath, _options);
-        if (result.notFound()) {
-            // Check for the archive file next.  Note we only go down this path on a notFound() to avoid
-            // masking errors.
-            result = registry->readImageImplementation(archiveFilePath, _options);
-        }
-
-        if (result.success()) {
-            buffer._waterRasterTexture = new osg::Texture2D(result.getImage());
-            buffer._waterRasterTexture->getImage()->flipVertical();
-            buffer._waterRasterTexture->setMaxAnisotropy(16.0f);
-            buffer._waterRasterTexture->setResizeNonPowerOfTwoHint(false);
-            buffer._waterRasterTexture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST_MIPMAP_NEAREST);
-            buffer._waterRasterTexture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::NEAREST_MIPMAP_NEAREST);
-            buffer._waterRasterTexture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
-            buffer._waterRasterTexture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
-            SG_LOG(SG_TERRAIN, SG_DEBUG, "Loaded coastline texture from " << filePath << " or " << archiveFilePath << " " << result.statusMessage());
-        } else  {
-            VPBRasterRenderer renderer = VPBRasterRenderer(propertyNode, _terrainTile, world, buffer._width, buffer._height);
-            buffer._waterRasterTexture = renderer.generateCoastTexture();
-        }
 
         landStateset->setTextureAttributeAndModes(0, texture2D, osg::StateAttribute::ON);
         landStateset->setTextureAttributeAndModes(1, atlas->getImage(), osg::StateAttribute::ON);
@@ -1697,6 +1670,49 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
         seaStateset->addUniform(new osg::Uniform(VPBTechnique::MODEL_OFFSET, (osg::Vec3f) buffer._transform->getMatrix().getTrans()));
         atlas->addUniforms(seaStateset);
     }
+}
+
+// Get a pre-generated coastline texture.  There are two possible locations
+//  - Inside the vpb directory adjacent to this tile file.
+//  - Inside a 1x1 degree zipped file, which we can access using OSGs archive loader.
+osg::Texture2D* VPBTechnique::getCoastlineTexture(const SGBucket bucket)
+{
+    auto tileID = _terrainTile->getTileID();
+    std::string filePath = "vpb/" + bucket.gen_vpb_filename(tileID.level, tileID.x, tileID.y, "coastline") + ".png";
+    std::string archiveFilePath = "vpb/" + bucket.gen_vpb_archive_filename(tileID.level, tileID.x, tileID.y, "coastline") + ".png";
+    SG_LOG(SG_TERRAIN, SG_DEBUG, "Looking for coastline texture in " << filePath << " and " << archiveFilePath);
+
+    // Check for the normal file first.  We go straight to the implementation here because we're already deep within
+    // the registry code stack.
+    osgDB::Registry* registry = osgDB::Registry::instance();
+    osgDB::ReaderWriter::ReadResult result = registry->readImageImplementation(filePath, _options);
+    if (result.notFound()) {
+        // Check for the archive file next.  Note we only go down this path on a notFound() to avoid
+        // masking errors.
+        result = registry->readImageImplementation(archiveFilePath, _options);
+    }
+
+    osg::Image* coastImage;
+
+    if (result.success()) {
+        SG_LOG(SG_TERRAIN, SG_DEBUG, "Loaded coastline texture from " << filePath << " or " << archiveFilePath << " " << result.statusMessage());
+        coastImage = result.getImage();
+    } else {
+        // Create a simple image so there's something to query which will be land.
+        coastImage = new osg::Image();
+        coastImage->allocateImage(1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE);
+        coastImage->setColor(osg::Vec4f(0.0f,0.0f,0.0f,0.0f), 0,0);
+    }
+
+    osg::Texture2D* coastlineTexture = new osg::Texture2D(coastImage);
+    coastlineTexture->getImage()->flipVertical();
+    coastlineTexture->setMaxAnisotropy(16.0f);
+    coastlineTexture->setResizeNonPowerOfTwoHint(false);
+    coastlineTexture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST_MIPMAP_NEAREST);
+    coastlineTexture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::NEAREST_MIPMAP_NEAREST);
+    coastlineTexture->setWrap(osg::Texture::WRAP_S,osg::Texture::CLAMP_TO_EDGE);
+    coastlineTexture->setWrap(osg::Texture::WRAP_T,osg::Texture::CLAMP_TO_EDGE);
+    return coastlineTexture;
 }
 
 double VPBTechnique::det2(const osg::Vec2d a, const osg::Vec2d b)

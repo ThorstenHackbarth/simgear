@@ -33,11 +33,9 @@
 #include <simgear/math/SGGeometry.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/matlib.hxx>
-#include <simgear/scene/tgdb/AreaFeatureBin.hxx>
 #include <simgear/scene/tgdb/LightBin.hxx>
 #include <simgear/scene/tgdb/LineFeatureBin.hxx>
 #include <simgear/scene/tgdb/ObjectInstanceBin.hxx>
-#include <simgear/scene/tgdb/CoastlineBin.hxx>
 #include <simgear/scene/tgdb/VPBBufferData.hxx>
 
 using namespace osgTerrain;

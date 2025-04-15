@@ -51,7 +51,6 @@
 #include <simgear/scene/tgdb/ObjectInstanceBin.hxx>
 #include <simgear/scene/tgdb/SGBuildingBin.hxx>
 #include <simgear/scene/tgdb/TreeBin.hxx>
-#include <simgear/scene/tgdb/VPBRasterRenderer.hxx>
 #include <simgear/scene/tgdb/VPBLineFeatureRenderer.hxx>
 #include <simgear/scene/tgdb/VPBTechnique.hxx>
 #include <simgear/scene/tgdb/apt_signs.hxx>
@@ -75,7 +74,6 @@
 #define BUILDING_LIST "BUILDING_LIST"
 #define TREE_LIST "TREE_LIST"
 #define LINE_FEATURE_LIST "LINE_FEATURE_LIST"
-#define COASTLINE_LIST "COASTLINE_LIST"
 #define OBJECT_LIGHT "OBJECT_LIGHT"
 #define LIGHT_LIST "LIGHT_LIST"
 #define OBJECT_INSTANCED "OBJECT_INSTANCED"
@@ -730,11 +728,6 @@ struct ReaderWriterSTG::_ModelBin {
                   in >> lineFeaturelist._material;
                   lineFeaturelist._bucket = bucketIndexFromFileName(absoluteFileName.file_base().c_str());
                   _lineFeatureListList.push_back(lineFeaturelist);
-                } else if (token == COASTLINE_LIST) {
-                  _CoastlineList coastFeaturelist;
-                  coastFeaturelist._filename = path.utf8Str();
-                  coastFeaturelist._bucket = bucketIndexFromFileName(absoluteFileName.file_base().c_str());
-                  _coastFeatureListList.push_back(coastFeaturelist);
                 } else if (token == OBJECT_LIGHT) {
                     _Light light;
                     in >> light._lon >> light._lat >> light._elev
@@ -830,19 +823,6 @@ struct ReaderWriterSTG::_ModelBin {
                 }
 
                 VPBLineFeatureRenderer::addLineFeatureList(bucket, lineFeatures);
-            }
-
-            if (!_coastFeatureListList.empty()) {
-
-                CoastlineBinList coastFeatures;
-
-                for (const auto& b : _coastFeatureListList) {
-                    // add the lineFeatures to the list
-                    const auto path = SGPath(b._filename);
-                    coastFeatures.push_back(new CoastlineBin(path));
-                }
-
-                VPBRasterRenderer::addCoastlineList(bucket, coastFeatures);
             }
 
             // OBJECTs include airports

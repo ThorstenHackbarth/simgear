@@ -1,8 +1,6 @@
 include (SimGearComponent)
 
 set(HEADERS 
-    AreaFeatureBin.hxx
-    CoastlineBin.hxx
     GroundLightManager.hxx
     LineFeatureBin.hxx
     LightBin.hxx
@@ -27,7 +25,6 @@ set(HEADERS
     VPBElevationSlice.hxx
     VPBMaterialHandler.hxx
     VPBLineFeatureRenderer.hxx
-    VPBRasterRenderer.hxx
     VPBTileBounds.hxx
     VPBTechnique.hxx
     apt_signs.hxx
@@ -37,8 +34,6 @@ set(HEADERS
     )
 
 set(SOURCES 
-    AreaFeatureBin.cxx
-    CoastlineBin.cxx
     GroundLightManager.cxx
     LineFeatureBin.cxx
     LightBin.cxx
@@ -53,7 +48,6 @@ set(SOURCES
     VPBElevationSlice.cxx
     VPBMaterialHandler.cxx
     VPBLineFeatureRenderer.cxx
-    VPBRasterRenderer.cxx
     VPBTileBounds.cxx
     VPBTechnique.cxx
     apt_signs.cxx
