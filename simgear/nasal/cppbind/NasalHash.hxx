@@ -5,6 +5,8 @@
 #ifndef SG_NASAL_HASH_HXX_
 #define SG_NASAL_HASH_HXX_
 
+#include <boost/mpl/if.hpp>
+
 #include "from_nasal.hxx"
 #include "to_nasal.hxx"
 

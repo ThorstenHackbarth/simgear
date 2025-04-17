@@ -369,7 +369,7 @@ int BoxLayout::ItemData::mhfw(int w) const
           continue;
 
         // override the min-size and size-hint with the equal-size values
-        // we computed in the loop abive
+        // we computed in the loop above
         if (item_data.equal) {
             item_data.min_size = _equalsMinSize;
             item_data.size_hint = _equalsSizeHint;
