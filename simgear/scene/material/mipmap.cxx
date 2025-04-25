@@ -292,9 +292,13 @@ osg::Image* computeMipmap( osg::Image* image, MipMapTuple attrs )
 
     if ( computeMipmap )
     {
-        osg::ref_ptr<osg::Image> mipmaps = new osg::Image();
         int r = image->r();
         int nb = osg::Image::computeNumberOfMipmapLevels(s, t, r);
+        // 1x1x1 textures don't need mipmapping
+        if (nb < 2)
+            return image;
+
+        osg::ref_ptr<osg::Image> mipmaps = new osg::Image();
         osg::Image::MipmapDataType mipmapOffsets;
         unsigned int offset = 0;
         for ( int i = 0; i < nb; ++i )
@@ -305,9 +309,9 @@ osg::Image* computeMipmap( osg::Image* image, MipMapTuple attrs )
             t >>= 1; if ( t == 0 ) t = 1;
             r >>= 1; if ( r == 0 ) r = 1;
         }
-        mipmapOffsets.pop_back();
         unsigned char *data = new unsigned char[offset];
         memcpy( data, image->data(), mipmapOffsets.front() );
+        mipmapOffsets.pop_back();
         s = image->s();
         t = image->t();
         r = image->r();
