@@ -460,8 +460,8 @@ BOOST_AUTO_TEST_CASE(boxlayout_equal)
     hbox->addItem(w2);
     hbox->addItem(w3);
 
-    hbox->setEquals(w1);
-    hbox->setEquals(w2);
+    hbox->setEqualsItem(w1);
+    hbox->setEqualsItem(w2);
     hbox->setStretchFactor(w3, 1);
 
     BOOST_CHECK_EQUAL(hbox->minimumSize(), SGVec2i(106, 16));

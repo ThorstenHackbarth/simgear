@@ -17,6 +17,7 @@
 #include <simgear/structure/exception.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
+#include <any>
 #include <array>
 #include <functional>
 #include <string>
@@ -74,6 +75,11 @@ namespace nasal
    * Convert a Nasal string to an SGPath
    */
   SGPath from_nasal_helper(naContext c, naRef ref, const SGPath*);
+
+  /**
+   * Convert a Nasal value to an std::any
+   */
+  std::any from_nasal_helper(naContext c, naRef ref, const std::any*);
 
   /**
    * Convert a Nasal hash to a nasal::Hash

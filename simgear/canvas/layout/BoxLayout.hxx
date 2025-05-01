@@ -66,9 +66,9 @@ namespace simgear::canvas
       void setEquals(size_t index);
 
       /**
-       * @brief Set the item rto have equal size to all other items with equal set
+       * @brief Set the item to have equal size to all other items with equal set
        */
-      void setEquals(const LayoutItemRef& item);
+      void setEqualsItem(const LayoutItemRef& item);
 
       /**
        * @brief query if the item at @a index has requested equal sizing

@@ -232,7 +232,7 @@ int BoxLayout::ItemData::mhfw(int w) const
   }
 
   //----------------------------------------------------------------------------
-  void BoxLayout::setEquals(const LayoutItemRef& item)
+  void BoxLayout::setEqualsItem(const LayoutItemRef& item)
   {
       auto it = std::find_if(_layout_items.begin(), _layout_items.end(), [item](const ItemData& idata) {
           return idata.layout_item == item;
