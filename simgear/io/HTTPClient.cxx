@@ -176,7 +176,7 @@ void Client::update(int waitTimeout)
         // eg if responseComplete cancels us
         Request_ptr req(rawReq);
 
-        long responseCode;
+        long responseCode = -999;
         curl_easy_getinfo(e, CURLINFO_RESPONSE_CODE, &responseCode);
 
           // remove from the requests map now,
@@ -214,6 +214,20 @@ void Client::update(int waitTimeout)
               req->setFailure(msg->data.result,
                               curl_easy_strerror(msg->data.result));
             }
+          }
+
+          if (responseCode == 200) {
+            req->finalResult(0, "");
+          }
+          else {
+            if (responseCode == 0) {
+                SG_LOG(SG_IO, SG_ALERT, "Unexpected responseCode=" << responseCode
+                        << " rawReq->url()=" << rawReq->url()
+                        << " msg->data.result=" << msg->data.result
+                        );
+            }
+            // Need to pass non-zero response to req->finalResult().
+            req->finalResult(responseCode ? responseCode : 2, "response code is not 200");
           }
 
         curl_multi_remove_handle(d->curlMulti, e);
@@ -373,6 +387,8 @@ void Client::cancelRequest(const Request_ptr &r, std::string reason)
     if (err != CURLM_OK) {
         SG_LOG(SG_IO, SG_WARN, "cancelRequest: curl_multi_remove_handle failed:" << err);
     }
+    // Use 1 for cancelled; this is not a defined HTTP response code.
+    r->finalResult(1, reason);
 
     // clear the request pointer form the curl-easy object
     curl_easy_setopt(it->second, CURLOPT_PRIVATE, 0);

@@ -199,6 +199,11 @@ void Request::responseComplete()
 }
 
 //------------------------------------------------------------------------------
+void Request::finalResult(int /*code*/, const std::string& /*reason*/)
+{
+}
+
+//------------------------------------------------------------------------------
 void Request::gotBodyData(const char* s, int n)
 {
   setReadyState(LOADING);

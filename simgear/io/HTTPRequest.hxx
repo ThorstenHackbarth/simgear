@@ -239,6 +239,16 @@ public:
     virtual void responseComplete();
     virtual void gotBodyData(const char* s, int n);
 
+    /**
+     * Called on success or failure at end of transfer.
+     *
+     * On success, <code> is 0.
+     *
+     * Otherwise <code> is the last (non-200) HTTP response, or 1 if cancelled,
+     * or 2 if there has been no HTTP reply.
+     */
+    virtual void finalResult(int code, const std::string& reason);
+
     virtual void onDone();
     virtual void onFail();
     virtual void onAlways();
