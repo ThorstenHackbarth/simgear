@@ -199,34 +199,6 @@ GridLayout::LayoutItems::iterator GridLayout::firstInRow(int row)
 }
 
 //----------------------------------------------------------------------------
-// void BoxLayout::insertItem( int index,
-//                             const LayoutItemRef& item,
-//                             int stretch,
-//                             uint8_t alignment )
-// {
-//   ItemData item_data = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-//   item_data.layout_item = item;
-//   item_data.stretch = std::max(0, stretch);
-
-//   if( alignment != AlignFill )
-//     item->setAlignment(alignment);
-
-//   if( SGWeakReferenced::count(this) )
-//     item->setParent(this);
-//   else
-//     SG_LOG( SG_GUI,
-//             SG_WARN,
-//             "Adding item to expired or non-refcounted layout" );
-
-//   if( index < 0 )
-//     _layout_items.push_back(item_data);
-//   else
-//     _layout_items.insert(_layout_items.begin() + index, item_data);
-
-//   invalidate();
-// }
-
-//----------------------------------------------------------------------------
 size_t GridLayout::count() const
 {
     return _layout_items.size();
@@ -378,7 +350,7 @@ void GridLayout::updateSizeHints() const
     }
 
     // if no row/column has any stretch set, use '1' for every row/column
-    // this means we don't need to special case this in all the rest of the code
+    // this means we don't need to special-case this in all the rest of the code
     if (totalColStretch == 0) {
         std::for_each(_columns.begin(), _columns.end(), [](RowColumnData& a) {
             a.calcStretch = 1;

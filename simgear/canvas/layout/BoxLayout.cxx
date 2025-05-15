@@ -596,17 +596,23 @@ int BoxLayout::ItemData::mhfw(int w) const
                                       << ", hint=" << space.size_hint
                                       << ", max=" << space.max_size << ")");
 
-      if (space.size < space.min_size) {
+      auto sizeToLayout = space.size;
+      if (sizeToLayout < space.min_size) {
           // TODO
-          SG_LOG(SG_GUI, SG_WARN, "BoxLayout: not enough size (not implemented)");
-      } else if (space.size < space.max_size) {
+          SG_LOG(SG_GUI, SG_DEV_WARN, "BoxLayout: not enough size (not implemented):" << space.size << " < " << space.min_size);
+
+          // overflow for now
+          sizeToLayout = space.min_size;
+      }
+
+      if (sizeToLayout < space.max_size) {
           _sum_stretch = 0;
           _space_stretch = 0;
 
-          bool less_then_hint = space.size < space.size_hint;
+          bool less_then_hint = sizeToLayout < space.size_hint;
 
           // Give min_size/size_hint to all items
-          _space_left = space.size - (less_then_hint ? space.min_size : space.size_hint);
+          _space_left = sizeToLayout - (less_then_hint ? space.min_size : space.size_hint);
           for (int i = 0; i < num_children; ++i) {
               ItemData& d = items[i];
               if (!d.visible)
@@ -711,7 +717,7 @@ int BoxLayout::ItemData::mhfw(int w) const
               }
           }
       } else {
-          _space_left = space.size - space.max_size;
+          _space_left = sizeToLayout - space.max_size;
           int num_align = 0;
           for (int i = 0; i < num_children; ++i) {
               if (!items[i].visible)
