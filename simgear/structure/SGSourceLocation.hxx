@@ -55,6 +55,13 @@ public:
     friend std::ostream& operator<<(std::ostream& out,
                                     const SGSourceLocation& loc);
 
+    /**
+     * @brief String representation of the location.
+     * 
+     * @return std::string 
+     */
+    std::string str() const;
+
 private:
     void setPath(const std::string& str);
 

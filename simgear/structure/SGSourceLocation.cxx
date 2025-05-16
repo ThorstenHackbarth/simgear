@@ -8,6 +8,9 @@
 
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/structure/exception.hxx>
+#include <string>
+
+using namespace std::string_literals;
 
 SGSourceLocation::SGSourceLocation()
     : _line(-1),
@@ -65,4 +68,16 @@ std::ostream& operator<<(std::ostream& out,
     if (loc._column >= 0)
         out << ":" << loc._column;
     return out;
+}
+
+std::string SGSourceLocation::str() const
+{
+    std::string r = _path ? *_path : ""s;
+    if (_line >= 0) {
+        r += ":"s + std::to_string(_line);
+    }
+    if (_column >= 0) {
+        r += ":"s + std::to_string(_column);
+    }
+    return r;
 }
