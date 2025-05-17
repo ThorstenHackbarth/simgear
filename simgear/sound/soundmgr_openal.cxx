@@ -181,7 +181,15 @@ void SGSoundMgr::init()
 
     if ((!devname)||(testForError(device, "Audio device not available, trying default.")) ) {
         // REVIEW: Memory Leak - 26 bytes in 1 blocks are still reachable
-        device = alcOpenDevice(nullptr);
+        try
+        {
+            device = alcOpenDevice(nullptr);
+        }
+        catch (std::exception& e)
+        {
+            SG_LOG( SG_SOUND, SG_ALERT, "alcOpenDevice(null) failed: " << e.what());
+            return;
+        }
         if (testForError(device, "Default audio device not available.") ) {
            return;
         }

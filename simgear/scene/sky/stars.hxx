@@ -11,6 +11,7 @@
 #pragma once
 
 #include <osg/ref_ptr>
+#include <osg/Node>
 
 #include <simgear/ephemeris/stardata.hxx>
 #include <simgear/structure/SGReferenced.hxx>

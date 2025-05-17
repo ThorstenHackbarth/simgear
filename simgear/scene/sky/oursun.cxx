@@ -9,6 +9,7 @@
  */
 
 #include <osg/Array>
+#include <osg/Geometry>
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/scene/material/Effect.hxx>

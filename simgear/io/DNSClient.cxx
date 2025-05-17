@@ -9,6 +9,7 @@
 #include <simgear_config.h>
 
 #include <algorithm>
+#include <cassert>
 
 #include "DNSClient.hxx"
 #include <udns.h>
@@ -144,6 +145,12 @@ void SRVRequest::submit( Client * client )
     }
     _start = time(NULL);
     _query = q;
+}
+
+std::string SRVRequest::getQueryDn() const
+{
+    assert(0);
+    return "";
 }
 
 TXTRequest::TXTRequest( const std::string & dn ) :

@@ -7,6 +7,8 @@
 
 #include <iterator>
 
+#include <osg/Geometry>
+
 #include <simgear/debug/logstream.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>

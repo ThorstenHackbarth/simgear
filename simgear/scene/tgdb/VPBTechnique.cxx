@@ -1718,7 +1718,7 @@ double VPBTechnique::det2(const osg::Vec2d a, const osg::Vec2d b)
     return a.x() * b.y() - b.x() * a.y();
 }
 
-const int VPBTechnique::getLandclass(const osg::Vec2d p)
+int VPBTechnique::getLandclass(const osg::Vec2d p)
 {
     osgTerrain::Layer* colorLayer = _terrainTile->getColorLayer(0);
 

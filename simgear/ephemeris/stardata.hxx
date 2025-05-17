@@ -9,6 +9,7 @@
 #ifndef _SG_STARDATA_HXX
 #define _SG_STARDATA_HXX
 
+#include <string>
 #include <vector>
 
 class SGPath;

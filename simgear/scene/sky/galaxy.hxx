@@ -7,6 +7,10 @@
 
 #pragma once
 
+namespace osg
+{
+class Node;
+}
 #include <osg/ref_ptr>
 
 #include <simgear/math/SGMath.hxx>

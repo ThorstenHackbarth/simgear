@@ -6,6 +6,7 @@
 #pragma once
 
 #include <osg/ref_ptr>
+#include <osg/Node>
 
 #include <simgear/math/SGVec3.hxx>
 #include <simgear/structure/SGReferenced.hxx>

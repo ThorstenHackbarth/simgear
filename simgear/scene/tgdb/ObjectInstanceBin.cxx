@@ -215,7 +215,7 @@ const ObjectInstanceBin::ObjectInstance& ObjectInstanceBin::getInstance(unsigned
     return _objectInstances[i];
 }
 
-const bool ObjectInstanceBin::hasCustomAttributes() const
+bool ObjectInstanceBin::hasCustomAttributes() const
 {
     return (customInstancingEffects.find(_effect) != customInstancingEffects.end());
 }

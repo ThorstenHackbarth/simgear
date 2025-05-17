@@ -61,7 +61,7 @@ public:
     const std::string getEffect() const;
     unsigned getNumInstances() const;
     const ObjectInstance& getInstance(unsigned i) const;
-    const bool hasCustomAttributes() const;
+    bool hasCustomAttributes() const;
 
 private:
     SGPath _STGFilePath;
