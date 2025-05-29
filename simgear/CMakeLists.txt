@@ -36,6 +36,7 @@ foreach( mylibfolder
         misc
         nasal
         nasal/cppbind
+        nasal/cpputils
         props
         scene
         screen
