@@ -5,6 +5,8 @@
 
 #include <cmath>
 
+#include <iostream>
+
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/sg_inlines.h>
@@ -584,12 +586,82 @@ SGGeodesy::distanceM(const SGGeoc& from, const SGGeoc& to)
   return distanceRad(from, to) * SG_RAD_TO_NM * SG_NM_TO_METER;
 }
 
+ 
+bool SGGeodesy::cross(const SGGeod& e1, const SGGeod& e2, SGVec3d& result) {
+  // Implementation of 
+  // https://www.edwilliams.org/intersect.htm
+  // includes conversion from east pos lon to neg and back
+
+  const double lat1 = e1.getLatitudeRad();
+  const double lon1 = -e1.getLongitudeRad();
+  const double lat2 = e2.getLatitudeRad();
+  const double lon2 = -e2.getLongitudeRad();
+
+
+  result[0] = sin(lat1 - lat2) * sin((lon1 + lon2) / 2) * cos((lon1 - lon2) / 2) -
+              sin(lat1 + lat2) * cos((lon1 + lon2) / 2) * sin((lon1 - lon2) / 2);
+
+  result[1] = -(sin(lat1 - lat2) * cos((lon1 + lon2) / 2) * cos((lon1 - lon2) / 2) +
+              sin(lat1 + lat2) * sin((lon1 + lon2) / 2) * sin((lon1 - lon2) / 2));
+
+  result[2] = cos(lat1) * cos(lat2) * sin(lon1 - lon2);
+
+  return true;
+}
+
+std::optional<SGGeod> 
+SGGeodesy::intersection(const SGGeod& e1, const SGGeod& e2, 
+  const SGGeod& e3, const SGGeod& e4)
+{
+  // Implementation of 
+  // https://www.edwilliams.org/intersect.htm
+
+  if (equivalent( e1.opposing(), e2)) {
+      return std::optional<SGGeod>();
+  }
+
+  if (equivalent( e3.opposing(), e4)) {
+      return std::optional<SGGeod>();
+  }
+
+  SGVec3d cp1;
+  SGVec3d cp2;
+  cross(e1, e2, cp1);
+  cross(e3, e4, cp2);
+  SGVec3d r = ::cross(normalize(cp1), normalize(cp2));
+
+  // only the length of the x/y vector ::length(r) includes Z
+  double xyLen = std::sqrt(std::pow(r.x(), 2) + std::pow(r.y(), 2));
+  double lat = std::atan2(r.z(), xyLen);
+  double lon = std::atan2(-r.y(), r.x());
+
+  auto cand1 = SGGeod::fromRad(lon, lat);
+  auto cand2 = cand1.opposing();
+
+  double minDist1 = distanceM(cand1, e1);
+  minDist1 = std::min(minDist1, distanceM(cand1, e2));
+  minDist1 = std::min(minDist1, distanceM(cand1, e3));
+  minDist1 = std::min(minDist1, distanceM(cand1, e4));
+
+  double minDist2 = distanceM(cand2, e1);
+  minDist2 = std::min(minDist2, distanceM(cand2, e2));
+  minDist2 = std::min(minDist2, distanceM(cand2, e3));
+  minDist2 = std::min(minDist2, distanceM(cand2, e4));
+
+  if (minDist1 < minDist2) {
+    return cand1;
+  } else {
+    return cand2;
+  }
+}
+
 bool 
 SGGeodesy::radialIntersection(const SGGeoc& a, double r1, 
     const SGGeoc& b, double r2, SGGeoc& result)
 {
   // implementation of
-  // http://williams.best.vwh.net/avform.htm#Intersection
+  // defunct http://williams.best.vwh.net/avform.htm#Intersection
+  // https://www.edwilliams.org/avform147.htm#Intersection
 
   double crs13 = r1 * SG_DEGREES_TO_RADIANS;
   double crs23 = r2 * SG_DEGREES_TO_RADIANS;

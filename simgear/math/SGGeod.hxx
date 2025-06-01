@@ -76,6 +76,17 @@ public:
   /// Set the geodetic elevation from the argument given in feet
   void setElevationFt(double elevation);
 
+  /// Return an opposing SGGeod
+  SGGeod opposing() const;
+
+  /// Return true if equal to the relative tolerance tol
+  bool
+  equivalent(const SGGeod& g1, const SGGeod& g2, double lattol, double lontol);
+
+  /// Return true if about equal to roundoff of the underlying type
+  bool
+  equivalent(const SGGeod& g1, const SGGeod& g2);
+
   /// Compare two geodetic positions for equality
   bool operator == ( const SGGeod & other ) const;
 
@@ -333,9 +344,33 @@ SGGeod::setElevationFt(double elevation)
   _elevation = elevation*SG_FEET_TO_METER;
 }
 
-inline
-bool
-SGGeod::operator == ( const SGGeod & other ) const
+inline SGGeod
+SGGeod::opposing() const
+{
+    double lon = SGMiscd::normalizePeriodic(-180, 180, getLongitudeDeg() + 180);
+    auto ret = SGGeod::fromDeg(lon, -getLatitudeDeg());
+    ret.setElevationM(getElevationM());
+    return ret;
+}
+
+/// Return true if equal to the relative tolerance tol
+inline bool
+equivalent(const SGGeod& g1, const SGGeod& g2, double lattol, double lontol)
+{
+    return std :: abs(g1.getLatitudeDeg() - g2.getLatitudeDeg()) < lattol &&
+           std :: abs(g1.getLongitudeDeg() - g2.getLongitudeDeg()) < lontol;
+}
+
+/// Return true if about equal to roundoff of the underlying type
+inline bool
+equivalent(const SGGeod& g1, const SGGeod& g2)
+{
+    double tol = SGLimits<double>::epsilon();
+    return equivalent(g1, g2, tol, tol);
+}
+
+inline bool
+SGGeod::operator==(const SGGeod& other) const
 {
   return _lon == other._lon &&
          _lat == other._lat &&

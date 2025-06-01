@@ -3,6 +3,7 @@
 
 #ifndef SGGeodesy_H
 #define SGGeodesy_H
+#include <optional>
 
 class SGGeodesy {
 public:
@@ -58,9 +59,17 @@ public:
   static double distanceRad(const SGGeoc& from, const SGGeoc& to);
   static double distanceM(const SGGeoc& from, const SGGeoc& to);
   
+  static bool cross(const SGGeod& e1, const SGGeod& e2, SGVec3d& result);
+  /**
+   * compute the intersection of two great circle segments, or return false
+   * if no intersection could be computed.
+   */
+  static std::optional<SGGeod> intersection(const SGGeod& e1, const SGGeod& e2, 
+      const SGGeod& e3, const SGGeod& e4);
+    
   /**
    * compute the intersection of two (true) radials (in degrees), or return false
-   * if no intersection culd be computed.
+   * if no intersection could be computed.
    */
   static bool radialIntersection(const SGGeoc& a, double aRadial, 
     const SGGeoc& b, double bRadial, SGGeoc& result);

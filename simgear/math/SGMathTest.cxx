@@ -287,6 +287,83 @@ void doRectTest()
   SG_VERIFY(rect.contains(9, 15, 1))
 }
 
+bool GeodesyIntersectionTest(void)
+{
+    // P1 N51 12 -> 90° (154,9km)
+    // P2 N50.86111 E17.69838
+    // P3 49 11 -> 45° (318km)
+    // P4 N51.47167 E15.07978
+    // Intersection 50.979167	14.2125
+  //  std::cout << std::endl
+  //            << "**** GeodesyIntersectionTest ***** " << std::endl;
+    auto e1 = SGGeod::fromDeg(12, 51);
+    auto e2 = SGGeod::fromDeg(17.69838, 50.86111);
+    auto e3 = SGGeod::fromDeg(11, 49);
+    auto e4 = SGGeod::fromDeg(15.07978, 51.47167);
+
+    SGGeod exp = SGGeod::fromDeg(14.2125, 50.979167);
+
+    std::optional<SGGeod> resOpt = SGGeodesy::intersection(e1, e2, e3, e4);
+    if (resOpt.has_value()) {
+      SGGeod res = resOpt.value();
+      bool ok = true;
+      ok &= std::abs(res.getLatitudeDeg() - exp.getLatitudeDeg()) < 0.01;
+      ok &= std::abs(res.getLongitudeDeg() - exp.getLongitudeDeg()) < 0.01;
+      if (!ok) {
+          std::cout << "GeodesyIntersectionTest " << std::endl;
+          std::cout << "Res  " << res << "\t" << SGVec3d::fromGeod(res) << std::endl;
+          std::cout << "Exp  " << exp << "\t" << SGVec3d::fromGeod(exp) << std::endl;
+      }
+      return ok;
+    } else {
+      return false;
+    }
+}
+
+bool GeodesyIntersectionTest2(void)
+{
+    // P1 N51 12 -> 90° (154,9km)
+    // P2 N50.86111 E17.69838
+    // P3 49 11 -> 45° (318km)
+    // P4 N51.47167 E15.07978
+    // Intersection 50.979167	14.2125
+    // std::cout << std::endl
+    //           << "**** GeodesyIntersectionTest2 ***** " << std::endl;
+    auto e1 = SGGeod::fromDeg(5, 45);
+    auto e2 = SGGeod::fromDeg(5, -45);
+    auto e3 = SGGeod::fromDeg(45, 5);
+    auto e4 = SGGeod::fromDeg(-45, 5);
+
+    SGGeod exp = SGGeod::fromDeg(5, 7.02);
+    std::optional<SGGeod> resOpt = SGGeodesy::intersection(e1, e2, e3, e4);
+    if (resOpt.has_value()) {
+      SGGeod res = resOpt.value();
+      bool ok = true;
+      ok &= std::abs(res.getLatitudeDeg() - exp.getLatitudeDeg()) < 0.01;
+      ok &= std::abs(res.getLongitudeDeg() - exp.getLongitudeDeg()) < 0.01;
+      if (!ok) {
+          std::cout << "GeodesyIntersectionTest " << std::endl;
+          std::cout << "Res  " << res << "\t" << SGVec3d::fromGeod(res) << std::endl;
+          std::cout << "Exp  " << exp << "\t" << SGVec3d::fromGeod(exp) << std::endl;
+      }
+      return ok;
+    } else {
+      return false;
+    }
+}
+
+bool GeodesyIntersectionTest3(void)
+{
+    // Points e3/e4 are opposite
+    auto e1 = SGGeod::fromDeg(0, 45);
+    auto e2 = SGGeod::fromDeg(0, -45);
+    auto e3 = SGGeod::fromDeg(90, 0);
+    auto e4 = SGGeod::fromDeg(-90, 0);
+
+    std::optional<SGGeod> resOpt = SGGeodesy::intersection(e1, e2, e3, e4);
+    return (!resOpt.has_value());
+}
+
 bool
 GeodesyTest(void)
 {
@@ -377,7 +454,13 @@ main(void)
   // Check geodetic/geocentric/cartesian conversions
   if (!GeodesyTest())
     { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
-
+  if (!GeodesyIntersectionTest())
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
+  if (!GeodesyIntersectionTest2())
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
+  if (!GeodesyIntersectionTest3() )
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
+    
   std::cout << "Successfully passed all tests!" << std::endl;
   return EXIT_SUCCESS;
 }
