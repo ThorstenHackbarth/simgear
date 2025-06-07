@@ -72,19 +72,16 @@ struct Torrent : SGSubsystem
     
     // Torrent operations.
     
-    /* Called with true/false on success/failure of torrent operation. */
+    /* Called zero or more times with ok=false, then once with ok=true when the
+    turrent operation has succeeded. */
     using fn_result_callback = std::function<void (bool ok)>;
     
-    /* Called after torrent file has been loaded, before download. */
-    using fn_info_callback = std::function<void (std::shared_ptr<libtorrent::torrent_info> torrent_info)>;
-    
     /* Reads specified torrent file, calls info_callback(), downloads to
-    <out_path>, then calls result_callback(). */
+    <out_path> calling result_callback(). */
     void add_torrent(
             SGPath& torrent_path,
             SGPath& out_path,
-            fn_result_callback result_callback,
-            fn_info_callback info_callback = nullptr
+            fn_result_callback result_callback=nullptr
             );
     
     /* Downloads .torrent file from <torrent_url> to <torrent_path> then calls
@@ -93,9 +90,22 @@ struct Torrent : SGSubsystem
             const std::string& torrent_url,
             SGPath& torrent_path,
             SGPath& out_path,
-            fn_result_callback result_callback,
-            fn_info_callback info_callback = nullptr
+            fn_result_callback result_callback=nullptr
             );
+    
+    enum class status
+    {
+        NONE,        // Not mentioned in any torrents.
+        IN_PROGRESS, // Torrent has not finished downloading.
+        DONE,        // Torrent has finished downloading.
+    };
+    
+    /* Returns status of specified torrent. */
+    status get_status_torrent_path(const SGPath& torrent_path);
+    
+    /* Returns status of torrent that contains specified *.stg leafname (which
+    we assume is unique). */
+    status get_status_stg_leafname(const std::string& stg_leafname);
 };
 
 }   // namespace simgear

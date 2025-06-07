@@ -52,7 +52,8 @@ static std::map<libtorrent::torrent_handle, std::function<void (bool ok)>> s_tor
 static std::map<libtorrent::torrent_handle, SGPropertyNode_ptr> s_torrent_to_node;
 static time_t s_torrent_status_t0 = 0;
 static std::vector<libtorrent::stats_metric>   s_stats_metrics;
-
+static std::map<std::string, libtorrent::torrent_handle> s_stg_leafname_to_torrent_handle;
+static std::map<SGPath, libtorrent::torrent_handle> s_torrent_path_to_torrent_handle;
 
 Torrent::Torrent(
         SGPropertyNode_ptr node,
@@ -323,15 +324,27 @@ void Torrent::update(double /*delta_time_sec*/)
                 /* Update per-torrent stats when completed. */
                 SG_LOG(SG_IO, SG_DEBUG, "torrent_finished_alert");
                 torrent_node->setStringValue("status", "finished");
-                torrent_callback(true /*ok*/);
+                if (torrent_callback)
+                {
+                    torrent_callback(true /*ok*/);
+                }
             }
             else if (auto torrent_error_alert = dynamic_cast<libtorrent::torrent_error_alert*>(alert))
             {
-                SG_LOG(SG_IO, SG_DEBUG, "torrent_error_alert");
+                SG_LOG(SG_IO, SG_DEBUG, "torrent_error_alert"
+                        << " typeid(*alert)=" << typeid(*alert).name()
+                        << " torrent_error_alert->filename()=" << torrent_error_alert->filename()
+                        << " torrent_error_alert->message()=" << torrent_error_alert->message()
+                        );
                 torrent_node->setStringValue("status", "error");
                 torrent_node->setStringValue("error_filename", torrent_error_alert->filename());
                 torrent_node->setStringValue("error_message", torrent_error_alert->message());
-                torrent_callback(false /*ok*/);
+                /* I think this may end up making callback multiple times. If
+                error occurs, libtorrent carries on trying. */
+                if (torrent_callback)
+                {
+                    torrent_callback(false /*ok*/);
+                }
             }
             else if (dynamic_cast<libtorrent::torrent_paused_alert*>(alert))
             {
@@ -380,8 +393,7 @@ void Torrent::update(double /*delta_time_sec*/)
 void Torrent::add_torrent(
         SGPath& torrent_path,
         SGPath& out_path,
-        Torrent::fn_result_callback result_callback,
-        Torrent::fn_info_callback info_callback
+        Torrent::fn_result_callback result_callback
         )
 {
     SG_LOG(SG_IO, SG_ALERT, "add_torrent():"
@@ -404,27 +416,60 @@ void Torrent::add_torrent(
     catch (std::exception& e)
     {
         SG_LOG(SG_IO, SG_ALERT, "Failed to load torrent file '" + torrent_path.str() + "': " + e.what());
-        result_callback(false /*ok*/);
+        if (result_callback)
+        {
+            result_callback(false /*ok*/);
+        }
         return;
     }
+    
     add_torrent_params.ti = torrent_info;
-    if (info_callback)
-    {
-        info_callback(torrent_info);
-    }
+    
+    /* Update our various maps to include the new torrent_handle. */
+    std::unique_lock    lock(s_mutex);
+
     // todo: use async_add_torrent()?
     libtorrent::torrent_handle torrent_handle = s_session->add_torrent(add_torrent_params);
+
+    {
+        auto it = s_torrent_path_to_torrent_handle.find(torrent_path);
+        if (it == s_torrent_path_to_torrent_handle.end())
+        {
+            /* This dummy entry was created by Torrent::add_torrent_url(). */
+            s_torrent_path_to_torrent_handle[torrent_path] = torrent_handle;
+        }
+        else
+        {
+            assert(it->second == libtorrent::torrent_handle());
+            it->second = torrent_handle;
+        }
+    }
+    assert(s_torrent_to_callback.find(torrent_handle) == s_torrent_to_callback.end());
+
+    s_torrent_to_callback[torrent_handle] = result_callback;
+
+    const libtorrent::file_storage& file_storage = torrent_info->files();
+    for (int i=0; i<file_storage.num_files(); ++i)
+    {
+        auto leafname = file_storage.file_name(i);
+        std::string leafname2(leafname.data(), leafname.size());
+        if (simgear::strutils::ends_with(leafname2, ".stg"))
+        {
+            assert(s_stg_leafname_to_torrent_handle.find(leafname2) == s_stg_leafname_to_torrent_handle.end());
+            s_stg_leafname_to_torrent_handle[leafname2] = torrent_handle;
+
+        }
+    }
+
     SGPropertyNode_ptr torrent_node = s_node->addChild("torrent");
     torrent_node->setStringValue("status", "init");
     torrent_node->setStringValue("torrent", torrent_path.str());
     torrent_node->setStringValue("path", out_path.str());
-    {
-        std::unique_lock    lock(s_mutex);
-        assert(s_torrent_to_callback.find(torrent_handle) == s_torrent_to_callback.end());
-        s_torrent_to_callback[torrent_handle] = result_callback;
-        s_torrent_to_node[torrent_handle] = torrent_node;
-    }
+
+    s_torrent_to_node[torrent_handle] = torrent_node;
     
+    lock.unlock();
+
     /* It's now safe to allow torrent to generate alerts. */
     torrent_handle.set_flags(libtorrent::torrent_flags::auto_managed);
     torrent_handle.resume();
@@ -437,7 +482,6 @@ static void add_torrent_url_callback(
         SGPath& torrent_path,
         SGPath& out_path,
         Torrent::fn_result_callback result_callback,
-        Torrent::fn_info_callback info_callback,
         int code,
         const std::string& reason
         )
@@ -450,11 +494,14 @@ static void add_torrent_url_callback(
             );
     if (code)
     {
-        result_callback(false);
+        if (result_callback)
+        {
+            result_callback(false);
+        }
     }
     else
     {
-        self->add_torrent(torrent_path, out_path, result_callback, info_callback);
+        self->add_torrent(torrent_path, out_path, result_callback);
     }   
 }
 
@@ -560,8 +607,7 @@ void Torrent::add_torrent_url(
         const std::string& torrent_url,
         SGPath& torrent_path,
         SGPath& out_path,
-        Torrent::fn_result_callback result_callback,
-        Torrent::fn_info_callback info_callback
+        Torrent::fn_result_callback result_callback
         )
 {
     SG_LOG(SG_IO, SG_ALERT, "[" << ((long) pthread_self()) << "]"
@@ -572,6 +618,12 @@ void Torrent::add_torrent_url(
             );
     simgear::HTTP::Client* http_client = s_get_http_client();
     assert(http_client);
+    {
+        std::unique_lock    lock(s_mutex);
+        assert(s_torrent_path_to_torrent_handle.find(torrent_path) == s_torrent_path_to_torrent_handle.end());
+        s_torrent_path_to_torrent_handle[torrent_path] = libtorrent::torrent_handle();
+    }
+    
     download_file(
             http_client,
             torrent_url,
@@ -583,11 +635,110 @@ void Torrent::add_torrent_url(
                 torrent_path,
                 out_path,
                 result_callback,
-                info_callback,
                 std::placeholders::_1 /*code*/,
                 std::placeholders::_2 /*reason*/
                 )
             );
+}
+
+
+static std::ostream& operator<< (std::ostream& out, Torrent::status status)
+{
+    if (status == Torrent::status::NONE)
+    {
+        out << "NONE";
+    }
+    else if (status == Torrent::status::IN_PROGRESS)
+    {
+        out << "IN_PROGRESS";
+    }
+    else if (status == Torrent::status::DONE)
+    {
+        out << "DONE";
+    }
+    else
+    {
+        assert(0);
+    }
+    return out;
+}
+
+
+static Torrent::status s_torrent_handle_to_status(const libtorrent::torrent_handle& torrent_handle)
+{
+    Torrent::status ret;
+    libtorrent::torrent_status torrent_status = torrent_handle.status(libtorrent::status_flags_t());
+    SG_LOG(SG_IO, SG_DEBUG, "torrent_status=" << torrent_status.state);
+    if (0
+            || torrent_status.state == libtorrent::torrent_status::checking_files
+            || torrent_status.state == libtorrent::torrent_status::downloading_metadata
+            || torrent_status.state == libtorrent::torrent_status::downloading
+            || torrent_status.state == libtorrent::torrent_status::finished
+            || torrent_status.state == libtorrent::torrent_status::checking_resume_data
+            )
+    {
+        ret = Torrent::status::IN_PROGRESS;
+    }
+    else if (torrent_status.state == libtorrent::torrent_status::seeding)
+    {
+        ret = Torrent::status::DONE;
+    }
+    else
+    {
+        SG_LOG(SG_IO, SG_DEBUG, "Unrecognised torrent state " << (int) torrent_status.state);
+        assert(0);
+    }
+    return ret;
+}
+
+Torrent::status Torrent::get_status_torrent_path(const SGPath& torrent_path)
+{
+    Torrent::status ret;
+    std::unique_lock    lock(s_mutex);
+    auto it = s_torrent_path_to_torrent_handle.find(torrent_path);
+    if (it == s_torrent_path_to_torrent_handle.end())
+    {
+        ret =  status::NONE;
+    }
+    else
+    {
+        const libtorrent::torrent_handle& torrent_handle = it->second;
+        lock.unlock();
+        if (torrent_handle == libtorrent::torrent_handle())
+        {
+            /* We are currently downloading the .torrent file itself using HTTP
+            (see Torrent::add_torrent_url()). */
+            ret = status::IN_PROGRESS;
+        }
+        else
+        {
+            ret = s_torrent_handle_to_status(torrent_handle);
+        }
+    }
+    SG_LOG(SG_IO, SG_DEBUG, "Torrent::get_status_torrent_path() torrent_path=" << torrent_path
+            << " returning " << ret);
+    return ret;
+}
+
+Torrent::status Torrent::get_status_stg_leafname(const std::string& stg_leafname)
+{
+    Torrent::status ret;
+
+    std::unique_lock    lock(s_mutex);
+    auto it = s_stg_leafname_to_torrent_handle.find(stg_leafname);
+    if (it == s_stg_leafname_to_torrent_handle.end())
+    {
+        ret =  status::NONE;
+    }
+    else
+    {
+        const libtorrent::torrent_handle& torrent_handle = it->second;
+        lock.unlock();
+        ret = s_torrent_handle_to_status(torrent_handle);
+    }
+    SG_LOG(SG_IO, SG_DEBUG, "Torrent::get_status_stg_leafname() stg_leafname=" << stg_leafname
+            << " returning " << ret);
+    return ret;
 }
 
 }   // namespace simgear.
