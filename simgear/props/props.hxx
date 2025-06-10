@@ -1234,6 +1234,7 @@ public:
     float getFloatValue(const char* relative_path, float defaultValue = 0.0f) const;
     double getDoubleValue(const char* relative_path, double defaultValue = 0.0) const;
     std::string getStringValue(const char* relative_path, const char* defaultValue = "") const;
+    std::string getStringValue(const char* relative_path, const std::string& defaultValue) const;
 
     bool getBoolValue(const std::string& relative_path, bool defaultValue = false) const;
     int getIntValue(const std::string& relative_path, int defaultValue = 0) const;
@@ -1241,6 +1242,8 @@ public:
     float getFloatValue(const std::string& relative_path, float defaultValue = 0.0f) const;
     double getDoubleValue(const std::string& relative_path, double defaultValue = 0.0) const;
     std::string getStringValue(const std::string& relative_path, const char* defaultValue = "") const;
+    std::string getStringValue(const std::string& relative_path,
+                               const std::string& defaultValue) const;
 
     /** Set another node's value. */
     bool setBoolValue(const char* relative_path, bool value);

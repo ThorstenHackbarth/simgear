@@ -3456,10 +3456,24 @@ SGPropertyNode::getStringValue (const char * relative_path,
   return (node) ? node->getStringValue() : defaultValue;
 }
 
+std::string
+SGPropertyNode::getStringValue(const char * relative_path,
+                               const std::string& defaultValue) const
+{
+    return getStringValue(relative_path, defaultValue.c_str());
+}
+
 std::string SGPropertyNode::getStringValue (const std::string& relative_path, const char * defaultValue) const
 {
     // TODO Check defaultValue != null
     return getStringValue(relative_path.c_str(), defaultValue);
+}
+
+std::string
+SGPropertyNode::getStringValue(const std::string& relative_path,
+                               const std::string& defaultValue) const
+{
+    return getStringValue(relative_path, defaultValue.c_str());
 }
 
 /**
