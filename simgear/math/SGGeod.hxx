@@ -76,8 +76,9 @@ public:
   /// Set the geodetic elevation from the argument given in feet
   void setElevationFt(double elevation);
 
-  /// Return an opposing SGGeod
-  SGGeod opposing() const;
+  /// Return an antipodal SGGeod
+  /// https://en.wikipedia.org/wiki/Antipodes
+  SGGeod antipodal() const;
 
   /// Return true if equal to the relative tolerance tol
   bool
@@ -345,9 +346,9 @@ SGGeod::setElevationFt(double elevation)
 }
 
 inline SGGeod
-SGGeod::opposing() const
+SGGeod::antipodal() const
 {
-    double lon = SGMiscd::normalizePeriodic(-180, 180, getLongitudeDeg() + 180);
+    const double lon = SGMiscd::normalizePeriodic(-180, 180, getLongitudeDeg() + 180);
     auto ret = SGGeod::fromDeg(lon, -getLatitudeDeg());
     ret.setElevationM(getElevationM());
     return ret;

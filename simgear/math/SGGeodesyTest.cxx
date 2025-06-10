@@ -1,9 +1,5 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// SPDX-FileCopyrightText: 2006 Mathias Froehlich <mathias.froehlich@web.de>
-
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+// SPDX-FileCopyrightText: 2025 Keith Paterson <keith.paterson@gmx.de>
 
 #include <simgear/misc/test_macros.hxx>
 
@@ -287,37 +283,184 @@ void doRectTest()
   SG_VERIFY(rect.contains(9, 15, 1))
 }
 
+bool GeodesyIntersectionTest(void)
+{
+    // P1 N51 12 -> 90° (154,9km)
+    // P2 N50.86111 E17.69838
+    // P3 49 11 -> 45° (318km)
+    // P4 N51.47167 E15.07978
+    // Intersection 50.979167	14.2125
+  //  std::cout << std::endl
+  //            << "**** GeodesyIntersectionTest ***** " << std::endl;
+    auto e1 = SGGeod::fromDeg(12, 51);
+    auto e2 = SGGeod::fromDeg(17.69838, 50.86111);
+    auto e3 = SGGeod::fromDeg(11, 49);
+    auto e4 = SGGeod::fromDeg(15.07978, 51.47167);
+
+    SGGeod exp = SGGeod::fromDeg(14.2125, 50.979167);
+
+    std::optional<SGGeod> resOpt = SGGeodesy::intersection(e1, e2, e3, e4);
+    if (resOpt.has_value()) {
+      SGGeod res = resOpt.value();
+      bool ok = true;
+      ok &= std::abs(res.getLatitudeDeg() - exp.getLatitudeDeg()) < 0.01;
+      ok &= std::abs(res.getLongitudeDeg() - exp.getLongitudeDeg()) < 0.01;
+      if (!ok) {
+          std::cout << "GeodesyIntersectionTest " << std::endl;
+          std::cout << "Res  " << res << "\t" << SGVec3d::fromGeod(res) << std::endl;
+          std::cout << "Exp  " << exp << "\t" << SGVec3d::fromGeod(exp) << std::endl;
+      }
+      return ok;
+    } else {
+      return false;
+    }
+}
+
+bool GeodesyIntersectionTest2(void)
+{
+    // P1 N51 12 -> 90° (154,9km)
+    // P2 N50.86111 E17.69838
+    // P3 49 11 -> 45° (318km)
+    // P4 N51.47167 E15.07978
+    // Intersection 50.979167	14.2125
+    // std::cout << std::endl
+    //           << "**** GeodesyIntersectionTest2 ***** " << std::endl;
+    auto e1 = SGGeod::fromDeg(5, 45);
+    auto e2 = SGGeod::fromDeg(5, -45);
+    auto e3 = SGGeod::fromDeg(45, 5);
+    auto e4 = SGGeod::fromDeg(-45, 5);
+
+    SGGeod exp = SGGeod::fromDeg(5, 7.02);
+    std::optional<SGGeod> resOpt = SGGeodesy::intersection(e1, e2, e3, e4);
+    if (resOpt.has_value()) {
+      SGGeod res = resOpt.value();
+      bool ok = true;
+      ok &= std::abs(res.getLatitudeDeg() - exp.getLatitudeDeg()) < 0.01;
+      ok &= std::abs(res.getLongitudeDeg() - exp.getLongitudeDeg()) < 0.01;
+      if (!ok) {
+          std::cout << "GeodesyIntersectionTest " << std::endl;
+          std::cout << "Res  " << res << "\t" << SGVec3d::fromGeod(res) << std::endl;
+          std::cout << "Exp  " << exp << "\t" << SGVec3d::fromGeod(exp) << std::endl;
+      }
+      return ok;
+    } else {
+      return false;
+    }
+}
+
+bool GeodesyIntersectionTest3(void)
+{
+    // Points e3/e4 are opposite
+    auto e1 = SGGeod::fromDeg(0, 45);
+    auto e2 = SGGeod::fromDeg(0, -45);
+    auto e3 = SGGeod::fromDeg(90, 0);
+    auto e4 = SGGeod::fromDeg(-90, 0);
+
+    std::optional<SGGeod> resOpt = SGGeodesy::intersection(e1, e2, e3, e4);
+    return (!resOpt.has_value());
+}
+
+bool
+GeodesyTest(void)
+{
+  // We know that the values are on the order of 1
+  double epsDeg = 10*360*SGLimits<double>::epsilon();
+  // For the altitude values we need to tolerate relative errors in the order
+  // of the radius
+  double epsM = 10*6e6*SGLimits<double>::epsilon();
+
+  SGVec3<double> cart0, cart1;
+  SGGeod geod0, geod1;
+  SGGeoc geoc0;
+
+  // create some geodetic position
+  geod0 = SGGeod::fromDegM(30, 20, 17);
+
+  // Test the conversion routines to cartesian coordinates
+  cart0 = SGVec3<double>::fromGeod(geod0);
+  geod1 = SGGeod::fromCart(cart0);
+  if (epsDeg < fabs(geod0.getLongitudeDeg() - geod1.getLongitudeDeg()) ||
+      epsDeg < fabs(geod0.getLatitudeDeg() - geod1.getLatitudeDeg()) ||
+      epsM < fabs(geod0.getElevationM() - geod1.getElevationM()))
+    { lineno = __LINE__; return false; }
+
+  // Test the conversion routines to radial coordinates
+  geoc0 = SGGeoc::fromCart(cart0);
+  cart1 = SGVec3<double>::fromGeoc(geoc0);
+  if (!equivalent(cart0, cart1))
+    { lineno = __LINE__; return false; }
+
+  // test course / advance routines
+  // uses examples from Williams aviation formulary
+  SGGeoc lax = SGGeoc::fromRadM(-2.066470, 0.592539, 10.0);
+  SGGeoc jfk = SGGeoc::fromRadM(-1.287762, 0.709186, 10.0);
+
+  double distNm = SGGeodesy::distanceRad(lax, jfk) * SG_RAD_TO_NM;
+  std::cout << "distance is " << distNm << std::endl;
+  if (0.5 < fabs(distNm - 2144)) // 2144 nm
+	{ lineno = __LINE__; return false; }
+
+  double crsDeg = SGGeodesy::courseRad(lax, jfk) * SG_RADIANS_TO_DEGREES;
+  std::cout << "course is " << crsDeg << std::endl;
+  if (0.5 < fabs(crsDeg - 66)) // 66 degrees
+	{ lineno = __LINE__; return false; }
+
+  SGGeoc adv;
+  SGGeodesy::advanceRadM(lax, crsDeg * SG_DEGREES_TO_RADIANS, 100 * SG_NM_TO_METER, adv);
+  std::cout << "lon:" << adv.getLongitudeRad() << ", lat:" << adv.getLatitudeRad() << std::endl;
+
+  if (0.01 < fabs(adv.getLongitudeRad() - (-2.034206)) ||
+	  0.01 < fabs(adv.getLatitudeRad() - 0.604180))
+	{ lineno = __LINE__; return false; }
+
+  return true;
+}
+
+bool GeodesyDistanceTestNear(void)
+{
+    auto geod1 = SGGeod::fromDeg(-5, 55);
+    auto geod2 = SGGeod::fromDeg(1, 58);
+    double dist = SGGeodesy::distanceM(geod1, geod2);
+    // Direction 45.35
+    return std::abs(dist-497791)<0.5; 
+}
+
+bool GeodesyDistanceTestFar(void)
+{
+    auto geod1 = SGGeod::fromDeg(176.30623232930921, -55.84059652626572);
+    auto geod2 = SGGeod::fromDeg(-3.3903270108616095, 55.944165801309168 );
+    try
+    {
+      double dist = SGGeodesy::distanceM(geod1, geod2);
+      return false;
+    }
+    catch(const std::exception& e)
+    {
+      // Expected
+      return true;
+    }
+    
+}
+
 int
 main(void)
 {
   sg_srandom(17);
 
-  // Do vector tests
-  if (!Vec3Test<float>())
+  // Check geodetic/geocentric/cartesian conversions
+  if (!GeodesyTest())
     { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
-  if (!Vec3Test<double>())
+  if (!GeodesyDistanceTestNear())
     { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
-
-  // Do quaternion tests
-  if (!QuatTest<float>())
+  if (!GeodesyDistanceTestFar())
     { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
-  if (!QuatTest<double>())
+  if (!GeodesyIntersectionTest())
     { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
-  if (!QuatDerivativeTest<float>())
+  if (!GeodesyIntersectionTest2())
     { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
-  if (!QuatDerivativeTest<double>())
+  if (!GeodesyIntersectionTest3() )
     { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
-
-  // Do matrix tests
-  if (!MatrixTest<float>())
-    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
-  if (!MatrixTest<double>())
-    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
-
-  // Do rect tests
-  doRectTest<int>();
-  doRectTest<double>();
-
+    
   std::cout << "Successfully passed all tests!" << std::endl;
   return EXIT_SUCCESS;
 }

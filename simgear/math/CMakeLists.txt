@@ -50,5 +50,6 @@ if(ENABLE_TESTS)
 add_simgear_autotest(sgvec4_test test_sgvec4.cxx)
 add_simgear_autotest(math_test SGMathTest.cxx)
 add_simgear_autotest(geometry_test SGGeometryTest.cxx)
+add_simgear_autotest(geodesy_test SGGeodesyTest.cxx)
 
 endif(ENABLE_TESTS)

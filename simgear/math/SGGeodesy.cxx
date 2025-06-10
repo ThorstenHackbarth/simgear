@@ -328,10 +328,21 @@ SGGeodesy::direct(const SGGeod& p1, double course1, double distance)
 // given lat1, lon1, lat2, lon2, calculate starting and ending
 // az1, az2 and distance (s).  Lat, lon, and azimuth are in degrees.
 // distance in meters
-static int _geo_inverse_wgs_84( double lat1, double lon1, double lat2,
-			double lon2, double *az1, double *az2,
-                        double *s )
+// formula of Vincenty
+// https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+static int _geo_inverse_wgs_84( const double lat1, const double lon1, double lat2,
+			const double lon2, double *az1, double *az2,
+                         double *s )
 {
+  // check for antipodal
+    const double lat1Ant = -lat1;
+    const double lon1Ant = SGMiscd::normalizePeriodic(-180, 180, lon1 + 180);
+
+    const double latDiff = std::abs(lat2-lat1Ant);
+    const double lonDiff = std::abs(lon2-lon1Ant);
+    if (latDiff < 0.5 && lonDiff < 0.5) {
+      throw sg_exception(std::string("geo_inverse_wgs_84 won't converge because of antipodal point"));
+    }
     double a = SGGeodesy::EQURAD, rf = SGGeodesy::iFLATTENING;
     int iter=0;
     double testv = 1.0E-10;
@@ -616,11 +627,11 @@ SGGeodesy::intersection(const SGGeod& e1, const SGGeod& e2,
   // Implementation of 
   // https://www.edwilliams.org/intersect.htm
 
-  if (equivalent( e1.opposing(), e2)) {
+  if (equivalent( e1.antipodal(), e2)) {
       return std::optional<SGGeod>();
   }
 
-  if (equivalent( e3.opposing(), e4)) {
+  if (equivalent( e3.antipodal(), e4)) {
       return std::optional<SGGeod>();
   }
 
@@ -636,17 +647,39 @@ SGGeodesy::intersection(const SGGeod& e1, const SGGeod& e2,
   double lon = std::atan2(-r.y(), r.x());
 
   auto cand1 = SGGeod::fromRad(lon, lat);
-  auto cand2 = cand1.opposing();
+  auto cand2 = cand1.antipodal();
 
-  double minDist1 = distanceM(cand1, e1);
-  minDist1 = std::min(minDist1, distanceM(cand1, e2));
-  minDist1 = std::min(minDist1, distanceM(cand1, e3));
-  minDist1 = std::min(minDist1, distanceM(cand1, e4));
+  // Find which of the candidates is nearer the points. The other
+  // one is basically on the other side of the world. 
+  double minDist1 = SGLimits<double>::max();
+  try {
+      minDist1 = std::min({distanceM(cand1, e1), 
+                          distanceM(cand1, e2), 
+                          distanceM(cand1, e3), 
+                          distanceM(cand1, e4)});
+  } catch (const std::exception&) {
+      // If one of the points can't be calculated we assume
+      // the other candidate must be correct
+  }
 
-  double minDist2 = distanceM(cand2, e1);
-  minDist2 = std::min(minDist2, distanceM(cand2, e2));
-  minDist2 = std::min(minDist2, distanceM(cand2, e3));
-  minDist2 = std::min(minDist2, distanceM(cand2, e4));
+
+  double minDist2 = SGLimits<double>::max();
+  try {
+      minDist2 = std::min({distanceM(cand2, e1), 
+                          distanceM(cand2, e2), 
+                          distanceM(cand2, e3), 
+                          distanceM(cand2, e4)});
+  } catch (const std::exception&) {
+      // If one of the points can't be calculated we assume
+      // the other candidate must be correct
+  }
+
+  if (minDist1==SGLimits<double>::max() && 
+      minDist2==SGLimits<double>::max()) {
+    SG_LOG(SG_GENERAL, SG_WARN, "SGGeodesy::intersection could not determine which candidate is valid");
+    return std::optional<SGGeod>();
+  }
+
 
   if (minDist1 < minDist2) {
     return cand1;
