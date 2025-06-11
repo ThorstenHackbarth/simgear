@@ -4,7 +4,7 @@
 #include <simgear_config.h>
 
 #include <cmath>
-
+#include <algorithm>
 #include <iostream>
 
 #include <simgear/debug/logstream.hxx>
