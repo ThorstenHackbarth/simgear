@@ -55,6 +55,10 @@ if (SIMGEAR_SOUND)
   endif()
 endif()
 
+if (SG_FFMPEG)
+  find_dependency(FFmpeg COMPONENTS AVCODEC AVFORMAT AVUTIL SWSCALE)
+endif()
+
 # OpenRTI support
 set(ENABLE_RTI @ENABLE_RTI@)
 if(ENABLE_RTI)
