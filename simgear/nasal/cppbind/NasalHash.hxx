@@ -10,9 +10,10 @@
 #include "from_nasal.hxx"
 #include "to_nasal.hxx"
 
+#include <boost/iterator/iterator_facade.hpp>
 #include <simgear/std/type_traits.hxx>
 #include <simgear/structure/map.hxx>
-#include <boost/iterator/iterator_facade.hpp>
+#include <type_traits>
 
 namespace nasal
 {
@@ -162,19 +163,14 @@ namespace nasal
       class Entry
       {
         public:
-          typedef typename boost::mpl::if_c<
-            is_const,
-            Hash const*,
-            Hash*
-          >::type HashPtr;
+            using HashPtr = typename std::conditional<is_const, Hash const*, Hash*>::type;
 
-          Entry(HashPtr hash, naRef key):
-            _hash(hash),
-            _key(key)
-          {
-            assert(hash);
-            assert(naIsScalar(key));
-          }
+            Entry(HashPtr hash, naRef key) : _hash(hash),
+                                             _key(key)
+            {
+                assert(hash);
+                assert(naIsScalar(key));
+            }
 
           std::string getKey() const
           {
