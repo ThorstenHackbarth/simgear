@@ -350,8 +350,11 @@ struct ReaderWriterSTG::_ModelBin {
                         group->addChild(matrixTransform);
 
                         std::for_each(treeList.begin(), treeList.end(), [](TreeBin* bb) {
+                            // We're finished with the intermediate data structure, so just delete it.
                             delete bb;
                         });
+
+                        treeList.clear();
                     }
                 }
             }

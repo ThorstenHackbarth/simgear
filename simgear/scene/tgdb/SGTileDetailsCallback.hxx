@@ -989,6 +989,12 @@ public:
       if (!randomBuildings.empty()) {
         buildingNode = createRandomBuildings(randomBuildings, osg::Matrix::identity(), _options);
         buildingNode->setName("Random buildings");
+
+        std::for_each(randomBuildings.begin(), randomBuildings.end(), [](simgear::SGBuildingBin* bb) {
+          // We're finished with the intermediate data structure, so just delete it.
+          delete bb;
+        });
+
         randomBuildings.clear();
       }
 
@@ -1000,6 +1006,13 @@ public:
         if (!randomForest.empty()) {
           forestNode = createForest(randomForest, _options);
           forestNode->setName("Random trees");
+
+          std::for_each(randomForest.begin(), randomForest.end(), [](TreeBin* bb) {
+            // We're finished with the intermediate data structure, so just delete it.
+            delete bb;
+          });
+
+          randomForest.clear();
         }
       }
 

@@ -300,6 +300,13 @@ void VegetationHandler::finish(osg::ref_ptr<SGReaderWriterOptions> options,
         osg::Group *trees = createForest(randomForest, options);
         trees->setNodeMask(SG_NODEMASK_TERRAIN_BIT);
         transform->addChild(trees);
+
+        std::for_each(randomForest.begin(), randomForest.end(), [](TreeBin* bb) {
+            // We're finished with the intermediate data structure, so just delete it.
+            delete bb;
+        });
+
+        randomForest.clear();
     }
 }
 
