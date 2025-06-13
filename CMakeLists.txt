@@ -153,11 +153,12 @@ else()
 
         if(NOT AAX_FOUND)
             set(USE_AEONWAVE FALSE)
-            if (USE_OPENALSOFT)
+            if (APPLE OR USE_OPENALSOFT)
                 message(STATUS "Sound requested to use OpenAL-soft: ensure Config.cmake files are in CMAKE_PREFIX_PATH")
                find_package(OpenAL REQUIRED CONFIG)
                if (TARGET OpenAL::OpenAL)
-                set(SG_SOUND_USES_OPENALSOFT ON)
+                # set in the cache so superbuild can find the value 
+                set(SG_SOUND_USES_OPENALSOFT ON CACHE BOOL "Trye if OpenAL appears to be OpenAL-soft")
                endif()
             else()
               # regular OpenAL is found via the CMake distro-suppling FindOpenAL
@@ -169,7 +170,7 @@ else()
 
         if(AAX_FOUND)
             message(STATUS "Sound support: AeonWave")
-        elseif (TARGET OpenAL::OpenAL)
+        elseif (SG_SOUND_USES_OPENALSOFT)
            message(STATUS "Sound support: OpenAL-soft")
         else()
             message(STATUS "Sound support: OpenAL (from system)")

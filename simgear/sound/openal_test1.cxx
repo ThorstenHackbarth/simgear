@@ -19,9 +19,7 @@
 #include <unistd.h>	// sleep()
 #endif
 
-#if defined( __APPLE__ )
-# define AL_ILLEGAL_ENUM AL_INVALID_ENUM
-# define AL_ILLEGAL_COMMAND AL_INVALID_OPERATION
+#if defined(__APPLE__) && !defined(SG_SOUND_USES_OPENALSOFT)
 # include <OpenAL/al.h>
 # include <OpenAL/alc.h>
 #elif defined(OPENALSDK)
