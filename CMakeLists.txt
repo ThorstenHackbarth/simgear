@@ -284,6 +284,7 @@ if (ENABLE_VIDEO_RECORD)
   # set this so it's picked up in simgear_config.h
     set(SG_FFMPEG 1)
     set(SIMGEAR_USE_FFMPEG ON)
+    message(STATUS "FFmpeg found, Video recording enabled")
   else()
     message(STATUS "Video recording was requested, but required FFmpeg/avcodec libaries not found")
   endif()
