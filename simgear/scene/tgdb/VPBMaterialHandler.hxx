@@ -60,18 +60,12 @@ class VPBMaterialHandler {
                                 ImageChannel channel, double sampleProbability,
                                 float x_scale, float y_scale, const osg::Vec2d t);
 
-    double det2(const osg::Vec2d a, const osg::Vec2d b);
-
   public:
     // Initialize internal state and return true if the handler should be called
     // for the current tile.
     virtual bool initialize(osg::ref_ptr<SGReaderWriterOptions> options,
                             osg::ref_ptr<TerrainTile> terrainTile,
                             osg::ref_ptr<SGMaterialCache> matcache) = 0;
-
-    // Set the internal state (e.g. deltas) based on the current tile's location
-    virtual void setLocation(const SGGeod loc, double r_E_lat,
-                             double r_E_lon) = 0;
 
     // Function that is called when a new material/landclass is detected during
     // the scanline reading process. Return false if the new material is
@@ -84,15 +78,6 @@ class VPBMaterialHandler {
     //  the pointInTriangle variable with the x and y location within the
     //  current triangle
     virtual bool handleIteration(SGMaterial* mat, osg::Image* objectMaskImage,
-                                 const double lon, const double lat,
-                                 osg::Vec2d p, const double D,
-                                 const osg::Vec2d ll_O, const osg::Vec2d ll_x,
-                                 const osg::Vec2d ll_y, const osg::Vec2d t_0,
-                                 osg::Vec2d t_x, osg::Vec2d t_y,
-                                 float x_scale, float y_scale,
-                                 osg::Vec2f& pointInTriangle) = 0;
-
-    virtual bool handleIterationTessellation(SGMaterial* mat, osg::Image* objectMaskImage,
                                 osg::Vec2d p, const double rand1, const double rand2,
                                  float x_scale, float y_scale) = 0;
 
@@ -125,15 +110,8 @@ class VegetationHandler : public VPBMaterialHandler {
     bool initialize(osg::ref_ptr<SGReaderWriterOptions> options,
                     osg::ref_ptr<TerrainTile> terrainTile,
                     osg::ref_ptr<SGMaterialCache> matcache);
-    void setLocation(const SGGeod loc, double r_E_lat, double r_E_lon);
     bool handleNewMaterial(SGMaterial *mat);
     bool handleIteration(SGMaterial* mat, osg::Image* objectMaskImage,
-                         const double lon, const double lat, osg::Vec2d p,
-                         const double D, const osg::Vec2d ll_O,
-                         const osg::Vec2d ll_x, const osg::Vec2d ll_y,
-                         const osg::Vec2d t_0, osg::Vec2d t_x, osg::Vec2d t_y,
-                         float x_scale, float y_scale, osg::Vec2f& pointInTriangle);
-    bool handleIterationTessellation(SGMaterial* mat, osg::Image* objectMaskImage,
                           osg::Vec2d p, const double rand1, const double rand2,
                           float x_scale, float y_scale);
     void placeObject(const osg::Vec3 vp);
@@ -163,15 +141,8 @@ class RandomLightsHandler : public VPBMaterialHandler {
     bool initialize(osg::ref_ptr<SGReaderWriterOptions> options,
                     osg::ref_ptr<TerrainTile> terrainTile,
                     osg::ref_ptr<SGMaterialCache> matcache);
-    void setLocation(const SGGeod loc, double r_E_lat, double r_E_lon);
     bool handleNewMaterial(SGMaterial *mat);
     bool handleIteration(SGMaterial* mat, osg::Image* objectMaskImage,
-                         const double lon, const double lat, osg::Vec2d p,
-                         const double D, const osg::Vec2d ll_O,
-                         const osg::Vec2d ll_x, const osg::Vec2d ll_y,
-                         const osg::Vec2d t_0, osg::Vec2d t_x, osg::Vec2d t_y,
-                         float x_scale, float y_scale, osg::Vec2f& pointInTriangle);
-    bool handleIterationTessellation(SGMaterial* mat, osg::Image* objectMaskImage,
                                 osg::Vec2d p, const double rand1, const double rand2,
                                  float x_scale, float y_scale);
     void placeObject(const osg::Vec3 vp);
