@@ -105,6 +105,7 @@ macos-build:
       -D CMAKE_PREFIX_PATH="$CI_PROJECT_DIR/osg-dist;$CI_PROJECT_DIR/dist"
       -D CMAKE_OSX_ARCHITECTURES="arm64;x86_64"
       -D ENABLE_SIMD=OFF
+      -D ENABLE_VIDEO_RECORD:BOOL=OFF
       -D ENABLE_TESTS:BOOL=OFF # BoostTest isn't build fat, so we need to disable tests on macOS : ho-hum.
 
     - cmake --build $BUILD_DIR
