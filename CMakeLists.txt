@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: James Turner <james@flightgear.org>
+
 cmake_minimum_required (VERSION 3.20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -32,7 +35,7 @@ include (GenerateExportHeader)
 # only relevant for building shared libs but let's set it regardless
 set(CMAKE_OSX_RPATH 1)
 
-# macOS 10.13 needed for C++17 libc++ 
+# macOS 10.13 needed for C++17 libc++
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum OS X deployment version")
 
 set(CMAKE_CXX_STANDARD 17)
@@ -113,7 +116,7 @@ include (DetectArch)
 include (ExportDebugSymbols)
 
 # until the fstream fix is applied and generally available in OSG,
-# keep the compatability link option as the default
+# keep the compatibility link option as the default
 option(OSG_FSTREAM_EXPORT_FIXED "Set to ON if the osgDB fstream export patch is applied" OFF)
 
 if (MSVC)
@@ -157,8 +160,8 @@ else()
                 message(STATUS "Sound requested to use OpenAL-soft: ensure Config.cmake files are in CMAKE_PREFIX_PATH")
                find_package(OpenAL REQUIRED CONFIG)
                if (TARGET OpenAL::OpenAL)
-                # set in the cache so superbuild can find the value 
-                set(SG_SOUND_USES_OPENALSOFT ON CACHE BOOL "Trye if OpenAL appears to be OpenAL-soft")
+                # set in the cache so superbuild can find the value
+                set(SG_SOUND_USES_OPENALSOFT ON CACHE BOOL "True if OpenAL appears to be OpenAL-soft")
                endif()
             else()
               # regular OpenAL is found via the CMake distro-suppling FindOpenAL
@@ -285,9 +288,10 @@ if (ENABLE_VIDEO_RECORD)
   # set this so it's picked up in simgear_config.h
     set(SG_FFMPEG 1)
     set(SIMGEAR_USE_FFMPEG ON)
+    include(CreateFFmpegImportedTargets)
     message(STATUS "FFmpeg found, Video recording enabled")
   else()
-    message(STATUS "Video recording was requested, but required FFmpeg/avcodec libaries not found")
+    message(STATUS "Video recording was requested, but required FFmpeg/avcodec libraries not found")
   endif()
 endif()
 
@@ -520,7 +524,11 @@ install(
   COMPONENT Devel
 )
 
-install (FILES CMakeModules/CreateOSGImportedTargets.cmake  DESTINATION ${ConfigPackageLocation})
+# helper files needed when importing
+install (FILES
+    CMakeModules/CreateOSGImportedTargets.cmake
+    CMakeModules/CreateFFmpegImportedTargets.cmake
+         DESTINATION ${ConfigPackageLocation})
 
 
 #-----------------------------------------------------------------------------

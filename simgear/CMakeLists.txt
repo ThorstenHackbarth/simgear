@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: James Turner <james@flightgear.org>
+
 if(SIMGEAR_SHARED)
     add_library(SimGearCore SHARED ${localExpatSources})
 
@@ -71,7 +74,7 @@ target_precompile_headers(SimGearCore PRIVATE
 target_include_directories(SimGearCore PRIVATE ${PROJECT_BINARY_DIR}/simgear)
 
 # needed for include of <simgear/simgear_config.h> in superbuild
-target_include_directories(SimGearCore INTERFACE 
+target_include_directories(SimGearCore INTERFACE
     $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
 
 target_include_directories(SimGearCore PUBLIC
@@ -128,7 +131,7 @@ if(NOT SIMGEAR_HEADLESS)
     # manually include a more modern header.
     # OpenGL is only used by ShaderVG.
     if(WIN32)
-        target_include_directories(SimGearScene BEFORE PUBLIC 
+        target_include_directories(SimGearScene BEFORE PUBLIC
             $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdparty/glcore>
         )
     endif()
@@ -165,11 +168,9 @@ if(NOT SIMGEAR_HEADLESS)
         FGTinyGLTF)
 
     if (SIMGEAR_USE_FFMPEG)
-        # FindFFmpeg should defined some imported targets to clean this up
-        target_link_libraries(SimGearScene PRIVATE ${FFMPEG_LIBRARIES})
-        target_include_directories(SimGearScene PRIVATE ${FFMPEG_INCLUDE_DIRS})
+        target_link_libraries(SimGearScene PRIVATE FFmpeg::avcodec FFmpeg::avformat FFmpeg::swscale FFmpeg::avutil)
     endif()
-    
+
     # ToDo: define an ALIAS target for the sound backend, to get
     # rid of this logic here
     if (ENABLE_SOUND)
