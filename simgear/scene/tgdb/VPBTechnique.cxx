@@ -1,20 +1,7 @@
 // VPBTechnique.cxx -- VirtualPlanetBuilder Effects technique
 //
-// Copyright (C) 2020 Stuart Buchanan
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: Copyright (C) 2020 Stuart Buchanan
 
 #include <chrono>
 #include <cmath>
@@ -74,8 +61,7 @@ VPBTechnique::VPBTechnique()
     setOptions(SGReaderWriterOptions::copyOrCreate(nullptr));
 }
 
-VPBTechnique::VPBTechnique(const SGReaderWriterOptions* options, const std::string fileName) : 
-    _fileName(fileName)
+VPBTechnique::VPBTechnique(const SGReaderWriterOptions* options, const std::string fileName) : _fileName(fileName)
 {
     setFilterBias(0);
     setFilterWidth(0.1);
@@ -130,7 +116,7 @@ void VPBTechnique::setOptions(const SGReaderWriterOptions* options)
         const std::lock_guard<std::mutex> lock(VPBTechnique::_stats_mutex); // Lock the _stats_mutex for this scope
         _statsPropertyNode = _options->getPropertyNode()->getNode("/sim/rendering/statistics/lod", true);
         _useTessellationPropNode = _options->getPropertyNode()->getNode("/sim/rendering/shaders/tessellation", true);
-    }    
+    }
 }
 
 void VPBTechnique::setFilterMatrixAs(FilterType filterType)
@@ -159,7 +145,7 @@ void VPBTechnique::setFilterMatrixAs(FilterType filterType)
 void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
 {
     if (!_terrainTile) return;
-    
+
     // Don't regenerate if the tile is not dirty AND we haven't switched between tessellation
     // and non-tessellation mode.  A cleaned way to do this would be to have a listener on the
     // property that dirties all tiles.
@@ -206,7 +192,7 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
         osg::StateSet* landStateset = read_buffer->_landGeode->getStateSet();
         if (landStateset)
         {
-            // We already have a full stateset, so re-use it.
+            // We already have a full stateset, so reuse it.
             buffer->_landGeode->setStateSet(landStateset);
             osg::StateSet* seaStateset = read_buffer->_seaGeode->getStateSet();
             buffer->_seaGeode->setStateSet(seaStateset);
@@ -231,7 +217,7 @@ void VPBTechnique::init(int dirtyMask, bool assumeMultiThreaded)
         // We have updated imagery, so re-generate everything.  Could be more efficient, but as
         // we very rarely use this path, we can accept longer runtime at present.
         generateGeometry(*buffer, centerModel, matcache);
-        
+
         applyColorLayers(*buffer, matcache);
         VPBLineFeatureRenderer lineFeatureRenderer = VPBLineFeatureRenderer(_terrainTile);
         lineFeatureRenderer.applyLineFeatures(*buffer, _options, matcache);
@@ -389,12 +375,12 @@ VPBTechnique::VertexNormalGenerator::VertexNormalGenerator(Locator* masterLocato
         _sea_vertices->reserve(numVertices);
 
         _normals = new osg::Vec3Array;
-        _normals->reserve(numVertices);        
+        _normals->reserve(numVertices);
         _sea_normals = new osg::Vec3Array;
-        _sea_normals->reserve(numVertices);        
+        _sea_normals->reserve(numVertices);
 
         _boundaryVertices = new osg::Vec3Array;
-        _boundaryVertices->reserve(_numRows*2 + _numColumns*2 + 4);        
+        _boundaryVertices->reserve(_numRows * 2 + _numColumns * 2 + 4);
     }
 
     // Initialize the elevation constraints to a suitably high number such
@@ -499,9 +485,9 @@ void VPBTechnique::VertexNormalGenerator::populateCenter(osgTerrain::Layer* elev
                     }
                 }
             }
-            
+
             if (_useTessellation) {
-                // compute the model coordinates            
+                // compute the model coordinates
                 setVertex(i, j, convertLocalToModel(ndc));
                 texcoords0->push_back(osg::Vec2(ndc.x(), ndc.y()));
                 texcoords1->push_back(osg::Vec2(2.0 * std::fabs((ndc.x() + (double) tileID.x) / dim - 0.5), 2.0 * std::fabs((ndc.y() + (double) tileID.y) / dim - 0.5)));
@@ -555,7 +541,7 @@ void VPBTechnique::VertexNormalGenerator::populateLeftBoundary(osgTerrain::Layer
                      (elevationLayer->getNumColumns()!=static_cast<unsigned int>(_numColumns)) );
 
     osg::Image* landclassImage = colorLayer->getImage();
-    
+
     for(int j=0; j<_numRows; ++j)
     {
         for(int i=-1; i<=0; ++i)
@@ -614,7 +600,7 @@ void VPBTechnique::VertexNormalGenerator::populateRightBoundary(osgTerrain::Laye
                      (elevationLayer->getNumColumns()!=static_cast<unsigned int>(_numColumns)) );
 
     osg::Image* landclassImage = colorLayer->getImage();
-    
+
     for(int j=0; j<_numRows; ++j)
     {
         for(int i=_numColumns-1; i<_numColumns+1; ++i)
@@ -673,7 +659,7 @@ void VPBTechnique::VertexNormalGenerator::populateAboveBoundary(osgTerrain::Laye
                      (elevationLayer->getNumColumns()!=static_cast<unsigned int>(_numColumns)) );
 
     osg::Image* landclassImage = colorLayer->getImage();
-    
+
     for(int j=_numRows-1; j<_numRows+1; ++j)
     {
         for(int i=0; i<_numColumns; ++i)
@@ -732,7 +718,7 @@ void VPBTechnique::VertexNormalGenerator::populateBelowBoundary(osgTerrain::Laye
                      (elevationLayer->getNumColumns()!=static_cast<unsigned int>(_numColumns)) );
 
     osg::Image* landclassImage = colorLayer->getImage();
-    
+
     for(int j=-1; j<=0; ++j)
     {
         for(int i=0; i<_numColumns; ++i)
@@ -899,7 +885,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
 
     buffer._landGeometry = new osg::Geometry;
     buffer._landGeode->addDrawable(buffer._landGeometry.get());
-  
+
     osg::ref_ptr<Effect> landEffect = makeEffect(landEffectProp, true, _options);
     buffer._landGeode->setEffect(landEffect.get());
     buffer._landGeode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
@@ -925,7 +911,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
 
         buffer._seaGeometry = new osg::Geometry;
         buffer._seaGeode->addDrawable(buffer._seaGeometry.get());
-    
+
         osg::ref_ptr<Effect> seaEffect = makeEffect(seaEffectProp, true, _options);
         buffer._seaGeode->setEffect(seaEffect.get());
         buffer._seaGeode->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
@@ -1026,7 +1012,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
             VNG.populateCorner(top_right_tile.valid() ? top_right_tile->getElevationLayer() : 0, colorLayer, atlas, VertexNormalGenerator::Corner::TOP_RIGHT);
 
             // Loading this tile will mean that there is new elevation data available for the adjacent tiles.
-            // This is relevant for tessellation beacuse we perform cubic interpolation that will extend beyond
+            // This is relevant for tessellation because we perform cubic interpolation that will extend beyond
             // a given tile boundary.  Hence we need to dirty the adjacent tiles so they are re-generated on the
             // next update.
 
@@ -1114,7 +1100,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         }
     } else {
         // Non-tessellation case
-        
+
         // Compute normals - though not sure why we would need to do that again?
         osg::ref_ptr<osg::Vec3Array> skirtVectors = new osg::Vec3Array((*VNG._normals));
         VNG.computeNormals();
@@ -1195,7 +1181,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
             }
 
             landElements->resizeElements(landElements->getNumIndices());
-        }       
+        }
 
         if (VNG.hasSea()) {
             osg::ref_ptr<osg::DrawElements> seaElements = smallTile ?
@@ -1444,8 +1430,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     buffer._landGeometry->setUseVertexBufferObjects(true);
     buffer._landGeometry->computeBoundingBox();
 
-    if (! _useTessellation) 
-    {
+    if (!_useTessellation) {
         buffer._landGeode->runGenerators(buffer._landGeometry);
 
         buffer._seaGeometry->setUseDisplayList(false);
@@ -1460,7 +1445,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
     landStateSet->addUniform(level);
     if (_useTessellation) {
         landStateSet->setAttribute(new osg::PatchParameter(16));
-    } 
+    }
 
     // Determine the x and y texture scaling.  Has to be performed after we've generated all the vertices.
     // Because the earth is round, each tile is not a rectangle.  Apart from edge cases like the poles, the
@@ -1495,7 +1480,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
         seaStateSet->addUniform(twu);
         seaStateSet->addUniform(thu);
     }
-    
+
     // Force build of KD trees?
     if (osgDB::Registry::instance()->getBuildKdTreesHint()==osgDB::ReaderWriter::Options::BUILD_KDTREES &&
         osgDB::Registry::instance()->getKdTreeBuilder())
@@ -1512,7 +1497,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
 }
 
 void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialCache> matcache)
-{   
+{
     const SGPropertyNode* propertyNode = _options->getPropertyNode().get();
     Atlas* atlas = matcache->getAtlas();
     buffer._BVHMaterialMap = atlas->getBVHMaterialMap();
@@ -1538,7 +1523,7 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
         std::string filePath = "Orthophotos/" + bucket.gen_vpb_subtile(tileID.level, tileID.x, tileID.y) + ".dds";
         std::string archiveFilePath = "Orthophotos/" + bucket.gen_vpb_archive_filename(tileID.level, tileID.x, tileID.y, "subtile") + ".dds";
         SG_LOG(SG_TERRAIN, SG_DEBUG, "Looking for ortho texture in " << filePath << " and " << archiveFilePath);
-    
+
         // Check for the normal file first.  We go straight to the implementation here because we're already deep within
         // the registry code stack.
         osgDB::Registry* registry = osgDB::Registry::instance();
@@ -1565,7 +1550,7 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
             // Get a coastline texture, if available.
             buffer._waterRasterTexture = getCoastlineTexture(bucket);
             landStateset->setTextureAttributeAndModes(7, buffer._waterRasterTexture, osg::StateAttribute::ON);
-            
+
             // Generate a water texture so we can use the water shader
             osg::ref_ptr<osg::Texture2D> waterTexture  = new osg::Texture2D;
             waterTexture->setImage(generateWaterTexture(atlas));
@@ -1624,7 +1609,7 @@ void VPBTechnique::applyColorLayers(BufferData& buffer, osg::ref_ptr<SGMaterialC
         // Simple statistics on the raster
         SG_LOG(SG_TERRAIN, SG_DEBUG, "Landclass Raster " << _fileName << " Level " << tileID.level << " X" << tileID.x << " Y" << tileID.y);
         SG_LOG(SG_TERRAIN, SG_DEBUG, "Raster Information:" << image->s() << "x" << image->t() << " (" << (image->s() * image->t()) << " pixels)" << " mipmaps:" << image->getNumMipmapLevels() << " format:" << image->getInternalTextureFormat());
-        for (int i = 0; i < 256; ++i) { 
+        for (int i = 0; i < 256; ++i) {
             if (raster_count[i] > 0) {
                 SGMaterial* mat = matcache->find(i);
                 if (mat) {
@@ -1744,7 +1729,7 @@ void VPBTechnique::applyMaterials(BufferData& buffer, osg::ref_ptr<SGMaterialCac
 {
     if (_useTessellation)
         applyMaterialsTesselated(buffer, matcache, loc);
-    else 
+    else
         applyMaterialsTriangles(buffer, matcache, loc);
 }
 
@@ -1817,7 +1802,7 @@ void VPBTechnique::applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGM
     //SG_LOG(SG_TERRAIN, SG_ALERT, "Number of Primitives: " << drawElements->getNumIndices() << " number of patches : " << patchCount << " patchArea (sqm): " << patchArea);
 
     // At the detailed tile level we are handling various materials, and
-    // as we walk across the tile, the landclass doesn't change regularly 
+    // as we walk across the tile, the landclass doesn't change regularly
     // from point to point within a given triangle.  Cache the required
     // material information for the current landclass to reduce the
     // number of lookups into the material cache.
@@ -1828,7 +1813,7 @@ void VPBTechnique::applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGM
     float y_scale = 1000.0;
 
     for (unsigned int i = 0; i < patchCount; ++i) {
-        // We're going to generate points in each patch in turn, which helps with 
+        // We're going to generate points in each patch in turn, which helps with
         // temporal locality of materials.  Each patch is defined by 16 points,
         // and bicubic interpolation for any point within.  See ws30.tesce.
         double height[16];
@@ -1842,7 +1827,7 @@ void VPBTechnique::applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGM
         const unsigned int idx1 = drawElements->index(16 * i + 6);  // Index of the inner bottom right element
         const unsigned int idx2 = drawElements->index(16 * i + 9);  // Index of the inner top left element
 
-        // Determing both the location of the (0,0) point for this patch,
+        // Determining both the location of the (0,0) point for this patch,
         // and the unit vectors in u and v for both the point and the texture.
         const osg::Vec3 v0 = vertexPtr[idx0];
         const osg::Vec3 vu = vertexPtr[idx1] - v0;
@@ -1928,7 +1913,7 @@ void VPBTechnique::applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGM
                         }
 
                         // Texture coordinates run [0..1][0..1] across the entire tile whereas
-                        // the texure itself has defined dimensions in m.
+                        // the texture itself has defined dimensions in m.
                         // We therefore need to use the tile width and height to determine the correct
                         // texture coordinate transformation.
                         x_scale = buffer._width / 1000.0;
@@ -1958,7 +1943,7 @@ void VPBTechnique::applyMaterialsTesselated(BufferData& buffer, osg::ref_ptr<SGM
                         continue;
 
                     // If we have got this far, then determine the points height using bicubic interpolation
-                    // We can determine the height using the same calculations that will be used by the tesselation shader.
+                    // We can determine the height using the same calculations that will be used by the tessellation shader.
                     // See fgdata/Shaders/HDR/ws30.tese
                     osg::Vec4d u_basis = VPBTechnique::catmull_rom_interp_basis(uv.x());
                     osg::Vec4d v_basis = VPBTechnique::catmull_rom_interp_basis(uv.y());
@@ -1989,7 +1974,7 @@ void VPBTechnique::applyMaterialsTriangles(BufferData& buffer, osg::ref_ptr<SGMa
     // XXX: This currently assumes we use triangles, so doesn't work with tessellation
     assert(! _useTessellation);
     if (!matcache) return;
-    
+
     pc_init(2718281);
 
     // Define all possible handlers
@@ -2046,7 +2031,7 @@ void VPBTechnique::applyMaterialsTriangles(BufferData& buffer, osg::ref_ptr<SGMa
     //SG_LOG(SG_TERRAIN, SG_ALERT, "Number of Primitives: " << drawElements->getNumIndices() << " number of patches : " << patchCount << " patchArea (sqm): " << patchArea);
 
     // At the detailed tile level we are handling various materials, and
-    // as we walk across the tile, the landclass doesn't change regularly 
+    // as we walk across the tile, the landclass doesn't change regularly
     // from point to point within a given triangle.  Cache the required
     // material information for the current landclass to reduce the
     // number of lookups into the material cache.
@@ -2072,7 +2057,7 @@ void VPBTechnique::applyMaterialsTriangles(BufferData& buffer, osg::ref_ptr<SGMa
         const osg::Vec3d v_y = v2 - v0;
 
         osg::Vec3 n = v_x ^ v_y;
-        n.normalize();        
+        n.normalize();
 
         const osg::Vec2 t0 = texPtr[i0];
         const osg::Vec2 t1 = texPtr[i1];
@@ -2100,10 +2085,16 @@ void VPBTechnique::applyMaterialsTriangles(BufferData& buffer, osg::ref_ptr<SGMa
 
             for (unsigned int k = 0; k < pt_count; ++k) {
                 // Create a pseudo-random UV coordinate that is repeatable and relatively unique for this patch.
-                const double uvx   = pc_rand();
-                const double uvy   = pc_rand();
+                double uvx   = pc_rand();
+                double uvy   = pc_rand();
                 const double rand1 = pc_rand();
                 const double rand2 = pc_rand();
+
+                if (uvx + uvy > 1.0) {
+                    //  Restrict the coordinates to within a triangle
+                    uvx = 1.0 - uvx;
+                    uvy = 1.0 - uvy;
+                }
 
                 // Location of this actual point.
                 osg::Vec3 p = v_0 + v_x*uvx + v_y*uvy;
@@ -2154,7 +2145,7 @@ void VPBTechnique::applyMaterialsTriangles(BufferData& buffer, osg::ref_ptr<SGMa
                         }
 
                         // Texture coordinates run [0..1][0..1] across the entire tile whereas
-                        // the texure itself has defined dimensions in m.
+                        // the texture itself has defined dimensions in m.
                         // We therefore need to use the tile width and height to determine the correct
                         // texture coordinate transformation.
                         x_scale = buffer._width / 1000.0;
@@ -2168,7 +2159,7 @@ void VPBTechnique::applyMaterialsTriangles(BufferData& buffer, osg::ref_ptr<SGMa
                 if (mat->get_is_plantation()) {
                     // For a plantation we will simply force the vegetation into a 5m grid.  This changes
                     // the position so we should check the new position against the landclass and also
-                    // recalulate the Z coordinate, but for the moment we won't bother, on the basis
+                    // recalculate the Z coordinate, but for the moment we won't bother, on the basis
                     // that this will be imperceptible.
                     const double new_x = 5.0f * std::round(p.x() / 5.0f);
                     const double new_y = 5.0f * std::round(p.y() / 5.0f);
@@ -2205,7 +2196,8 @@ void VPBTechnique::applyMaterialsTriangles(BufferData& buffer, osg::ref_ptr<SGMa
     }
 }
 
-osg::Image* VPBTechnique::generateWaterTexture(Atlas* atlas) {  
+osg::Image* VPBTechnique::generateWaterTexture(Atlas* atlas)
+{
     osg::Image* waterTexture = new osg::Image();
 
     osgTerrain::Layer* colorLayer = _terrainTile->getColorLayer(0);
@@ -2218,7 +2210,7 @@ osg::Image* VPBTechnique::generateWaterTexture(Atlas* atlas) {
 
     // Set the r color channel to indicate if this is water or not
     for (unsigned int s = 0; s < (unsigned int) image->s(); s++) {
-        for (unsigned int t = 0; t < (unsigned int) image->t(); t++) {            
+        for (unsigned int t = 0; t < (unsigned int)image->t(); t++) {
             const osg::Vec4d c = image->getColor(s, t);
             const int i = int(std::round(c.x() * 255.0));
             waterTexture->setColor(osg::Vec4f(atlas->isWater(i) ? 1.0f : 0.0f,0.0f,0.0f,0.0f), s, t);
@@ -2325,20 +2317,20 @@ void VPBTechnique::releaseGLObjects(osg::State* state) const
     if (_newBufferData.valid() && _newBufferData->_transform.valid()) _newBufferData->_transform->releaseGLObjects(state);
 }
 
-// Add an osg object representing an elevation contraint on the terrain mesh.  The generated terrain mesh will not include any vertices that
+// Add an osg object representing an elevation constraint on the terrain mesh.  The generated terrain mesh will not include any vertices that
 // lie above the constraint model.  (Note that geometry may result in edges intersecting the constraint model in cases where there
 // are significantly higher vertices that lie just outside the constraint model.
 void VPBTechnique::addElevationConstraint(osg::ref_ptr<osg::Node> constraint)
-{ 
+{
     const std::lock_guard<std::shared_mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
-    _elevationConstraintGroup->addChild(constraint.get()); 
+    _elevationConstraintGroup->addChild(constraint.get());
 }
 
 // Remove a previously added constraint.  E.g on model unload.
 void VPBTechnique::removeElevationConstraint(osg::ref_ptr<osg::Node> constraint)
-{ 
+{
     const std::lock_guard<std::shared_mutex> lock(VPBTechnique::_elevationConstraintMutex); // Lock the _elevationConstraintGroup for this scope
-    _elevationConstraintGroup->removeChild(constraint.get()); 
+    _elevationConstraintGroup->removeChild(constraint.get());
 }
 
 // Check a given vertex against any elevation constraints  E.g. to ensure the terrain mesh doesn't
@@ -2351,7 +2343,7 @@ double VPBTechnique::getConstrainedElevation(osg::Vec3d ndc, Locator* masterLoca
     osg::Vec3d origin, vertex;
     masterLocator->convertLocalToModel(osg::Vec3d(ndc.x(), ndc.y(), -1000), origin);
     masterLocator->convertLocalToModel(ndc, vertex);
-    
+
     double elev = ndc.z();
 
     osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector;

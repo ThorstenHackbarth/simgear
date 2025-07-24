@@ -1,23 +1,9 @@
 // VPBTechnique.hxx -- VirtualPlanetBuilder Effects technique
 //
-// Copyright (C) 2020 Stuart Buchanan
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: Copyright (C) 2020 Stuart Buchanan
 
-#ifndef VPBTECHNIQUE
-#define VPBTECHNIQUE 1
+#pragma once
 
 #include <mutex>
 
@@ -63,7 +49,7 @@ class VPBTechnique : public TerrainTechnique
 
         virtual void cull(osg::NodeVisitor& nv);
 
-        /** Traverse the terain subgraph.*/
+        /** Traverse the terrain subgraph.*/
         virtual void traverse(osg::NodeVisitor& nv);
 
         virtual BVHMaterial* getMaterial(osg::Vec3d point);
@@ -305,7 +291,7 @@ class VPBTechnique : public TerrainTechnique
                 return true;
             }
 
-            bool hasSea() { return _hasSea; } 
+            bool hasSea() { return _hasSea; }
 
             Locator*                        _masterLocator;
             const osg::Vec3d                _centerModel;
@@ -356,7 +342,7 @@ class VPBTechnique : public TerrainTechnique
 
         // Check a given vertex against any constraints  E.g. to ensure we
         // don't get objects like trees sprouting from roads or runways.
-        bool checkAgainstRandomObjectsConstraints(BufferData& buffer, 
+        bool checkAgainstRandomObjectsConstraints(BufferData& buffer,
                                                   osg::Vec3d origin, osg::Vec3d vertex);
 
 
@@ -388,6 +374,4 @@ class VPBTechnique : public TerrainTechnique
         inline static SGPropertyNode* _useTessellationPropNode;
 };
 
-};
-
-#endif
+}; // namespace simgear
