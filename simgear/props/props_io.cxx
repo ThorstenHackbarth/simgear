@@ -25,12 +25,13 @@
 #include "props_io.hxx"
 #include "vectorPropTemplates.hxx"
 
-#include <iostream>
+#include <cstring> // strcmp()
 #include <fstream>
-#include <string>
-#include <cstring>      // strcmp()
-#include <vector>
+#include <iostream>
 #include <map>
+#include <regex>
+#include <string>
+#include <vector>
 
 using std::istream;
 using std::ifstream;
@@ -114,6 +115,9 @@ private:
     _state_stack.pop_back();
     _level--;
   }
+
+  void warnForIncorrectBooleanValuesInDeveloperMode(
+      const std::string& propertyPath, const sg_location& location) const;
 
   int _default_mode;
   string _data;
@@ -313,6 +317,19 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
   }
 }
 
+void PropsVisitor::warnForIncorrectBooleanValuesInDeveloperMode(
+    const std::string& propertyPath, const sg_location& location) const
+{
+    if (sglog().inDeveloperMode()) {
+        static const std::regex regexp(R"(^true|false|[0-9]+$)");
+
+        if (!std::regex_match(_data, regexp)) {
+            SG_LOG(SG_INPUT, SG_WARN,
+                   "readProperties: invalid value '" << _data << "' for boolean property " << propertyPath << " at " << location.getPath() << ":" << location.getLine() << " (use 'true', 'false' or a decimal integer)");
+        }
+    }
+}
+
 void
 PropsVisitor::endElement (const char * name)
 {
@@ -325,10 +342,13 @@ PropsVisitor::endElement (const char * name)
   if( !st.hasChildren() && !st.node->isAlias() )
   {
     if (st.type == "bool") {
-      if (_data == "true" || atoi(_data.c_str()) != 0)
-        ret = st.node->setBoolValue(true);
-      else
-        ret = st.node->setBoolValue(false);
+        warnForIncorrectBooleanValuesInDeveloperMode(st.node->getPath(),
+                                                     location);
+        // Historic, lax parsing
+        if (_data == "true" || atoi(_data.c_str()) != 0)
+            ret = st.node->setBoolValue(true);
+        else
+            ret = st.node->setBoolValue(false);
     } else if (st.type == "int") {
       ret = st.node->setIntValue(atoi(_data.c_str()));
     } else if (st.type == "long") {
@@ -744,11 +764,11 @@ copyPropertyValue(const SGPropertyNode *in, SGPropertyNode *out)
 {
     using namespace simgear;
     bool retval = true;
-    
+
     if (!in->hasValue()) {
         return true;
     }
-    
+
     switch (in->getType()) {
         case props::BOOL:
             if (!out->setBoolValue(in->getBoolValue()))
@@ -793,13 +813,13 @@ copyPropertyValue(const SGPropertyNode *in, SGPropertyNode *out)
             message += in->getType();
             throw sg_error(message, SG_ORIGIN, false);
     }
-    
+
     return retval;
 }
 
 /**
  * Copy one property tree to another.
- * 
+ *
  * @param in The source property tree.
  * @param out The destination property tree.
  * @return true if all properties were copied, false if some failed
@@ -813,7 +833,7 @@ copyProperties (const SGPropertyNode *in, SGPropertyNode *out)
   if (!retval) {
     return false;
   }
-    
+
   // copy the attributes.
   out->setAttributes( in->getAttributes() );
 
@@ -848,30 +868,30 @@ copyPropertiesWithAttribute(const SGPropertyNode *in, SGPropertyNode *out,
         return false;
     }
     out->setAttributes( in->getAttributes() );
-    
+
     // if attribute is set directly on this node, we don't require it on
     // descendent nodes. (Allows setting an attribute on an entire sub-tree
     // of nodes)
     if ((attr != SGPropertyNode::NO_ATTR) && out->getAttribute(attr)) {
         attr = SGPropertyNode::NO_ATTR;
     }
-    
+
     int nChildren = in->nChildren();
     for (int i = 0; i < nChildren; i++) {
         const SGPropertyNode* in_child = in->getChild(i);
         if ((attr != SGPropertyNode::NO_ATTR) && !isArchivable(in_child, attr))
             continue;
-        
+
          SGPropertyNode* out_child = out->getChild(in_child->getNameString(),
                                       in_child->getIndex(),
                                       true);
-        
+
         bool ok = copyPropertiesWithAttribute(in_child, out_child, attr);
         if (!ok) {
             return false;
         }
     }// of children iteration
-    
+
     return true;
 }
 
@@ -886,7 +906,7 @@ bool _inner_copyPropertiesIf(const SGPropertyNode *in, SGPropertyNode *out,
         return false;
     }
     out->setAttributes( in->getAttributes() );
-    
+
     int nChildren = in->nChildren();
     for (int i = 0; i < nChildren; i++) {
         const SGPropertyNode* in_child = in->getChild(i);
@@ -898,7 +918,7 @@ bool _inner_copyPropertiesIf(const SGPropertyNode *in, SGPropertyNode *out,
         SGPropertyNode* out_child = out->getChild(in_child->getNameString(),
                                       in_child->getIndex(),
                                       true);
-        
+
         bool ok = copyPropertiesIf(in_child, out_child, predicate);
         if (!ok) {
             return false;
