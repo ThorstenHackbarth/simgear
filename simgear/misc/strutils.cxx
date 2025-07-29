@@ -5,7 +5,6 @@
  * @file
  * @brief  String utilities
  */
- 
 
 
 #include <simgear_config.h>
@@ -28,9 +27,9 @@
 #include <simgear/math/SGGeod.hxx>
 
 #if defined(SG_WINDOWS)
-	#include <windows.h>
-    #include <codecvt>
-    #include <locale>    
+#include <codecvt>
+#include <locale>
+#include <windows.h>
 #endif
 
 using std::string;
@@ -166,33 +165,31 @@ namespace simgear {
 	}
 
 
-        string_list split_on_any_of(const std::string& str, const char* seperators)
-        {
-            if (seperators == nullptr || (strlen(seperators) == 0)) {
-                throw sg_exception("illegal/missing seperator string");
-            }
-
-            string_list result;
-            size_t pos = 0;
-            size_t startPos = str.find_first_not_of(seperators, 0);
-            for(;;)
-            {
-                pos = str.find_first_of(seperators, startPos);
-                if (pos == string::npos) {
-                    result.push_back(str.substr(startPos));
-                    break;
-                }
-                result.push_back(str.substr(startPos, pos - startPos));
-                startPos = str.find_first_not_of(seperators, pos);
-                if (startPos == string::npos) {
-                    break;
-                }
-            }
-            return result;
-
+    string_list split_on_any_of(const std::string& str, const char* separators)
+    {
+        if (separators == nullptr || (strlen(separators) == 0)) {
+            throw sg_exception("illegal/missing separator string");
         }
 
-	/**
+        string_list result;
+        size_t pos = 0;
+        size_t startPos = str.find_first_not_of(separators, 0);
+        for (;;) {
+            pos = str.find_first_of(separators, startPos);
+            if (pos == string::npos) {
+                result.push_back(str.substr(startPos));
+                break;
+            }
+            result.push_back(str.substr(startPos, pos - startPos));
+            startPos = str.find_first_not_of(separators, pos);
+            if (startPos == string::npos) {
+                break;
+            }
+        }
+        return result;
+    }
+
+    /**
 	 * The lstrip(), rstrip() and strip() functions are implemented
 	 * in do_strip() which uses an additional parameter to indicate what
 	 * type of strip should occur.
@@ -403,9 +400,9 @@ namespace simgear {
         string::const_iterator it = s.begin(),
             end = s.end();
 
-    // advance to first non-space char - simplifes logic in main loop,
-    // since we can always prepend a single space when we see a
-    // space -> non-space transition
+        // advance to first non-space char - simplifies logic in main loop,
+        // since we can always prepend a single space when we see a
+        // space -> non-space transition
         for (; (it != end) && isspace(*it); ++it) { /* nothing */ }
 
         bool lastWasSpace = false;
@@ -604,20 +601,20 @@ namespace simgear {
     unsigned long long readNonNegativeInt<unsigned long long, 16>(
         const std::string& s);
 #endif
-        
+
         // parse a time string ([+/-]%f[:%f[:%f]]) into hours
         double readTime(const string& time_in)
         {
             if (time_in.empty()) {
                 return 0.0;
             }
-            
+
             const bool negativeSign = time_in.front() == '-';
             const string_list pieces = split(time_in, ":");
             if (pieces.size() > 3) {
                 throw sg_format_exception("Unable to parse time string, too many pieces", time_in);
             }
-            
+
             const int hours = std::abs(to_int(pieces.front()));
             int minutes = 0, seconds = 0;
             if (pieces.size() > 1) {
@@ -626,7 +623,7 @@ namespace simgear {
                     seconds = to_int(pieces.at(2));
                 }
             }
-        
+
             double result = hours + (minutes / 60.0) + (seconds / 3600.0);
             return negativeSign ? -result : result;
         }
@@ -654,7 +651,7 @@ namespace simgear {
         // reached end - longer wins
         return v1parts.size() - v2parts.size();
     }
-    
+
     bool compareVersionToWildcard(const std::string& aVersion, const std::string& aCandidate)
     {
         if (aCandidate == aVersion) {
@@ -668,7 +665,7 @@ namespace simgear {
 
         const size_t partCount = parts.size();
         const size_t candidatePartCount =  candidateParts.size();
-        
+
         bool previousCandidatePartWasWildcard = false;
 
         for (unsigned int p=0; p < partCount; ++p) {
@@ -722,13 +719,13 @@ bool iequals(const std::string& a, const std::string& b)
     const auto lenA = a.length();
     const auto lenB = b.length();
     if (lenA != lenB) return false;
-    
+
     const char* aPtr = a.data();
     const char* bPtr = b.data();
     for (size_t i = 0; i < lenA; ++i) {
         if (tolower(*aPtr++) != tolower(*bPtr++)) return false;
     }
-    
+
     return true;
 }
 
@@ -770,20 +767,20 @@ std::wstring convertUtf8ToWString(const std::string& a)
     std::wstring result;
     int expectedContinuationCount = 0;
     wchar_t wc = 0;
-    
+
     for (uint8_t utf8CodePoint : a) {
         // ASCII 7-bit range
         if (utf8CodePoint <= 0x7f) {
             if (expectedContinuationCount != 0) {
                 throw sg_format_exception();
             }
-            
+
             result.push_back(static_cast<wchar_t>(utf8CodePoint));
         } else if (expectedContinuationCount > 0) {
             if ((utf8CodePoint & 0xC0) != 0x80) {
                 throw sg_format_exception();
             }
-            
+
             wc = (wc << 6) | (utf8CodePoint & 0x3F);
             if (--expectedContinuationCount == 0) {
                 result.push_back(wc);
@@ -804,9 +801,9 @@ std::wstring convertUtf8ToWString(const std::string& a)
             }
         }
     } // of UTF-8 code point iteration
-    
+
     return result;
-    
+
 #endif
 
 }
@@ -818,7 +815,7 @@ std::string convertWStringToUtf8(const std::wstring& w)
 #else
     assert(sizeof(wchar_t) == 4);
     std::string result;
-    
+
     for (wchar_t cp : w) {
         if (cp <= 0x7f) {
             result.push_back(static_cast<uint8_t>(cp));
@@ -838,7 +835,7 @@ std::string convertWStringToUtf8(const std::wstring& w)
             throw sg_format_exception();
         }
     }
-    
+
     return result;
 #endif
 }
@@ -969,22 +966,40 @@ void decodeBase64(const std::string& encoded_string, std::vector<unsigned char>&
 //------------------------------------------------------------------------------
 const char hexChar[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-std::string encodeHex(const std::string& bytes)
+std::string encodeHex(const std::string& bytes, char sep)
 {
   return encodeHex(
     reinterpret_cast<const unsigned char*>(bytes.c_str()),
-    bytes.size()
+    bytes.size(),
+    sep
   );
 }
 
-std::string encodeHex(const unsigned char* rawBytes, unsigned int length)
+std::string encodeHex(const unsigned char* rawBytes, unsigned int length, char sep)
 {
-  std::string hex(length * 2, '\0');
-  for (unsigned int i=0; i<length;++i) {
-      unsigned char c = *rawBytes++;
-      hex[i * 2] = hexChar[c >> 4];
-      hex[i * 2 + 1] = hexChar[c & 0x0f];
-  }
+    auto len = length * 2;
+    if (sep != 0) {
+        len += (length - 1);
+    }
+
+    std::string hex(len, '\0');
+    char* dst = hex.data();
+
+    unsigned int i = 0;
+    while (true) {
+        unsigned char c = *rawBytes++;
+        *dst++ = hexChar[c >> 4];
+        *dst++ = hexChar[c & 0x0f];
+
+        // ensure we don't append a trailing separator
+        if (++i >= length) {
+            break;
+        }
+
+        if (sep != 0) {
+            *dst++ = sep;
+        }
+    }
 
   return hex;
 }
@@ -994,14 +1009,14 @@ std::vector<uint8_t> decodeHex(const std::string& input)
     std::vector<uint8_t> result;
     char* ptr = const_cast<char*>(input.data());
     const char* end = ptr + input.length();
-    
+
     bool highNibble = true;
     uint8_t b = 0;
-    
+
     while (ptr != end) {
         const char c = *ptr;
         char val = 0;
-        
+
         if (c == '0') {
             val = 0;
             if ((ptr + 1) < end) {
@@ -1026,11 +1041,11 @@ std::vector<uint8_t> decodeHex(const std::string& input)
                 highNibble = true;
                 result.push_back(b >> 4);
             }
-            
+
             ++ptr;
             continue;
         }
-        
+
         if (highNibble) {
             highNibble = false;
             b = val << 4;
@@ -1039,20 +1054,20 @@ std::vector<uint8_t> decodeHex(const std::string& input)
             b |= val;
             result.push_back(b);
         }
-        
+
         ++ptr;
     }
-    
+
     // watch for trailing single digit
-    // this is reqquired so a stirng ending in 0x3 is decoded.
+    // this is required so a string ending in 0x3 is decoded.
     if (!highNibble) {
         result.push_back(b >> 4);
     }
-    
+
     return result;
 }
-    
-// Write an octal backslash-escaped respresentation of 'val' to 'buf'.
+
+// Write an octal backslash-escaped representation of 'val' to 'buf'.
 //
 // At least 4 write positions must be available at 'buf'. The result is *not*
 // null-terminated. Only the 8 least significant bits of 'val' are used;
@@ -1319,20 +1334,20 @@ bool matchPropPathToTemplate(const std::string& path, const std::string& templat
 
     // unreachable
 }
- 
+
 bool parseStringAsLatLonValue(const std::string& s, double& degrees)
 {
     try {
             string ss = simplify(s);
             auto spacePos = ss.find_first_of(" *");
-        
+
             if (spacePos == std::string::npos) {
                 degrees = std::stod(ss);
             } else {
                 degrees = std::stod(ss.substr(0, spacePos));
-                
+
                 double minutes = 0.0, seconds = 0.0;
-                
+
                 // check for minutes marker
                 auto quotePos = ss.find('\'');
                 if (quotePos == std::string::npos) {
@@ -1347,16 +1362,16 @@ bool parseStringAsLatLonValue(const std::string& s, double& degrees)
                         seconds = std::stod(secondsStr);
                     }
                 }
-                
+
                 if ((seconds < 0.0) || (minutes < 0.0)) {
                     // don't allow sign information in minutes or seconds
                     return false;
                 }
-                
+
                 double offset = (minutes / 60.0) + (seconds / 3600.0);
                 degrees += (degrees >= 0.0) ? offset : -offset;
             }
-        
+
             // since we simplified, any trailing N/S/E/W must be the last char
             const char lastChar = ::toupper(ss.back());
             if ((lastChar == 'W') || (lastChar == 'S')) {
@@ -1366,41 +1381,41 @@ bool parseStringAsLatLonValue(const std::string& s, double& degrees)
         // std::stdo can throw
         return false;
     }
-    
+
     return true;
 }
-        
+
 namespace {
     bool isLatString(const std::string &s)
     {
         const char lastChar = ::toupper(s.back());
         return (lastChar == 'N') || (lastChar == 'S');
     }
-    
+
     bool isLonString(const std::string &s)
     {
         const char lastChar = ::toupper(s.back());
         return (lastChar == 'E') || (lastChar == 'W');
     }
 } // of anonymous namespace
-        
+
 bool parseStringAsGeod(const std::string& s, SGGeod* result, bool assumeLonLatOrder)
 {
     if (s.empty())
         return false;
-    
+
     const auto commaPos = s.find(',');
     if (commaPos == string::npos) {
         return false;
     }
-    
+
     auto termA = simplify(s.substr(0, commaPos)),
         termB = simplify(s.substr(commaPos+1));
     double valueA, valueB;
     if (!parseStringAsLatLonValue(termA, valueA) || !parseStringAsLatLonValue(termB, valueB)) {
         return false;
     }
-    
+
     if (result) {
         // explicit ordering
         if (isLatString(termA) && isLonString(termB)) {
@@ -1414,10 +1429,10 @@ bool parseStringAsGeod(const std::string& s, SGGeod* result, bool assumeLonLatOr
                                         : SGGeod::fromDeg(valueB, valueA);
         }
     }
-    
+
     return true;
 }
-        
+
 namespace {
     const char* static_degreeSymbols[] = {
         "*",
@@ -1426,7 +1441,7 @@ namespace {
         "\xC2\xB0"  // UTF-8 equivalent
     };
 } // of anonymous namespace
-        
+
 std::string formatLatLonValueAsString(double deg, LatLonFormat format,
                                       char c,
                                       DegreeSymbol degreeSymbol)
@@ -1436,12 +1451,12 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format,
     deg = fabs(deg);
     char buf[128];
     const char* degSym = static_degreeSymbols[static_cast<int>(degreeSymbol)];
-    
+
     switch (format) {
     case LatLonFormat::DECIMAL_DEGREES:
         ::snprintf(buf, sizeof(buf), "%3.6f%c", deg, c);
         break;
-        
+
     case LatLonFormat::DEGREES_MINUTES:
         // d mm.mmm' (DMM format) -- uses a round-off factor tailored to the
         // required precision of the minutes field (three decimal places),
@@ -1453,7 +1468,7 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format,
         }
         snprintf(buf, sizeof(buf), "%d%s%06.3f'%c", int(deg), degSym, fabs(min), c);
         break;
-        
+
     case LatLonFormat::DEGREES_MINUTES_SECONDS:
         // d mm'ss.s" (DMS format) -- uses a round-off factor tailored to the
         // required precision of the seconds field (one decimal place),
@@ -1471,12 +1486,12 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format,
         ::snprintf(buf, sizeof(buf), "%d%s%02d'%04.1f\"%c", int(deg), degSym,
                    int(min), fabs(sec), c);
         break;
-            
+
     case LatLonFormat::SIGNED_DECIMAL_DEGREES:
         // d.dddddd' (signed DDD format).
         ::snprintf(buf, sizeof(buf), "%3.6f", sign*deg);
         break;
-    
+
     case LatLonFormat::SIGNED_DEGREES_MINUTES:
         // d mm.mmm' (signed DMM format).
         min = (deg - int(deg)) * 60.0;
@@ -1490,8 +1505,8 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format,
             snprintf(buf, sizeof(buf), "-%d%s%06.3f'", int(deg), degSym, fabs(min));
         }
         break;
-        
-            
+
+
     case LatLonFormat::SIGNED_DEGREES_MINUTES_SECONDS:
         // d mm'ss.s" (signed DMS format).
         min = (deg - int(deg)) * 60.0;
@@ -1510,7 +1525,7 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format,
             snprintf(buf, sizeof(buf), "-%d%s%02d'%04.1f\"", int(deg), degSym, int(min), fabs(sec));
         }
         break;
-            
+
     case LatLonFormat::ZERO_PAD_DECIMAL_DEGRESS:
         // dd.dddddd X, ddd.dddddd X (zero padded DDD format).
         if (c == 'N' || c == 'S') {
@@ -1519,7 +1534,7 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format,
             snprintf(buf, sizeof(buf), "%010.6f%c", deg, c);
         }
         break;
-            
+
     case LatLonFormat::ZERO_PAD_DEGREES_MINUTES:
         // dd mm.mmm' X, ddd mm.mmm' X (zero padded DMM format).
         min = (deg - int(deg)) * 60.0;
@@ -1533,7 +1548,7 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format,
             snprintf(buf, sizeof(buf), "%03d%s%06.3f'%c", int(deg), degSym, fabs(min), c);
         }
         break;
-            
+
     case LatLonFormat::ZERO_PAD_DEGREES_MINUTES_SECONDS:
         // dd mm'ss.s" X, dd mm'ss.s" X (zero padded DMS format).
         min = (deg - int(deg)) * 60.0;
@@ -1552,7 +1567,7 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format,
             snprintf(buf, sizeof(buf), "%03d%s%02d'%04.1f\"%c", int(deg), degSym, int(min), fabs(sec), c);
         }
         break;
-            
+
     case LatLonFormat::TRINITY_HOUSE:
         // dd* mm'.mmm X, ddd* mm'.mmm X (Trinity House Navigation standard).
         min = (deg - int(deg)) * 60.0;
@@ -1566,11 +1581,11 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format,
             snprintf(buf, sizeof(buf), "%03d* %02d'.%03d%c", int(deg), int(min), int(SGMisc<double>::round((min-int(min))*1000)), c);
         }
         break;
-            
+
     case LatLonFormat::DECIMAL_DEGREES_SYMBOL:
         ::snprintf(buf, sizeof(buf), "%3.6f%s%c", deg, degSym, c);
         break;
-            
+
     case LatLonFormat::ICAO_ROUTE_DEGREES:
     {
         min = (deg - int(deg)) * 60.0;
@@ -1578,7 +1593,7 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format,
             min -= 60.0;
             deg += 1.0;
         }
-        
+
         if (static_cast<int>(min) == 0) {
             // 7-digit mode
             if (c == 'N' || c == 'S') {
@@ -1596,11 +1611,11 @@ std::string formatLatLonValueAsString(double deg, LatLonFormat format,
         }
         break;
     }
-            
+
     default:
         break;
     }
- 
+
     return std::string(buf);
 }
 
@@ -1609,13 +1624,13 @@ std::string formatGeodAsString(const SGGeod& geod, LatLonFormat format,
 {
     const char ns = (geod.getLatitudeDeg() > 0.0) ? 'N' : 'S';
     const char ew = (geod.getLongitudeDeg() > 0.0) ? 'E' : 'W';
-    
-    // no comma seperator
+
+    // no comma separator
     if (format == LatLonFormat::ICAO_ROUTE_DEGREES) {
         return formatLatLonValueAsString(geod.getLatitudeDeg(), format, ns, degreeSymbol) +
             formatLatLonValueAsString(geod.getLongitudeDeg(), format, ew, degreeSymbol);
     }
-    
+
     return formatLatLonValueAsString(geod.getLatitudeDeg(), format, ns, degreeSymbol) + ","
         + formatLatLonValueAsString(geod.getLongitudeDeg(), format, ew, degreeSymbol);
 }
