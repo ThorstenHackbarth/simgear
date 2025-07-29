@@ -2,28 +2,10 @@
 //
 // Written by Curtis Olson, started May 1998.
 //
-// Copyright (C) 1998 - 2000  Curtis L. Olson  - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+// SPDX-FileCopyrightText: Copyright (C) 1998 - 2000  Curtis L. Olson
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
-
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include <simgear/compiler.h>
 
@@ -346,7 +328,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
 
     // There are some constraints on the maximum building size that we can sensibly render.
     // Using values outside these ranges will result in the texture being stretched to fit,
-    // which may not be desireable.  We will allow it, but display warnings.
+    // which may not be desirable.  We will allow it, but display warnings.
     // We do not display warnings for large buildings as we assume the textures are sufficiently
     // generic to be stretched without problems.
     if (building_small_max_floors  >    3) SG_LOG(SG_GENERAL, SG_ALERT, "building-small-max-floors exceeds maximum (3). Texture will be stretched to fit.");
@@ -399,8 +381,8 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         tree_normal_map = SGModelLib::findDataFile(normalPath, options);
         if (tree_normal_map.empty()) {
             simgear::reportFailure(simgear::LoadFailure::IOError, simgear::ErrorCode::LoadingTexture,
-                                   "Cannot find texture \"" + treeNormalMapPath + "\" in Textures folders.",
-                                   SGPath::fromUtf8("Textures") / treeNormalMapPath);
+                                   "Cannot find texture \"" + normalPath.utf8Str() + "\" in Textures folders.",
+                                   normalPath);
         }
     }
 
@@ -486,7 +468,7 @@ SGMaterial::init ()
     light_edge_intensity_cd = 100.0;
     light_edge_angle_horizontal_deg = 360.0;
     light_edge_angle_vertical_deg = 360.0;
-    light_edge_colour = SGVec4f(1.0,1.0,1.0,1.0); 
+    light_edge_colour = SGVec4f(1.0, 1.0, 1.0, 1.0);
     light_edge_offset = true;
 
     building_coverage = 0.0;

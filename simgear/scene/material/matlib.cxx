@@ -2,28 +2,11 @@
 //
 // Written by Curtis Olson, started May 1998.
 //
-// Copyright (C) 1998  Curtis L. Olson  - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+// SPDX-FileCopyrightText: Copyright (C) 1998 - 2000  Curtis L. Olson
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
@@ -36,12 +19,13 @@
 
 #include <osgDB/ReadFile>
 
+#include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/debug/logstream.hxx>
-#include <simgear/misc/sg_path.hxx>
 #include <simgear/io/iostreams/sgstream.hxx>
+#include <simgear/misc/sg_path.hxx>
+#include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
-#include <simgear/props/condition.hxx>
 #include <simgear/scene/model/modellib.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
@@ -73,6 +57,7 @@ bool SGMaterialLib::load( const SGPath &fg_root, const SGPath& mpath,
         SGPropertyNode *prop_root )
 {
     SGPropertyNode materialblocks;
+    simgear::ErrorReportContext ec("materials", mpath.utf8Str());
 
     SG_LOG( SG_INPUT, SG_INFO, "Reading materials from " << mpath );
     try {
@@ -162,7 +147,7 @@ bool SGMaterialLib::load( const SGPath &fg_root, const SGPath& mpath,
         const std::string mat = node->getStringValue("material-name");
         const bool water = node->getBoolValue("water");
         const bool sea = node->getBoolValue("sea");
-        
+
         // Verify that the landclass mapping exists before creating the mapping
         const_material_map_iterator it = matlib.find( mat );
         if ( it == end() ) {
@@ -304,7 +289,7 @@ SGMaterialCache::SGMaterialCache ()
 
 // Insertion into the material cache
 void SGMaterialCache::insert(const std::string& name, SGSharedPtr<SGMaterial> material) {
-	cache[name] = material;    
+	cache[name] = material;
 }
 
 void SGMaterialCache::insert(int lc, SGSharedPtr<SGMaterial> material) {
@@ -381,6 +366,6 @@ SGMaterialCache::~SGMaterialCache ( void ) {
     SG_LOG( SG_TERRAIN, SG_DEBUG, "SGMaterialCache::~SGMaterialCache() size=" << cache.size());
 }
 
-// Initalizer
+// Initializer
 SGMaterialLib::atlas_map SGMaterialLib::_atlasCache;
 std::mutex SGMaterialLib::_atlasCacheMutex;
