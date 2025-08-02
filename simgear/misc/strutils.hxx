@@ -289,7 +289,7 @@ std::string encodeHex(const std::string& bytes, char sep = 0);
 std::string encodeHex(const unsigned char* rawBytes, unsigned int length, char sep = 0);
 
 
-std::string encodeHex(const UInt8Vector bytes, char sep = 0);
+std::string encodeHex(const UInt8Vector& bytes, char sep = 0);
 
 UInt8Vector decodeHex(const std::string& input);
 
