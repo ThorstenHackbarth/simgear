@@ -915,7 +915,7 @@ static bool is_whitespace(unsigned char c) {
     return ((c == ' ') || (c == '\r') || (c == '\n'));
 }
 
-void decodeBase64(const std::string& encoded_string, std::vector<unsigned char>& ret)
+void decodeBase64(const std::string& encoded_string, UInt8Vector& ret)
 {
   int in_len = encoded_string.size();
   int i = 0;
@@ -966,6 +966,11 @@ void decodeBase64(const std::string& encoded_string, std::vector<unsigned char>&
 //------------------------------------------------------------------------------
 const char hexChar[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
+std::string encodeHex(const UInt8Vector& bytes, char sep)
+{
+    return encodeHex(bytes.data(), bytes.size(), sep);
+}
+
 std::string encodeHex(const std::string& bytes, char sep)
 {
   return encodeHex(
@@ -1004,9 +1009,9 @@ std::string encodeHex(const unsigned char* rawBytes, unsigned int length, char s
   return hex;
 }
 
-std::vector<uint8_t> decodeHex(const std::string& input)
+UInt8Vector decodeHex(const std::string& input)
 {
-    std::vector<uint8_t> result;
+    UInt8Vector result;
     char* ptr = const_cast<char*>(input.data());
     const char* end = ptr + input.length();
 
