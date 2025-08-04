@@ -1,11 +1,12 @@
-// placement.cxx - manage the placment of a 3D model.
+// placement.cxx - manage the placement of a 3D model.
 // Written by David Megginson, started 2002.
 //
-// This file is in the Public Domain, and comes with no warranty.
+// SPDX-FileCopyrightText: 2002 David Megginson
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
-#ifdef HAVE_CONFIG_H
+#include "simgear/debug/debug_types.h"
+
 #include <simgear_config.h>
-#endif
 
 #include "placement.hxx"
 
@@ -31,6 +32,9 @@ SGModelPlacement::SGModelPlacement () :
 
 SGModelPlacement::~SGModelPlacement ()
 {
+    if (_selector && (_selector->getNumParents() > 0)) {
+        SG_LOG(SG_OSG, SG_DEV_WARN, "Destroying model placement with still-attached scene-node.");
+    }
 }
 
 void
@@ -44,6 +48,12 @@ SGModelPlacement::init( osg::Node * model )
   _selector->setValue(0, 1);
 }
 
+osg::ref_ptr<osg::Node> SGModelPlacement::getSceneGraph() const
+{
+    return _selector;
+}
+
+
 void
 SGModelPlacement::add( osg::Node* model )
 {
@@ -54,8 +64,8 @@ SGModelPlacement::add( osg::Node* model )
 
 void SGModelPlacement::clear()
 {
-    _selector = NULL;
-    _transform = NULL;
+    _selector = nullptr;
+    _transform = nullptr;
 }
 
 void

@@ -1,15 +1,10 @@
-// placement.hxx - manage the placment of a 3D model.
+// placement.hxx - manage the placement of a 3D model.
 // Written by David Megginson, started 2002.
 //
-// This file is in the Public Domain, and comes with no warranty.
+// SPDX-FileCopyrightText: 2002 David Megginson
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
-
-#ifndef _SG_PLACEMENT_HXX
-#define _SG_PLACEMENT_HXX 1
-
-#ifndef __cplusplus
-# error This library requires C++
-#endif
+#pragma once
 
 #include <osg/ref_ptr>
 #include <osg/Node>
@@ -17,14 +12,6 @@
 #include <osg/PositionAttitudeTransform>
 
 #include <simgear/math/SGMath.hxx>
-
-// Has anyone done anything *really* stupid, like making min and max macros?
-#ifdef min
-#undef min
-#endif
-#ifdef max
-#undef max
-#endif
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -44,10 +31,10 @@ public:
   virtual void init( osg::Node* model );
   void clear();
   void add( osg::Node* model );
-  
+
   virtual void update();
 
-  virtual osg::Node* getSceneGraph () { return _selector.get(); }
+  osg::ref_ptr<osg::Node> getSceneGraph() const;
 
   virtual bool getVisible () const;
   virtual void setVisible (bool visible);
@@ -69,7 +56,7 @@ public:
   void setReferenceTime(const double& referenceTime);
   void setBodyLinearVelocity(const SGVec3d& velocity);
   void setBodyAngularVelocity(const SGVec3d& velocity);
-  
+
 private:
                                 // Geodetic position
   SGGeod _position;
@@ -82,5 +69,3 @@ private:
   osg::ref_ptr<osg::Switch> _selector;
   osg::ref_ptr<osg::PositionAttitudeTransform> _transform;
 };
-
-#endif // _SG_PLACEMENT_HXX
