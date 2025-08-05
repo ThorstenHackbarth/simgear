@@ -56,14 +56,12 @@ void Client::ClientPrivate::createCurlMulti() {
   // see https://curl.haxx.se/libcurl/c/CURLMOPT_PIPELINING.html
   // we request HTTP 1.1 pipelining
   curl_multi_setopt(curlMulti, CURLMOPT_PIPELINING, 1 /* aka CURLPIPE_HTTP1 */);
-#if (LIBCURL_VERSION_MINOR >= 30)
   curl_multi_setopt(curlMulti, CURLMOPT_MAX_TOTAL_CONNECTIONS,
                     (long)maxConnections);
   curl_multi_setopt(curlMulti, CURLMOPT_MAX_PIPELINE_LENGTH,
                     (long)maxPipelineDepth);
   curl_multi_setopt(curlMulti, CURLMOPT_MAX_HOST_CONNECTIONS,
                     (long)maxHostConnections);
-#endif
 }
 
 Client::Client()
@@ -88,25 +86,19 @@ Client::~Client()
 void Client::setMaxConnections(unsigned int maxCon)
 {
     d->maxConnections = maxCon;
-#if (LIBCURL_VERSION_MINOR >= 30)
     curl_multi_setopt(d->curlMulti, CURLMOPT_MAX_TOTAL_CONNECTIONS, (long) maxCon);
-#endif
 }
 
 void Client::setMaxHostConnections(unsigned int maxHostCon)
 {
     d->maxHostConnections = maxHostCon;
-#if (LIBCURL_VERSION_MINOR >= 30)
     curl_multi_setopt(d->curlMulti, CURLMOPT_MAX_HOST_CONNECTIONS, (long) maxHostCon);
-#endif
 }
 
 void Client::setMaxPipelineDepth(unsigned int depth)
 {
     d->maxPipelineDepth = depth;
-#if (LIBCURL_VERSION_MINOR >= 30)
     curl_multi_setopt(d->curlMulti, CURLMOPT_MAX_PIPELINE_LENGTH, (long) depth);
-#endif
 }
 
 void Client::reset()
@@ -152,7 +144,7 @@ void Client::update(int waitTimeout)
     mc = curl_multi_perform(d->curlMulti, &remainingActive);
     if (mc == CURLM_CALL_MULTI_PERFORM) {
         // we could loop here, but don't want to get blocked
-        // also this shouldn't  ocurr in any modern libCurl
+        // also this shouldn't occur in any modern libCurl
         curl_multi_perform(d->curlMulti, &remainingActive);
     } else if (mc != CURLM_OK) {
         d->curlPerformActive = false;
@@ -311,7 +303,7 @@ void Client::makeRequest(const Request_ptr& r)
         curl_easy_setopt(curlRequest, CURLOPT_RANGE, range.c_str());
         SG_LOG(SG_GENERAL, SG_DEBUG, "Have added CURLOPT_RANGE: '" << range << "'");
     }
-    
+
     const char* enc = r->getAcceptEncoding();
     if (enc) {
         curl_easy_setopt(curlRequest, CURLOPT_ACCEPT_ENCODING, const_cast<char*>(enc));
@@ -363,7 +355,7 @@ void Client::makeRequest(const Request_ptr& r)
     curl_multi_add_handle(d->curlMulti, curlRequest);
 
 // this seems premature, but we don't have a callback from Curl we could
-// use to trigger when the requst is actually sent.
+// use to trigger when the request is actually sent.
     r->requestStart();
 }
 
@@ -540,7 +532,7 @@ size_t Client::requestHeaderCallback(char *rawBuffer, size_t size, size_t nitems
   }
 
   if (h.empty()) {
-      // got a 100-continue reponse; restart
+      // got a 100-continue response; restart
       if (req->responseCode() == 100) {
           req->setReadyState(HTTP::Request::OPENED);
           return byteSize;
