@@ -133,7 +133,7 @@ QuatTest(void)
     { lineno = __LINE__; return false; }
 
   // Now check some successive transforms
-  // We can reuse the prevously tested stuff
+  // We can reuse the previously tested stuff
   q1 = SGQuat<T>::fromAngleAxis(0.5*SGMisc<T>::pi(), e1);
   q2 = SGQuat<T>::fromAngleAxis(0.5*SGMisc<T>::pi(), e2);
   q3 = q1*q2;
@@ -197,7 +197,7 @@ QuatDerivativeTest(void)
 {
   for (unsigned i = 0; i < 100; ++i) {
     // Generate the test case:
-    // Give a lower bound to the distance, so avoid testing cancelation
+    // Give a lower bound to the distance, so avoid testing cancellation
     T dt = T(0.01) + sg_random();
     // Start with orientation o0, angular velocity av and a random stepsize
     SGQuat<T> o0 = SGQuat<T>::fromEulerDeg(T(360)*sg_random(), T(360)*sg_random(), T(360)*sg_random());

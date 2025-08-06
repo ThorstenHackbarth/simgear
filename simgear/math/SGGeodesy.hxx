@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // SPDX-FileCopyrightText: 2006 Mathias Froehlich <mathias.froehlich@web.de>
 
-#ifndef SGGeodesy_H
-#define SGGeodesy_H
+#pragma once
+
 #include <optional>
 
 class SGGeodesy {
@@ -17,18 +17,18 @@ public:
   /// Takes a cartesian coordinate data and returns the geodetic
   /// coordinates.
   static void SGCartToGeod(const SGVec3<double>& cart, SGGeod& geod);
-  
+
   /// Takes a geodetic coordinate data and returns the cartesian
   /// coordinates.
   static void SGGeodToCart(const SGGeod& geod, SGVec3<double>& cart);
-  
+
   /// Takes a geodetic coordinate data and returns the sea level radius.
   static double SGGeodToSeaLevelRadius(const SGGeod& geod);
 
   /// Takes a cartesian coordinate data and returns the geocentric
   /// coordinates.
   static void SGCartToGeoc(const SGVec3<double>& cart, SGGeoc& geoc);
-  
+
   /// Takes a geocentric coordinate data and returns the cartesian
   /// coordinates.
   static void SGGeocToCart(const SGGeoc& geoc, SGVec3<double>& cart);
@@ -48,7 +48,7 @@ public:
   static double courseDeg(const SGGeod& from, const SGGeod& to);
   static double distanceM(const SGGeod& from, const SGGeod& to);
   static double distanceNm(const SGGeod& from, const SGGeod& to);
-    
+
   // Geocentric course/distance computation
   static void advanceRadM(const SGGeoc& geoc, double course, double distance,
                           SGGeoc& result);
@@ -58,24 +58,24 @@ public:
   static double courseRad(const SGGeoc& from, const SGGeoc& to);
   static double distanceRad(const SGGeoc& from, const SGGeoc& to);
   static double distanceM(const SGGeoc& from, const SGGeoc& to);
-  
+
   static bool cross(const SGGeod& e1, const SGGeod& e2, SGVec3d& result);
+  static bool largeAngleDiff(const SGGeod& p1, const SGGeod& p2);
   /**
    * compute the intersection of two great circle segments, or return false
    * if no intersection could be computed.
    */
-  static std::optional<SGGeod> intersection(const SGGeod& e1, const SGGeod& e2, 
+  static std::optional<SGGeod> intersection(const SGGeod& e1, const SGGeod& e2,
       const SGGeod& e3, const SGGeod& e4);
-    
+
   /**
    * compute the intersection of two (true) radials (in degrees), or return false
    * if no intersection could be computed.
    */
-  static bool radialIntersection(const SGGeoc& a, double aRadial, 
+  static bool radialIntersection(const SGGeoc& a, double aRadial,
     const SGGeoc& b, double bRadial, SGGeoc& result);
-    
-  static bool radialIntersection(const SGGeod& a, double aRadial, 
-    const SGGeod& b, double bRadial, SGGeod& result);
-};
 
-#endif
+  static bool radialIntersection(const SGGeod& a, double aRadial,
+    const SGGeod& b, double bRadial, SGGeod& result);
+
+};

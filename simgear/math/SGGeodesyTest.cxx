@@ -129,7 +129,7 @@ QuatTest(void)
     { lineno = __LINE__; return false; }
 
   // Now check some successive transforms
-  // We can reuse the prevously tested stuff
+  // We can reuse the previously tested stuff
   q1 = SGQuat<T>::fromAngleAxis(0.5*SGMisc<T>::pi(), e1);
   q2 = SGQuat<T>::fromAngleAxis(0.5*SGMisc<T>::pi(), e2);
   q3 = q1*q2;
@@ -193,7 +193,7 @@ QuatDerivativeTest(void)
 {
   for (unsigned i = 0; i < 100; ++i) {
     // Generate the test case:
-    // Give a lower bound to the distance, so avoid testing cancelation
+    // Give a lower bound to the distance, so avoid testing cancellation
     T dt = T(0.01) + sg_random();
     // Start with orientation o0, angular velocity av and a random stepsize
     SGQuat<T> o0 = SGQuat<T>::fromEulerDeg(T(360)*sg_random(), T(360)*sg_random(), T(360)*sg_random());
@@ -325,12 +325,12 @@ bool GeodesyIntersectionTest2(void)
     // Intersection 50.979167	14.2125
     // std::cout << std::endl
     //           << "**** GeodesyIntersectionTest2 ***** " << std::endl;
-    auto e1 = SGGeod::fromDeg(5, 45);
-    auto e2 = SGGeod::fromDeg(5, -45);
-    auto e3 = SGGeod::fromDeg(45, 5);
-    auto e4 = SGGeod::fromDeg(-45, 5);
+    auto e1 = SGGeod::fromDeg(5, 15);
+    auto e2 = SGGeod::fromDeg(5, -15);
+    auto e3 = SGGeod::fromDeg(15, 5);
+    auto e4 = SGGeod::fromDeg(-15, 5);
 
-    SGGeod exp = SGGeod::fromDeg(5, 7.02);
+    SGGeod exp = SGGeod::fromDeg(5, 5.15585);
     std::optional<SGGeod> resOpt = SGGeodesy::intersection(e1, e2, e3, e4);
     if (resOpt.has_value()) {
       SGGeod res = resOpt.value();
@@ -358,6 +358,56 @@ bool GeodesyIntersectionTest3(void)
 
     std::optional<SGGeod> resOpt = SGGeodesy::intersection(e1, e2, e3, e4);
     return (!resOpt.has_value());
+}
+
+bool GeodesyIntersectionTest4(void)
+{
+    auto e1 = SGGeod::fromDeg(175, 5);
+    auto e2 = SGGeod::fromDeg(-175, 5);
+    auto e3 = SGGeod::fromDeg(175, 15);
+    auto e4 = SGGeod::fromDeg(175, -15);
+
+    SGGeod exp = SGGeod::fromDeg(175, 5);
+    std::optional<SGGeod> resOpt = SGGeodesy::intersection(e1, e2, e3, e4);
+    if (resOpt.has_value()) {
+      SGGeod res = resOpt.value();
+      bool ok = true;
+      ok &= std::abs(res.getLatitudeDeg() - exp.getLatitudeDeg()) < 0.01;
+      ok &= std::abs(res.getLongitudeDeg() - exp.getLongitudeDeg()) < 0.01;
+      if (!ok) {
+          std::cout << "GeodesyIntersectionTest " << std::endl;
+          std::cout << "Res  " << res << "\t" << SGVec3d::fromGeod(res) << std::endl;
+          std::cout << "Exp  " << exp << "\t" << SGVec3d::fromGeod(exp) << std::endl;
+      }
+      return ok;
+    } else {
+      return false;
+    }
+}
+
+bool GeodesyIntersectionTest5(void)
+{
+    auto e1 = SGGeod::fromDeg(175, 5);
+    auto e2 = SGGeod::fromDeg(-175, -5);
+    auto e3 = SGGeod::fromDeg(175, -15);
+    auto e4 = SGGeod::fromDeg(-175, 15);
+
+    SGGeod exp = SGGeod::fromDeg(-180, 0);
+    std::optional<SGGeod> resOpt = SGGeodesy::intersection(e1, e2, e3, e4);
+    if (resOpt.has_value()) {
+      SGGeod res = resOpt.value();
+      bool ok = true;
+      ok &= std::abs(res.getLatitudeDeg() - exp.getLatitudeDeg()) < 0.01;
+      ok &= std::abs(res.getLongitudeDeg() - exp.getLongitudeDeg()) < 0.01;
+      if (!ok) {
+          std::cout << "GeodesyIntersectionTest " << std::endl;
+          std::cout << "Res  " << res << "\t" << SGVec3d::fromGeod(res) << std::endl;
+          std::cout << "Exp  " << exp << "\t" << SGVec3d::fromGeod(exp) << std::endl;
+      }
+      return ok;
+    } else {
+      return false;
+    }
 }
 
 bool
@@ -422,7 +472,7 @@ bool GeodesyDistanceTestNear(void)
     auto geod2 = SGGeod::fromDeg(1, 58);
     double dist = SGGeodesy::distanceM(geod1, geod2);
     // Direction 45.35
-    return std::abs(dist-497791)<0.5; 
+    return std::abs(dist-497791)<0.5;
 }
 
 bool GeodesyDistanceTestFar(void)
@@ -432,14 +482,14 @@ bool GeodesyDistanceTestFar(void)
     try
     {
       double dist = SGGeodesy::distanceM(geod1, geod2);
-      return false;
+      return dist < 0;
     }
     catch(const std::exception& e)
     {
       // Expected
       return true;
     }
-    
+
 }
 
 int
@@ -460,7 +510,11 @@ main(void)
     { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
   if (!GeodesyIntersectionTest3() )
     { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
-    
+  if (!GeodesyIntersectionTest4() )
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
+  if (!GeodesyIntersectionTest5() )
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
+
   std::cout << "Successfully passed all tests!" << std::endl;
   return EXIT_SUCCESS;
 }

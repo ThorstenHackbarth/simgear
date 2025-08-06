@@ -64,7 +64,7 @@ void SGGeodesy::SGCartToGeod(const SGVec3<double>& cart, SGGeod& geod)
 {
     // according to
     // H. Vermeille,
-    // Direct transformation from geocentric to geodetic ccordinates,
+    // Direct transformation from geocentric to geodetic coordinates,
     // Journal of Geodesy (2002) 76:451-454
     double X = cart(0);
     double Y = cart(1);
@@ -86,7 +86,7 @@ void SGGeodesy::SGCartToGeod(const SGVec3<double>& cart, SGGeod& geod)
     double q = Z * Z * (1 - e2) * ra2;
     double r = 1 / 6.0 * (p + q - e4);
     double s = e4 * p * q / (4 * r * r * r);
-    /* 
+    /*
   s*(2+s) is negative for s = [-2..0]
   slightly negative values for s due to floating point rounding errors
   cause nan for sqrt(s*(2+s))
@@ -110,7 +110,7 @@ void SGGeodesy::SGGeodToCart(const SGGeod& geod, SGVec3<double>& cart)
 {
     // according to
     // H. Vermeille,
-    // Direct transformation from geocentric to geodetic ccordinates,
+    // Direct transformation from geocentric to geodetic coordinates,
     // Journal of Geodesy (2002) 76:451-454
     double lambda = geod.getLongitudeRad();
     double phi = geod.getLatitudeRad();
@@ -258,7 +258,7 @@ static int _geo_direct_wgs_84(double lat1, double lon1, double az1,
         rnumer = sinu1 * cossig + cosu1 * sinsig * cosaz1;
         *lat2 = SGMiscd::rad2deg(atan2(rnumer, denom));
 
-        // DIFFERENCE IN LONGITUDE ON AUXILARY SPHERE (DLAMS )
+        // DIFFERENCE IN LONGITUDE ON AUXILIARY SPHERE (DLAMS )
         rnumer = sinsig * sinaz1;
         denom = cosu1 * cossig - sinu1 * sinsig * cosaz1;
         dlams = atan2(rnumer, denom);
@@ -635,40 +635,13 @@ SGGeodesy::intersection(const SGGeod& e1, const SGGeod& e2,
 
     // Find which of the candidates is nearer the points. The other
     // one is basically on the other side of the world.
-    double minDist1 = SGLimits<double>::max();
-    try {
-        minDist1 = std::min({distanceM(cand1, e1),
-                             distanceM(cand1, e2),
-                             distanceM(cand1, e3),
-                             distanceM(cand1, e4)});
-    } catch (const sg_exception&) {
-        // If one of the points can't be calculated we assume
-        // the other candidate must be correct
-    }
-
-
-    double minDist2 = SGLimits<double>::max();
-    try {
-        minDist2 = std::min({distanceM(cand2, e1),
-                             distanceM(cand2, e2),
-                             distanceM(cand2, e3),
-                             distanceM(cand2, e4)});
-    } catch (const sg_exception&) {
-        // If one of the points can't be calculated we assume
-        // the other candidate must be correct
-    }
-
-    if (minDist1 == SGLimits<double>::max() &&
-        minDist2 == SGLimits<double>::max()) {
-        SG_LOG(SG_GENERAL, SG_WARN, "SGGeodesy::intersection could not determine which candidate is valid");
-        return std::optional<SGGeod>();
-    }
-
-
-    if (minDist1 < minDist2) {
-        return cand1;
-    } else {
+    if (largeAngleDiff(cand1, e1) ||
+        largeAngleDiff(cand1, e2) ||
+        largeAngleDiff(cand1, e3) ||
+        largeAngleDiff(cand1, e4)) {
         return cand2;
+    } else {
+        return cand1;
     }
 }
 
@@ -743,6 +716,14 @@ bool SGGeodesy::radialIntersection(const SGGeod& a, double aRadial,
     result = SGGeod::fromGeoc(r);
     return true;
 }
+
+bool SGGeodesy::largeAngleDiff(const SGGeod& p1, const SGGeod& p2)
+{
+    double latDiff = SGMiscd::normalizePeriodic(-90.0, 90.0, p1.getLatitudeDeg() - p2.getLatitudeDeg());
+    double lonDiff = SGMiscd::normalizePeriodic(-180.0, 180.0, p1.getLongitudeDeg() - p2.getLongitudeDeg());
+    return fabs(latDiff) > 45 || fabs(lonDiff) > 45;
+};
+
 
 SGGeod SGGeod::invalid()
 {
