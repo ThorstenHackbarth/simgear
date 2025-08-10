@@ -466,6 +466,30 @@ GeodesyTest(void)
   return true;
 }
 
+bool GeodesyDistanceTestNorthPole(void)
+{
+    auto geod1 = SGGeod::fromDeg(-87.926615477882635, 89.999999994282845);
+    auto geod2 = SGGeod::fromDeg(92.073384522117379, 89.999999994409421);
+    double dist = SGGeodesy::distanceM(geod1, geod2);
+    return std::abs(dist)<0.0000001;
+}
+
+bool GeodesyDistanceTestSouthPole(void)
+{
+    auto geod1 = SGGeod::fromDeg(-87.926615477882635, -89.999999994282845);
+    auto geod2 = SGGeod::fromDeg(92.073384522117379, -89.999999994409421);
+    double dist = SGGeodesy::distanceM(geod1, geod2);
+    return std::abs(dist)<0.0000001;
+}
+
+bool GeodesyDistanceTestAntiPole(void)
+{
+    auto geod1 = SGGeod::fromDeg(-87.926615477882635, 89.999999994282845);
+    auto geod2 = SGGeod::fromDeg(92.073384522117379, -89.999999994409421);
+    double dist = SGGeodesy::distanceM(geod1, geod2);
+    return std::abs(dist)>20000000;
+}
+
 bool GeodesyDistanceTestNear(void)
 {
     auto geod1 = SGGeod::fromDeg(-5, 55);
@@ -499,6 +523,12 @@ main(void)
 
   // Check geodetic/geocentric/cartesian conversions
   if (!GeodesyTest())
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
+  if (!GeodesyDistanceTestNorthPole())
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
+  if (!GeodesyDistanceTestSouthPole())
+    { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
+  if (!GeodesyDistanceTestAntiPole())
     { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }
   if (!GeodesyDistanceTestNear())
     { fprintf(stderr, "Error at line: %i called from line: %i\n", lineno, __LINE__); return EXIT_FAILURE; }

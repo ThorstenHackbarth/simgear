@@ -335,9 +335,23 @@ static int _geo_inverse_wgs_84(const double lat1, const double lon1, double lat2
     double phi2 = SGMiscd::deg2rad(lat2), lam2 = SGMiscd::deg2rad(lon2);
     double sinphi2 = sin(phi2), cosphi2 = cos(phi2);
 
-    if ((fabs(lat1 - lat2) < testv &&
-         (fabs(lon1 - lon2) < testv)) ||
-        (fabs(lat1 - 90.0) < testv)) {
+    if ((fabs(fabs(lat1) - 90.0) < 200 * testv) &&
+        (fabs(fabs(lat2) - 90.0) < 200 * testv)) {
+        // TWO STATIONS ARE IDENTICAL AND POLAR: SET DISTANCE & AZIMUTHS TO ZERO */
+        if (std::signbit(lat1) == std::signbit(lat2)) {
+            *az1 = 0.0;
+            *az2 = 0.0;
+            *s = 0.0;
+            return 0;
+        } else {
+            *az1 = 0.0;
+            *az2 = 0.0;
+            *s = 20020000.0;
+            return 0;
+        }
+    } else if ((fabs(lat1 - lat2) < testv &&
+                (fabs(lon1 - lon2) < testv)) ||
+               (fabs(lat1 - 90.0) < testv)) {
         // TWO STATIONS ARE IDENTICAL : SET DISTANCE & AZIMUTHS TO ZERO */
         *az1 = 0.0;
         *az2 = 0.0;
