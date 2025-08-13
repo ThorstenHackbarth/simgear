@@ -15,6 +15,7 @@
 
 class SGPath;
 class SGPropertyNode;
+class SGSourceLocation;
 
 /**
  * Information encapsulating a single location in an external resource
@@ -34,13 +35,15 @@ public:
 
   /**
    * @brief Construct from the location stored in a property node.
-   * 
+   *
    * If the node wasn't created from XML, this may result in an invalid location.
    * This is marked as explicit because the is automatic conversion in the other
    * direction. Longer term we should replace this class with SGSourceLocation
    * which is more efficient internally (no path copying)
    */
   explicit sg_location(const SGPropertyNode* node) noexcept;
+
+  explicit sg_location(const SGSourceLocation& loc) noexcept;
 
   ~sg_location() = default;   // non-virtual intentional
 

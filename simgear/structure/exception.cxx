@@ -13,6 +13,7 @@
 #include <cstring>
 #include <sstream>
 
+#include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 
@@ -60,14 +61,33 @@ sg_location::sg_location(const SGPropertyNode* node) noexcept : sg_location()
       return;
   }
 
-  const auto sourceLoc = node->getLocation();
-  if (!sourceLoc.isValid()) {
-      return;
+  auto sourceLoc = node->getLocation();
+  while (!sourceLoc.isValid()) {
+      // leaf nodes don't get a location, to save space
+      // hence, walk the parent chain till we find a valid location
+      // this is inaccurate but hopefully close enough to help
+      // with debugging.
+      node = node->getParent();
+      if (!node) {
+          return;
+      }
+      sourceLoc = node->getLocation();
   }
 
   setPath(sourceLoc.getPath());
   _line = sourceLoc.getLine();
   _column = sourceLoc.getColumn();
+}
+
+sg_location::sg_location(const SGSourceLocation& sourceLoc) noexcept
+{
+    if (!sourceLoc.isValid()) {
+        return;
+    }
+
+    setPath(sourceLoc.getPath());
+    _line = sourceLoc.getLine();
+    _column = sourceLoc.getColumn();
 }
 
 
