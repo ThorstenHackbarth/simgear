@@ -54,6 +54,8 @@ namespace canvas
       void setFill(const std::string& fill);
       void setFill(const osg::Vec4& color);
 
+      void setSize(const SGVec2f& sz);
+
       /**
        * @see http://www.w3.org/TR/css3-background/#border-image-outset
        */
@@ -96,23 +98,23 @@ namespace canvas
        * fill the specified rectangle of the image, with an RGB value
        */
       void fillRect(const SGRect<int>& rect, const std::string& color);
-      
+
       /**
        * fill the specified rectangle of the image, with an RGB value
        */
       void fillRect(const SGRect<int>& rect, const osg::Vec4& color);
-      
+
       void setPixel(int x, int y, const std::string& color);
-      
+
       void setPixel(int x, int y, const osg::Vec4& color);
 
       /**
         * mark the image pixels as modified, so the canvas is re-painted
        */
       void dirtyPixels();
-      
+
       osg::ref_ptr<osg::Image> getImage() const;
-      
+
     //  void setRow(int row, int offset, )
     protected:
       enum ImageAttributes

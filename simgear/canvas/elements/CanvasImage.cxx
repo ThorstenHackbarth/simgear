@@ -727,6 +727,13 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void Image::setSize(const SGVec2f& sz)
+  {
+      _region.setSize(sz);
+      _attributes_dirty |= DEST_SIZE;
+  }
+
+  //----------------------------------------------------------------------------
   void Image::setupDefaultDimensions()
   {
     if( !_src_rect.width() || !_src_rect.height() )
@@ -867,7 +874,7 @@ namespace canvas
     osg::Vec4 color(1,1,1,1);
     if(!c.empty() && !parseColor(c, color))
       return;
-    
+
     fillRect(rect, color);
   }
 
@@ -894,37 +901,37 @@ SGRect<int> intersectRect(const SGRect<int>& a, const SGRect<int>& b)
       allocateImage();
       image = _texture->getImage();
     }
-      
+
       if (image->getDataVariance() != osg::Object::DYNAMIC) {
           image->setDataVariance(osg::Object::DYNAMIC);
       }
-      
+
     const auto format = image->getInternalTextureFormat();
-    
+
     auto clippedRect = intersectRect(rect, SGRect<int>(0, 0, image->s(), image->t()));
     if ((clippedRect.width() == 0) || (clippedRect.height() == 0)) {
       return;
     }
-    
+
     GLubyte* rowData = nullptr;
     size_t rowByteSize = 0;
     GLuint pixelWidth = clippedRect.width();
     GLuint pixel = 0;
     GLuint pixelBytes = 0;
-    
+
     switch (format) {
     case GL_RGBA8:
     case GL_RGBA:
         rowByteSize = pixelWidth * 4;
         rowData = static_cast<GLubyte*>(alloca(rowByteSize));
-        
+
         // assume litte-endian, so read out backwards, hence when we memcpy
         // the data, it ends up in RGBA order
         pixel = color.asABGR();
         pixelBytes = 4;
         fillRow(rowData, pixel, pixelWidth, pixelBytes);
         break;
-    
+
     case GL_RGB8:
     case GL_RGB:
         rowByteSize = pixelWidth * 3;
@@ -933,17 +940,17 @@ SGRect<int> intersectRect(const SGRect<int>& a, const SGRect<int>& b)
         pixelBytes = 3;
         fillRow(rowData, pixel, pixelWidth, pixelBytes);
         break;
-        
+
     default:
       SG_LOG(SG_IO, SG_WARN, "Image::fillRect: unsupported internal image format:" << format);
       return;
     }
-    
+
     for (int row=clippedRect.t(); row < clippedRect.b(); ++row) {
       GLubyte* imageData = image->data(clippedRect.l(), row);
       memcpy(imageData, rowData, rowByteSize);
     }
-      
+
     image->dirty();
     auto c = getCanvas().lock();
     c->enableRendering(true); // force a repaint
@@ -954,7 +961,7 @@ SGRect<int> intersectRect(const SGRect<int>& a, const SGRect<int>& b)
     osg::Vec4 color(1,1,1,1);
     if(!c.empty() && !parseColor(c, color))
       return;
-    
+
     setPixel(x, y, color);
   }
 
@@ -965,11 +972,11 @@ SGRect<int> intersectRect(const SGRect<int>& a, const SGRect<int>& b)
         allocateImage();
         image = _texture->getImage();
     }
-     
+
     if (image->getDataVariance() != osg::Object::DYNAMIC) {
       image->setDataVariance(osg::Object::DYNAMIC);
     }
-      
+
     image->setColor(color, x, y);
   }
 
