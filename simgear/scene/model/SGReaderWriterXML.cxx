@@ -1,20 +1,6 @@
-// Copyright (C) 2007 Tim Moore timoore@redhat.com
-// Copyright (C) 2008 Till Busch buti@bux.at
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2007 Tim Moore <timoore@redhat.com>
+// SPDX-FileCopyrightText: 2008 Till Busch <buti@bux.at>
 
 #include <simgear_config.h>
 
@@ -208,16 +194,15 @@ namespace {
 }
 
 struct DumpSGPropertyNode {
-    
     SGPropertyNode*     _node;
     const std::string&  _indent;
-    
+
     DumpSGPropertyNode(SGPropertyNode* node, const std::string& indent="")
     :
     _node(node),
     _indent(indent)
     {}
-    
+
     friend std::ostream& operator << (std::ostream& out, const DumpSGPropertyNode& dump)
     {
         if (!dump._node)    return out;
@@ -231,16 +216,15 @@ struct DumpSGPropertyNode {
 };
 
 struct DumpOsgNode {
-    
     osg::Node*          _node;
     const std::string&  _indent;
-    
+
     DumpOsgNode(osg::Node* node, const std::string& indent="")
     :
     _node(node),
     _indent(indent)
     {}
-    
+
     friend std::ostream& operator << (std::ostream& out, const DumpOsgNode& dump)
     {
         if (!dump._node)    return out;
@@ -259,18 +243,18 @@ struct DumpOsgNode {
 struct OSGNodeGetNames
 {
     std::vector<std::string>    names;
-    
+
     OSGNodeGetNames(osg::Node* node=NULL)
     {
         add(node);
     }
-    
+
     void add(osg::Node* node)
     {
         if (!node)  return;
         const std::string&  name = node->getName();
         if (name != "") names.push_back(name);
-        
+
         osg::Group* group = dynamic_cast<osg::Group*>(node);
         if (group) {
             for (unsigned i=0; i<group->getNumChildren(); ++i) {
@@ -317,7 +301,7 @@ void addTooltipAnimations(const SGPath& path, SGPropertyNode_ptr props, osg::ref
     control properties), so we keep track of the ones we've created in this
     map. */
     std::map<std::string, SGPropertyNode*>  object_name_to_animation_node;
-    
+
     /* Keep track of the total number of animations, so we can respect
     autoTooltipsMasterMax. */
     static int  num_new_animations = 0;
@@ -442,7 +426,7 @@ void addTooltipAnimations(const SGPath& path, SGPropertyNode_ptr props, osg::ref
                 << DumpSGPropertyNode(props, "    ")
                 );
     }
-    
+
     SG_LOG(SG_INPUT, SG_DEBUG, "auto-tooltips: num_new_animations=" << num_new_animations);
 }
 
@@ -543,8 +527,7 @@ sgLoad3DModel_internal(const SGPath& path,
         if (b) {
             modelpath = b.value_or(SGPath{});
             texturepath = b.value_or(SGPath{});
-            SG_LOG(SG_IO, SG_DEV_WARN, "Requested model which previously used an XML wrapper:" << path 
-                << " mapped to " << modelpath);
+            SG_LOG(SG_IO, SG_DEV_WARN, "Requested model which previously used an XML wrapper:" << path << " mapped to " << modelpath);
         } else {
             simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::XMLModelLoad,
                                    "Failed to load model XML: not found", path);
@@ -566,7 +549,7 @@ sgLoad3DModel_internal(const SGPath& path,
     osg::ref_ptr<SGModelData> data = options->getModelData();
     options->setModelData(0);
 
-    // remember the current value of the vertex order setting 
+    // remember the current value of the vertex order setting
     // because an included <model> may change this.
     bool currentVertexOrderXYZ = options->getVertexOrderXYZ();
 
@@ -593,7 +576,7 @@ sgLoad3DModel_internal(const SGPath& path,
         if (options->getAutoTooltipsMaster()) {
             addTooltipAnimations(path, props, model, options->getAutoTooltipsMasterMax());
         }
-        
+
         if (previewMode && props->hasChild("nopreview")) {
             return std::make_tuple(0, (osg::Node *) NULL);
         }
@@ -728,7 +711,7 @@ sgLoad3DModel_internal(const SGPath& path,
           SG_LOG(SG_IO, SG_DEV_ALERT, "Failed to load file: \"" << subPathStr << "\"");
           simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::XMLModelLoad,
                                  "Couldn't find file for submodel '" + sub_props->getStringValue("name") + "': " + subPathStr,
-                                 SGPath::fromUtf8(subPathStr));
+                                 sg_location(sub_props));
           continue;
         }
 
@@ -857,7 +840,7 @@ sgLoad3DModel_internal(const SGPath& path,
             } // of object-names in the animation
             continue;
         }
-        
+
         try {
             /*
              * Setup the model data for the node currently being animated.
@@ -870,7 +853,7 @@ sgLoad3DModel_internal(const SGPath& path,
             // note from James: we used to re-throw these errors, and they
             // were caught one level up as an SG_DEV_ALERT log message and
             // loading an empty osg::Node for the entire model.
-            // Chosing instead to trap them there, since a single failed animation
+            // Choosing instead to trap them there, since a single failed animation
             // isn't necessarily a reason to abandon the model load.
         } catch (sg_exception& e) {
             simgear::reportFailure(simgear::LoadFailure::Misconfigured, simgear::ErrorCode::XMLModelLoad,

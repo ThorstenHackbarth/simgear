@@ -115,7 +115,7 @@ SGXmlSound::init( SGPropertyNode *root,
 
    if (!_property && !_condition) {
        simgear::reportFailure(simgear::LoadFailure::Misconfigured, simgear::ErrorCode::AudioFX,
-                              "SGXmlSound: node:" + _name, path);
+                              "SGXmlSound: node:" + _name + " without <property> or <condition>", sg_location{node});
    }
 
    _delay = node->getDoubleValue("delay-sec", 0.0);
@@ -307,7 +307,7 @@ SGXmlSound::init( SGPropertyNode *root,
    _sample = new SGSoundSample(soundFileStr.c_str(), path);
    if (!_sample->file_path().exists()) {
        simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::AudioFX,
-                              "SGXmlSound: node:" + _name + "; can't find:" + soundFileStr, path);
+                              "SGXmlSound: node:" + _name + "; can't find:" + soundFileStr, sg_location{node});
        return false;
    }
 
