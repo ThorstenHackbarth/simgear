@@ -8,6 +8,8 @@
 
 #include <simgear/nasal/cppbind/detail/to_nasal_helper.hxx>
 
+#include <any>
+
 namespace nasal
 {
   /**
@@ -36,6 +38,10 @@ namespace nasal
   {
     return to_nasal_helper(c, array);
   }
+
+
+  template <>
+  naRef to_nasal(naContext c, const std::any& arg);
 
   /**
    * Wrapper to get pointer to specific version of to_nasal applicable to given

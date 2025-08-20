@@ -3,7 +3,9 @@
 // SPDX-FileCopyrightText: 2012 Thomas Geymayer <tomgey@gmail.com>
 
 #include "to_nasal_helper.hxx"
+#include "simgear/nasal/nasal.h"
 
+#include <any>
 #include <memory>
 
 #include <simgear/nasal/cppbind/NasalHash.hxx>
@@ -95,7 +97,7 @@ namespace nasal
     delete static_cast<free_function_t*>(func);
   }
 
-  //----------------------------------------------------------------------------
+
   naRef to_nasal_helper(naContext c, const free_function_t& func)
   {
     return naNewFunc
@@ -110,5 +112,35 @@ namespace nasal
       )
     );
   }
+
+  template <>
+  naRef to_nasal(naContext c, const std::any& arg)
+  {
+      return any_to_nasal_helper(c, arg);
+  }
+
+  //----------------------------------------------------------------------------
+  naRef any_to_nasal_helper(naContext c, const std::any& a)
+  {
+      if (a.type() == typeid(int)) {
+          return naNum(std::any_cast<int>(a));
+      }
+      if (a.type() == typeid(float)) {
+          return naNum(std::any_cast<float>(a));
+      }
+      if (a.type() == typeid(double)) {
+          return naNum(std::any_cast<double>(a));
+      }
+      if (a.type() == typeid(bool)) {
+          const auto b = std::any_cast<bool>(a);
+          return naNum(b ? 1.0 : 0.0);
+      }
+      if (a.type() == typeid(std::string)) {
+          return to_nasal_helper(c, std::any_cast<std::string>(a));
+      }
+
+      return naNil();
+  }
+
 
 } // namespace nasal

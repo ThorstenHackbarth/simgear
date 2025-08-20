@@ -14,6 +14,7 @@
 
 #include <boost/call_traits.hpp>
 
+#include <any>
 #include <array>
 #include <functional>
 #include <initializer_list>
@@ -53,6 +54,11 @@ namespace nasal
   naRef to_nasal_helper(naContext c, const SGGeod& pos);
 
   naRef to_nasal_helper(naContext c, const SGPath& path);
+
+  /**
+   * Convert std::any to Nasal
+   */
+  naRef any_to_nasal_helper(naContext c, const std::any& a);
 
   /**
    * Convert function pointer to Nasal function
