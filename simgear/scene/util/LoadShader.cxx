@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (C) 2024 Fernando García Liñán
-// SPDX-License-Identifier: LGPL-2.0-or-later
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include "LoadShader.hxx"
 
@@ -11,6 +11,8 @@
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/scene/model/modellib.hxx>
+
+using namespace std::string_literals;
 
 namespace simgear {
 
@@ -71,7 +73,7 @@ using namespace simgear;
 
 void *sgShaderVGShaderOpen(const char *filename, const char **buf, int *size)
 {
-    SGPath path("Shaders/ShaderVG/");
+    SGPath path("Shaders/ShaderVG/"s);
     path.append(filename);
 
     std::string file = SGModelLib::findDataFile(path);

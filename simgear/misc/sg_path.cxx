@@ -7,8 +7,6 @@
  *         between MacOS and the rest of the world
  */
 
-// $Id$
-
 #include <simgear/compiler.h>
 #include <simgear_config.h>
 
@@ -185,50 +183,33 @@ SGPath::fix()
 
 // default constructor
 SGPath::SGPath(PermissionChecker validator)
-    : path(""),
-    _permission_checker(validator),
-    _cached(false),
-    _rwCached(false),
-    _cacheEnabled(true),
-    _existsCached(false)
+    : _permission_checker(validator)
 {
 }
 
 
 // create a path based on "path"
-SGPath::SGPath( const std::string& p, PermissionChecker validator )
+SGPath::SGPath(const std::string& p, PermissionChecker validator)
     : path(p),
-    _permission_checker(validator),
-    _cached(false),
-    _rwCached(false),
-    _cacheEnabled(true),
-    _existsCached(false)
+      _permission_checker(validator)
 {
     fix();
 }
 
 // create a path based on "path"
-SGPath::SGPath(const std::wstring& p, PermissionChecker validator) :
-	_permission_checker(validator),
-	_cached(false),
-	_rwCached(false),
-	_cacheEnabled(true)
+SGPath::SGPath(const std::wstring& p, PermissionChecker validator) : _permission_checker(validator)
 {
 	path = simgear::strutils::convertWStringToUtf8(p);
 	fix();
 }
 
-
 // create a path based on "path" and a "subpath"
-SGPath::SGPath( const SGPath& p,
-                const std::string& r,
-                PermissionChecker validator )
+SGPath::SGPath(const SGPath& p,
+               const std::string& r,
+               PermissionChecker validator)
     : path(p.path),
-    _permission_checker(validator),
-    _cached(false),
-    _rwCached(false),
-    _cacheEnabled(p._cacheEnabled),
-    _existsCached(false)
+      _permission_checker(validator),
+      _cacheEnabled(p._cacheEnabled)
 {
     append(r);
     fix();
@@ -251,6 +232,22 @@ void SGPath::set( const string& p ) {
     _cached = false;
     _rwCached = false;
 }
+
+SGPath::SGPath(const std::filesystem::path& p)
+{
+    const auto ws = p.generic_wstring();
+    path = simgear::strutils::convertWStringToUtf8(ws);
+    fix();
+}
+
+std::filesystem::path SGPath::toStdPath() const
+{
+    // FXIME for C++20: we could use construction from char8_t which would
+    // assume UTF-8, but that would imply adding conversion to std::u8string
+    return std::filesystem::path(wstr(),
+                                 std::filesystem::path::format::generic_format);
+}
+
 
 //------------------------------------------------------------------------------
 void SGPath::setPermissionChecker(PermissionChecker validator)
@@ -1038,7 +1035,7 @@ std::vector<SGPath> SGPath::pathsFromEnv(const char *name)
 	if (!val) {
 		return r;
 	}
-   
+
 #if defined(SG_WINDOWS)
 	return pathsFromUtf8(simgear::strutils::convertWStringToUtf8(val));
 #else
@@ -1180,7 +1177,7 @@ std::string SGPath::fileUrl() const
             return "file:///" + utf8Str();
         }
 #endif
-        // the leading directory seperator of the path becomes the required
+        // the leading directory separator of the path becomes the required
         // third slash in this case.
         return "file://" + utf8Str();
     } else {
@@ -1198,7 +1195,7 @@ bool SGPath::touch()
                " reason: access denied" );
         return false;
     }
-    
+
     if (!exists()) {
         SG_LOG(SG_IO, SG_WARN, "file touch failed: (" << *this << ")"
                " reason: missing file");
@@ -1220,7 +1217,7 @@ bool SGPath::touch()
         return false;
     }
 #endif
-    
+
     // reset the cache flag so we re-stat() on next request
     _cached = false;
     return true;

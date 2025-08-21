@@ -1,26 +1,7 @@
-/* -*-c++-*-
- *
- * Copyright (C) 2024 Fahim Dalvi
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
- *
- */
+// SPDX-FileCopyrightText: Copyright (C) 2024 Fahim Dalvi
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
-#ifndef OBJECT_INSTANCE_BIN_HXX
-#define OBJECT_INSTANCE_BIN_HXX
+#pragma once
 
 #include <osg/Node>
 #include <simgear/math/SGVec3.hxx>
@@ -49,7 +30,9 @@ public:
     typedef std::vector<ObjectInstance> ObjectInstanceList;
 
     ObjectInstanceBin() = default;
-    ObjectInstanceBin(const std::string modelFileName, const std::string effect = "default", const SGPath& STGFilePath = SGPath("dynamically-generated"), const SGPath& instancesFilePath = SGPath());
+    ObjectInstanceBin(const std::string modelFileName, const std::string effect = "default",
+                      const SGPath& STGFilePath = SGPath{std::string{"dynamically-generated"}},
+                      const SGPath& instancesFilePath = SGPath{});
 
     ~ObjectInstanceBin() = default;     // non-virtual intentional
 
@@ -75,4 +58,3 @@ private:
 
 osg::ref_ptr<osg::Node> createObjectInstances(ObjectInstanceBin& objectInstances, const osg::Matrix& transform, const osg::ref_ptr<SGReaderWriterOptions> options);
 }; // namespace simgear
-#endif

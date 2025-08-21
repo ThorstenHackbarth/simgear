@@ -74,7 +74,7 @@ public:
                 path = ss.str();
             }
         }
-        
+
         if (path == "/catalogTestInvalid/catalog.xml") {
             if (global_catalogVersion > 0) {
                 std::stringstream ss;
@@ -82,7 +82,7 @@ public:
                 path = ss.str();
             }
         }
-        
+
         // return zip data for this computed URL
         if (path.find("/catalogTest1/movies") == 0) {
             path = "/catalogTest1/movies-data.zip";
@@ -96,7 +96,7 @@ public:
                 path = "/catalogTest1/b747.tar.gz"; // valid path
             }
         }
-        
+
         if ((path.find("/mirror") == 0) && (path.find("/b737.tar.gz") == 8)) {
             if (global_737RequestsToFailCount > 0) {
                 sendErrorResponse(404, false, "Mirror failure");
@@ -105,7 +105,7 @@ public:
             }
             path = "/catalogTest1/b737.tar.gz";
         }
-        
+
         localPath.append(path);
 
       //  SG_LOG(SG_IO, SG_INFO, "local path is:" << localPath.str());
@@ -158,7 +158,7 @@ int parseTest()
 
     pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
     root->setLocale("de");
-    pkg::CatalogRef cat = pkg::Catalog::createFromPath(root, SGPath(SRC_DIR "/catalogTest1"));
+    pkg::CatalogRef cat = pkg::Catalog::createFromPath(root, SGPath::fromUtf8(SRC_DIR "/catalogTest1"));
 
     SG_VERIFY(cat.valid());
 
@@ -214,7 +214,7 @@ int parseTest()
 
     try {
         p2->indexOfVariant("fofofo");
-        SG_TEST_FAIL("lookup of non-existant variant did not throw");
+        SG_TEST_FAIL("lookup of non-existent variant did not throw");
     } catch (sg_exception& e) {
       // expected
     }
@@ -275,8 +275,8 @@ int parseTest()
     pkg::PackageRef p3 = cat->getPackageById("b737-NG");
     SG_VERIFY(p3.valid());
     SG_CHECK_EQUAL(p3->description(), "German description of B737NG XYZ");
-    
-    
+
+
 // test filtering / searching too
     string_set tags(p2->tags());
     SG_CHECK_EQUAL(tags.size(), 4);
@@ -325,14 +325,14 @@ int parseTest()
         queryText->setStringValue("any-of/description", "float");
         SG_VERIFY(p2->matches(queryText.ptr()));
     }
-    
+
     // match localized variant descriptions
     {
         SGPropertyNode_ptr queryText(new SGPropertyNode);
         queryText->setStringValue("any-of/description", "XYZ");
         SG_VERIFY(p3->matches(queryText.ptr()));
     }
-    
+
     string_list urls = p3->downloadUrls();
     SG_CHECK_EQUAL(urls.size(), 3);
     SG_CHECK_EQUAL(urls.at(1), "http://localhost:2000/mirrorB/b737.tar.gz");
@@ -604,32 +604,32 @@ void testInstallArchiveType(HTTP::Client* cl)
     rootPath.append("pkg_install_archive_type");
     simgear::Dir pd(rootPath);
     pd.removeChildren();
-    
+
     pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
     // specify a test dir
     root->setHTTPClient(cl);
-    
+
     pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
     waitForUpdateComplete(cl, root);
-    
+
     pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.movies");
     SG_CHECK_EQUAL(p1->id(), "movies");
     pkg::InstallRef ins = p1->install();
-    
+
     SG_VERIFY(ins->isQueued());
-    
+
     waitForUpdateComplete(cl, root);
     SG_VERIFY(p1->isInstalled());
     SG_VERIFY(p1->existingInstall() == ins);
-    
+
     // verify on disk state
     SGPath p(rootPath);
     p.append("org.flightgear.test.catalog1");
     p.append("Aircraft");
     p.append("movies");
-    
+
     SG_CHECK_EQUAL(p, ins->path());
-    
+
     p.append("movie-list.json");
     SG_VERIFY(p.exists());
 }
@@ -641,11 +641,11 @@ void testDisableDueToVersion(HTTP::Client* cl)
     rootPath.append("cat_disable_at_version");
     simgear::Dir pd(rootPath);
     pd.removeChildren();
-    
+
     {
         pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
         root->setHTTPClient(cl);
-        
+
         pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
         waitForUpdateComplete(cl, root);
         SG_VERIFY(c->isEnabled());
@@ -658,7 +658,7 @@ void testDisableDueToVersion(HTTP::Client* cl)
         waitForUpdateComplete(cl, root);
         SG_VERIFY(p1->isInstalled());
     }
-    
+
     // bump version and refresh
     {
         pkg::RootRef root(new pkg::Root(rootPath, "9.1.2"));
@@ -672,16 +672,16 @@ void testDisableDueToVersion(HTTP::Client* cl)
         waitForUpdateComplete(cl, root);
         SG_CHECK_EQUAL(root->allCatalogs().size(), 1);
 
-        
+
         SG_CHECK_EQUAL(cat->status(), pkg::Delegate::FAIL_VERSION);
         SG_VERIFY(!cat->isEnabled());
         SG_CHECK_EQUAL(cat->id(), "org.flightgear.test.catalog1");
-        
+
         auto enabledCats = root->catalogs();
         auto it = std::find(enabledCats.begin(), enabledCats.end(), cat);
         SG_VERIFY(it == enabledCats.end());
         SG_CHECK_EQUAL(enabledCats.size(), 0);
-        
+
         auto allCats = root->allCatalogs();
         auto j = std::find(allCats.begin(), allCats.end(), cat);
         SG_VERIFY(j != allCats.end());
@@ -689,7 +689,7 @@ void testDisableDueToVersion(HTTP::Client* cl)
         SG_CHECK_EQUAL(allCats.size(), 1);
 
         // ensure existing package is still installed but not directly list
-        
+
         pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
         SG_VERIFY(p1 !=  pkg::PackageRef());
         SG_CHECK_EQUAL(p1->id(), "b737-NG");
@@ -707,15 +707,15 @@ void testVersionMigrate(HTTP::Client* cl)
     rootPath.append("cat_migrate_version");
     simgear::Dir pd(rootPath);
     pd.removeChildren();
-    
+
     {
         pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
         root->setHTTPClient(cl);
-        
+
         pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
         waitForUpdateComplete(cl, root);
         SG_VERIFY(c->isEnabled());
-        
+
         // install a package
         pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
         SG_CHECK_EQUAL(p1->id(), "b737-NG");
@@ -724,16 +724,16 @@ void testVersionMigrate(HTTP::Client* cl)
         waitForUpdateComplete(cl, root);
         SG_VERIFY(p1->isInstalled());
     }
-    
+
     // bump version and refresh
     {
         pkg::RootRef root(new pkg::Root(rootPath, "10.1.2"));
         root->setHTTPClient(cl);
-        
+
         // this should cause auto-migration
         root->refresh(true);
         waitForUpdateComplete(cl, root);
-        
+
         pkg::CatalogRef cat = root->getCatalogById("org.flightgear.test.catalog1");
         SG_VERIFY(cat->isEnabled());
         SG_CHECK_EQUAL(cat->status(), pkg::Delegate::STATUS_REFRESHED);
@@ -743,13 +743,13 @@ void testVersionMigrate(HTTP::Client* cl)
         auto enabledCats = root->catalogs();
         auto it = std::find(enabledCats.begin(), enabledCats.end(), cat);
         SG_VERIFY(it != enabledCats.end());
-        
+
         // ensure existing package is still installed
-        
+
         pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
         SG_VERIFY(p1 !=  pkg::PackageRef());
         SG_CHECK_EQUAL(p1->id(), "b737-NG");
-        
+
         auto packs = root->allPackages();
         auto k = std::find(packs.begin(), packs.end(), p1);
         SG_VERIFY(k != packs.end());
@@ -763,15 +763,15 @@ void testVersionMigrateToId(HTTP::Client* cl)
     rootPath.append("cat_migrate_version_id");
     simgear::Dir pd(rootPath);
     pd.removeChildren();
-    
+
     {
         pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
         root->setHTTPClient(cl);
-        
+
         pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
         waitForUpdateComplete(cl, root);
         SG_VERIFY(c->isEnabled());
-        
+
         // install a package
         pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
         SG_CHECK_EQUAL(p1->id(), "b737-NG");
@@ -780,43 +780,43 @@ void testVersionMigrateToId(HTTP::Client* cl)
         waitForUpdateComplete(cl, root);
         SG_VERIFY(p1->isInstalled());
     }
-    
+
     // change version to an alternate one
     {
         pkg::RootRef root(new pkg::Root(rootPath, "7.5"));
         root->setHTTPClient(cl);
-        
+
         // this should cause the alternate package to be loaded
         root->refresh(true);
         waitForUpdateComplete(cl, root);
-        
+
         pkg::CatalogRef cat = root->getCatalogById("org.flightgear.test.catalog1");
         SG_VERIFY(!cat->isEnabled());
         SG_CHECK_EQUAL(cat->status(), pkg::Delegate::FAIL_VERSION);
         SG_CHECK_EQUAL(cat->id(), "org.flightgear.test.catalog1");
         SG_CHECK_EQUAL(cat->url(), "http://localhost:2000/catalogTest1/catalog.xml");
-        
+
         auto enabledCats = root->catalogs();
         auto it = std::find(enabledCats.begin(), enabledCats.end(), cat);
         SG_VERIFY(it == enabledCats.end());
-                
+
         // ensure existing package is still installed
         pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
         SG_VERIFY(p1 !=  pkg::PackageRef());
         SG_CHECK_EQUAL(p1->id(), "b737-NG");
-        
+
         // but not listed
         auto packs = root->allPackages();
         auto k = std::find(packs.begin(), packs.end(), p1);
         SG_VERIFY(k == packs.end());
-        
+
         // check the new catalog
         auto altCat = root->getCatalogById("org.flightgear.test.catalog-alt");
         SG_VERIFY(altCat->isEnabled());
         SG_CHECK_EQUAL(altCat->status(), pkg::Delegate::STATUS_REFRESHED);
         SG_CHECK_EQUAL(altCat->id(), "org.flightgear.test.catalog-alt");
         SG_CHECK_EQUAL(altCat->url(), "http://localhost:2000/catalogTest1/catalog-alt.xml");
-        
+
         it = std::find(enabledCats.begin(), enabledCats.end(), altCat);
         SG_VERIFY(it != enabledCats.end());
 
@@ -830,7 +830,7 @@ void testVersionMigrateToId(HTTP::Client* cl)
         SG_VERIFY(ins->isQueued());
         waitForUpdateComplete(cl, root);
         SG_VERIFY(p2->isInstalled());
-        
+
         // do a non-scoped lookup, we should get the new one
         pkg::PackageRef p3 = root->getPackageById("b737-NG");
         SG_CHECK_EQUAL(p2, p3);
@@ -840,32 +840,32 @@ void testVersionMigrateToId(HTTP::Client* cl)
     {
         pkg::RootRef root(new pkg::Root(rootPath, "7.5"));
         root->setHTTPClient(cl);
-        
+
         root->refresh(true);
         waitForUpdateComplete(cl, root);
-        
+
         pkg::CatalogRef cat = root->getCatalogById("org.flightgear.test.catalog1");
         SG_VERIFY(!cat->isEnabled());
         SG_CHECK_EQUAL(cat->status(), pkg::Delegate::FAIL_VERSION);
-        
+
         auto altCat = root->getCatalogById("org.flightgear.test.catalog-alt");
         SG_VERIFY(altCat->isEnabled());
-        
+
         auto packs = root->allPackages();
         SG_CHECK_EQUAL(packs.size(), 4);
     }
-    
+
     // and now switch back to the older version
     {
         pkg::RootRef root(new pkg::Root(rootPath, "8.1.0"));
         root->setHTTPClient(cl);
         root->refresh(true);
         waitForUpdateComplete(cl, root);
-        
+
         pkg::CatalogRef cat = root->getCatalogById("org.flightgear.test.catalog1");
         SG_VERIFY(cat->isEnabled());
         SG_CHECK_EQUAL(cat->status(), pkg::Delegate::STATUS_REFRESHED);
-        
+
         auto altCat = root->getCatalogById("org.flightgear.test.catalog-alt");
         SG_VERIFY(!altCat->isEnabled());
 
@@ -874,7 +874,7 @@ void testVersionMigrateToId(HTTP::Client* cl)
         SG_VERIFY(p1 !=  pkg::PackageRef());
         SG_CHECK_EQUAL(p1->id(), "b737-NG");
         SG_VERIFY(p1->isInstalled());
-        
+
         // verify the alt package is still installed,
         pkg::PackageRef p2 = root->getPackageById("org.flightgear.test.catalog-alt.b737-NG");
         SG_VERIFY(p2 !=  pkg::PackageRef());
@@ -890,15 +890,15 @@ void testOfflineMode(HTTP::Client* cl)
     rootPath.append("cat_offline_mode");
     simgear::Dir pd(rootPath);
     pd.removeChildren();
-    
+
     {
         pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
         root->setHTTPClient(cl);
-        
+
         pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
         waitForUpdateComplete(cl, root);
         SG_VERIFY(c->isEnabled());
-        
+
         // install a package
         pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
         SG_CHECK_EQUAL(p1->id(), "b737-NG");
@@ -907,9 +907,9 @@ void testOfflineMode(HTTP::Client* cl)
         waitForUpdateComplete(cl, root);
         SG_VERIFY(p1->isInstalled());
     }
-    
+
     global_failRequests = true;
-    
+
     {
         pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
         SG_CHECK_EQUAL(root->catalogs().size(), 1);
@@ -923,21 +923,21 @@ void testOfflineMode(HTTP::Client* cl)
         SG_VERIFY(cat->isEnabled());
         SG_CHECK_EQUAL(cat->status(), pkg::Delegate::FAIL_DOWNLOAD);
         SG_CHECK_EQUAL(cat->id(), "org.flightgear.test.catalog1");
-        
+
         auto enabledCats = root->catalogs();
         auto it = std::find(enabledCats.begin(), enabledCats.end(), cat);
         SG_VERIFY(it != enabledCats.end());
-        
+
         // ensure existing package is still installed
         pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
         SG_VERIFY(p1 !=  pkg::PackageRef());
         SG_CHECK_EQUAL(p1->id(), "b737-NG");
-        
+
         auto packs = root->allPackages();
         auto k = std::find(packs.begin(), packs.end(), p1);
         SG_VERIFY(k != packs.end());
     }
-    
+
     global_failRequests = false;
 }
 
@@ -946,26 +946,26 @@ int parseInvalidTest()
     SGPath rootPath = simgear::Dir::current().path();
     rootPath.append("testRoot");
     pkg::RootRef root(new pkg::Root(rootPath, "8.1.12"));
-    pkg::CatalogRef cat = pkg::Catalog::createFromPath(root, SGPath(SRC_DIR "/catalogTestInvalid"));
+    pkg::CatalogRef cat = pkg::Catalog::createFromPath(root, SGPath::fromUtf8(SRC_DIR "/catalogTestInvalid"));
     SG_VERIFY(cat.valid());
 
     SG_CHECK_EQUAL(cat->status(), pkg::Delegate::FAIL_VALIDATION);
- 
+
     return 0;
 }
 
 void removeInvalidCatalog(HTTP::Client* cl)
 {
     global_catalogVersion = 0; // fetch the good version
-    
+
     SGPath rootPath(simgear::Dir::current().path());
     rootPath.append("cat_remove_invalid");
     simgear::Dir pd(rootPath);
     pd.removeChildren();
-    
+
     pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
     root->setHTTPClient(cl);
-    
+
     // another catalog so the dicts are non-empty
     pkg::CatalogRef anotherCat = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
 
@@ -975,7 +975,7 @@ void removeInvalidCatalog(HTTP::Client* cl)
     SG_VERIFY(c->status() == pkg::Delegate::FAIL_VALIDATION);
     SG_VERIFY(!vectorContains(root->catalogs(), c));
     SG_VERIFY(vectorContains(root->allCatalogs(), c));
- 
+
     // now remove it
     root->removeCatalog(c);
     SG_VERIFY(!vectorContains(root->catalogs(), c));
@@ -990,17 +990,17 @@ void removeInvalidCatalog(HTTP::Client* cl)
         SG_VERIFY(c2->status() == pkg::Delegate::FAIL_VALIDATION);
         SG_VERIFY(!vectorContains(root->catalogs(), c2));
         SG_VERIFY(vectorContains(root->allCatalogs(), c2));
-        
+
         // now remove it
         root->removeCatalog(c2);
         SG_VERIFY(!vectorContains(root->catalogs(), c2));
         SG_VERIFY(!vectorContains(root->allCatalogs(), c2));
     }
-    
+
     // only the other catalog (testCatalog should be left)
     SG_VERIFY(root->allCatalogs().size() == 1);
     SG_VERIFY(root->catalogs().size() == 1);
-    
+
     SG_LOG(SG_GENERAL, SG_INFO, "Remove invalid catalog test passeed");
 }
 
@@ -1011,15 +1011,15 @@ void updateInvalidToValid(HTTP::Client* cl)
     rootPath.append("cat_update_invalid_to_valid");
     simgear::Dir pd(rootPath);
     pd.removeChildren();
-    
+
 // first, sync the invalid version
     pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
     root->setHTTPClient(cl);
-    
+
     pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTestInvalid/catalog.xml");
     waitForUpdateComplete(cl, root);
     SG_VERIFY(!c->isEnabled());
-    
+
     SG_VERIFY(c->status() == pkg::Delegate::FAIL_VALIDATION);
     SG_VERIFY(!vectorContains(root->catalogs(), c));
     SG_VERIFY(vectorContains(root->allCatalogs(), c));
@@ -1037,23 +1037,23 @@ void updateInvalidToValid(HTTP::Client* cl)
 void updateValidToInvalid(HTTP::Client* cl)
 {
     global_catalogVersion = 2; // fetch the good version
-    
+
     SGPath rootPath(simgear::Dir::current().path());
     rootPath.append("cat_update_valid_to_invalid");
     simgear::Dir pd(rootPath);
     pd.removeChildren();
-    
+
     // first, sync the invalid version
     pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
     root->setHTTPClient(cl);
-    
+
     pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTestInvalid/catalog.xml");
     waitForUpdateComplete(cl, root);
     SG_VERIFY(c->isEnabled());
     SG_VERIFY(c->status() == pkg::Delegate::STATUS_REFRESHED);
     SG_VERIFY(vectorContains(root->catalogs(), c));
     SG_VERIFY(vectorContains(root->allCatalogs(), c));
-    
+
     // now refrsh the bad one
     global_catalogVersion = 3;
     c->refresh();
@@ -1070,19 +1070,19 @@ void updateInvalidToInvalid(HTTP::Client* cl)
     rootPath.append("cat_update_invalid_to_inalid");
     simgear::Dir pd(rootPath);
     pd.removeChildren();
-    
+
     // first, sync the invalid version
     pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
     root->setHTTPClient(cl);
-    
+
     pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTestInvalid/catalog.xml");
     waitForUpdateComplete(cl, root);
     SG_VERIFY(!c->isEnabled());
-    
+
     SG_VERIFY(c->status() == pkg::Delegate::FAIL_VALIDATION);
     SG_VERIFY(!vectorContains(root->catalogs(), c));
     SG_VERIFY(vectorContains(root->allCatalogs(), c));
-    
+
     // now refresh to a different, but still bad one
     global_catalogVersion = 3;
     c->refresh();
@@ -1090,14 +1090,14 @@ void updateInvalidToInvalid(HTTP::Client* cl)
     SG_VERIFY(!c->isEnabled());
     SG_VERIFY(c->status() == pkg::Delegate::FAIL_VALIDATION);
     SG_VERIFY(!vectorContains(root->catalogs(), c));
-    
+
 }
 
 void testInstallBadPackage(HTTP::Client* cl)
 {
     global_catalogVersion = 0;
     global_fail747Request = true;
-    
+
     SGPath rootPath(simgear::Dir::current().path());
     rootPath.append("pkg_install_bad_pkg");
     simgear::Dir pd(rootPath);
@@ -1112,13 +1112,13 @@ void testInstallBadPackage(HTTP::Client* cl)
 
     pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b747-400");
     pkg::InstallRef ins = p1->install();
-    
+
     bool didFail = false;
     ins->fail([&didFail, &ins](pkg::Install* ourInstall) {
         SG_CHECK_EQUAL(ins, ourInstall);
         didFail = true;
     });
-    
+
     SG_VERIFY(ins->isQueued());
 
     waitForUpdateComplete(cl, root);
@@ -1127,10 +1127,10 @@ void testInstallBadPackage(HTTP::Client* cl)
     SG_VERIFY(p1->existingInstall() == ins);
     SG_CHECK_EQUAL(ins->status(), pkg::Delegate::FAIL_DOWNLOAD);
     SG_CHECK_EQUAL(ins->path(), rootPath / "org.flightgear.test.catalog1" / "Aircraft" / "b744");
-    
+
     // now retry, it should work
     global_fail747Request = false;
-    
+
     auto ins2 = p1->install();
     SG_CHECK_EQUAL(ins2, p1->existingInstall());
     root->scheduleToUpdate(ins2);
@@ -1147,9 +1147,9 @@ void testInstallBadPackage(HTTP::Client* cl)
 void testMirrorsFailure(HTTP::Client* cl)
 {
     global_catalogVersion = 0;
-    // there's three mirrors defined, so se tthe first twom attempts to fail
+    // there's three mirrors defined, so set the first two attempts to fail
     global_737RequestsToFailCount = 2;
-    
+
     SGPath rootPath(simgear::Dir::current().path());
     rootPath.append("pkg_install_mirror_fail");
     simgear::Dir pd(rootPath);
@@ -1164,19 +1164,19 @@ void testMirrorsFailure(HTTP::Client* cl)
 
     pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
     pkg::InstallRef ins = p1->install();
-    
+
     bool didFail = false;
     ins->fail([&didFail, &ins](pkg::Install* ourInstall) {
         SG_CHECK_EQUAL(ins, ourInstall);
         didFail = true;
     });
-    
+
     waitForUpdateComplete(cl, root);
     SG_VERIFY(p1->isInstalled());
     SG_VERIFY(!didFail);
     SG_VERIFY(p1->existingInstall() == ins);
     SG_CHECK_EQUAL(ins->status(), pkg::Delegate::STATUS_SUCCESS);
-    
+
 }
 
 void testMigrateInstalled(HTTP::Client *cl) {
@@ -1223,7 +1223,7 @@ void testMigrateInstalled(HTTP::Client *cl) {
 
     auto p1 = root->getPackageById("org.flightgear.test.catalog2.b737-NG");
     auto ins = p1->existingInstall();
-    SG_CHECK_EQUAL(0, ins->revsion());
+    SG_CHECK_EQUAL(0, ins->revision());
   }
 
   {
@@ -1234,7 +1234,7 @@ void testMigrateInstalled(HTTP::Client *cl) {
 
     auto p1 = root->getPackageById("org.flightgear.test.catalog2.b737-NG");
     auto ins = p1->existingInstall();
-    SG_CHECK_EQUAL(ins->revsion(), p1->revision());
+    SG_CHECK_EQUAL(ins->revision(), p1->revision());
   }
 }
 
@@ -1331,9 +1331,9 @@ int main(int argc, char* argv[])
     sglog().setLogLevels( SG_ALL, SG_WARN );
 
     HTTP::Client cl;
-    cl.setMaxConnections(1); 
+    cl.setMaxConnections(1);
 
-    global_serverFilesRoot = SGPath(SRC_DIR);
+    global_serverFilesRoot = SGPath::fromLocal8Bit(SRC_DIR);
 
     testAddCatalog(&cl);
 

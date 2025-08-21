@@ -47,7 +47,7 @@ int main( int argc, char *argv[] ) {
     // Move the samples to the listener
     smgr->update(0.0);
 
-    SGPath srcDir(SRC_DIR);
+    SGPath srcDir(std::string{SRC_DIR});
 
     SGSoundSample *sample1 = new SGSoundSample("jet_ulaw.wav", srcDir);
     sample1->set_volume(1.0);

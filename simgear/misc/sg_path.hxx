@@ -7,30 +7,9 @@
  *         between MacOS and the rest of the world
  */
 
-// Written by Curtis L. Olson, started April 1999.
-//
-// Copyright (C) 1999  Curtis L. Olson - http://www.flightgear.org/~curt
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+#pragma once
 
-
-#ifndef _SG_PATH_HXX
-#define _SG_PATH_HXX
-
+#include <filesystem>
 #include <functional>
 #include <string>
 
@@ -86,6 +65,13 @@ public:
     SGPath( const SGPath& p,
             const std::string& r,
             PermissionChecker validator = NULL );
+
+    explicit SGPath(const std::filesystem::path& p);
+
+    /**
+     * @brief convert to a std::filesystem::path
+     */
+    std::filesystem::path toStdPath() const;
 
     /**
      * Set path to a new value
@@ -206,13 +192,13 @@ public:
      * @return file string
      */
     std::string file() const;
-  
+
     /**
      * Get the directory part of the path.
      * @return directory string
      */
     std::string dir() const;
-  
+
     /**
      * Get the base part of the path (everything but the final extension.)
      * @return the base string
@@ -230,14 +216,14 @@ public:
      * @return the extension string
      */
     std::string extension() const;
-    
+
     /**
      * Get the extension part of the path (everything after the final ".")
      * converted to lowercase
      * @return the extension string
      */
     std::string lower_extension() const;
-    
+
     /**
      * Get the complete extension part of the path (everything after the first ".")
      * this might look like 'tar.gz' or 'txt.Z', or might be identical to 'extension' above
@@ -245,7 +231,7 @@ public:
      * @return the extension string
      */
     std::string complete_lower_extension() const;
-    
+
     /**
      * Get the path string
      * @return path string
@@ -284,7 +270,7 @@ public:
     int create_dir(mode_t mode = 0755);
 
     /**
-     * Check if reading file is allowed. Readabilty does not imply the existance
+     * Check if reading file is allowed. Readability does not imply the existence
      * of the file.
      *
      * @note By default all files will be marked as readable. No check is made
@@ -296,28 +282,28 @@ public:
 
     bool isFile() const;
     bool isDir() const;
-    
+
     /**
      * Opposite sense to isAbsolute
      */
     bool isRelative() const { return !isAbsolute(); }
-    
+
     /**
      * Is this an absolute path?
-     * I.e starts with a directory seperator, or a single character + colon
+     * I.e starts with a directory separator, or a single character + colon
      */
     bool isAbsolute() const;
-    
+
     /**
      * check for default constructed path
      */
     bool isNull() const;
-    
+
     /**
      * delete the file, if possible
      */
     bool remove();
-    
+
     /**
      * modification time of the file
      */
@@ -334,7 +320,7 @@ public:
      * or if the destination already exists, or is not writeable
      */
     bool rename(const SGPath& newName);
-	
+
 
 	/**
 	 * return the path of the parent directory of this path.
@@ -345,19 +331,19 @@ public:
      * return path as a file:// URI
      */
     std::string fileUrl() const;
-    
+
     /**
      * Update the file modification timestamp to be 'now'. The contents will
      * not be changed. (Same as POSIX 'touch' command). Will fail if the file
      * does not exist or permissions do not allow writing.
      */
     bool touch();
-    
+
     /**
      * Create a link with this path that points to <destination>.
      */
     bool makeLink(const std::string& destination);
-    
+
     enum StandardLocation
     {
       HOME,
@@ -415,19 +401,19 @@ private:
     bool permissionsAllowsWrite() const;
 
     std::string path;
-    PermissionChecker _permission_checker;
+    PermissionChecker _permission_checker = nullptr;
 
-    mutable bool _cached : 1;
-    mutable bool _rwCached : 1;
-    bool _cacheEnabled : 1; ///< cacheing can be disbled if required
+    mutable bool _cached : 1 = false;
+    mutable bool _rwCached : 1 = false;
+    bool _cacheEnabled : 1 = true; ///< caching can be disabled if required
     mutable bool _canRead : 1;
     mutable bool _canWrite : 1;
-    mutable bool _exists : 1;
-    mutable bool _isDir : 1;
-    mutable bool _isFile : 1;
-    mutable bool _existsCached : 1; ///< only used on Windows
-    mutable time_t _modTime;
-    mutable size_t _size;
+    mutable bool _exists : 1 = false;
+    mutable bool _isDir : 1 = false;
+    mutable bool _isFile : 1 = false;
+    mutable bool _existsCached : 1 = false; ///< only used on Windows
+    mutable time_t _modTime = 0;
+    mutable size_t _size = 0;
 
     // For addAllowedPathPattern(), validate(), etc.
     static string_list read_allowed_paths;
@@ -468,8 +454,3 @@ string_list sgPathBranchSplit( const std::string &path );
  * Split a directory search path into a vector of individual paths
  */
 string_list sgPathSplit( const std::string &search_path );
-
-
-#endif // _SG_PATH_HXX
-
-

@@ -1,27 +1,7 @@
-/* -*-c++-*-
- *
- * Copyright (C) 2024 Fahim Dalvi
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
- *
- */
+// SPDX-FileCopyrightText: Copyright (C) 2024 Fahim Dalvi
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
-#ifdef HAVE_CONFIG_H
 #include <simgear_config.h>
-#endif
 
 #include "ObjectInstanceBin.hxx"
 
@@ -132,7 +112,7 @@ public:
                 Effect* effect = makeEffect(effectRoot, true, _opts);
                 if (effect) {
                     eg->setEffect(effect);
-                }                
+                }
             }
 
             for (unsigned int i = 0; i < node.getNumDrawables(); ++i) {
@@ -176,7 +156,7 @@ private:
     osg::Vec4Array* _customAttribs;
     std::string _effect;
     const SGReaderWriterOptions* _opts;
- 
+
     DrawableSet _drawableSet;
     EffectGeodeSet _effectGeodeSet;
 };
@@ -357,7 +337,7 @@ osg::ref_ptr<osg::Node> createObjectInstances(ObjectInstanceBin& objectInstances
     opt = sharedOptions(objectInstances.getSTGFilePath().dir(), options);
 
     if (SGPath(objectInstances.getModelFileName()).lower_extension() == "ac"   ||
-        SGPath(objectInstances.getModelFileName()).lower_extension() == "gltf" || 
+        SGPath(objectInstances.getModelFileName()).lower_extension() == "gltf" ||
         SGPath(objectInstances.getModelFileName()).lower_extension() == "glb"    )
         opt->setInstantiateEffects(true);
     else

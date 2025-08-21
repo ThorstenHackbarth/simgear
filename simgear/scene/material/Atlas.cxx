@@ -1,22 +1,7 @@
 // Atlas.cxx -- class for a material-based texture atlas
 //
-// Copyright (C) 2022 Stuart Buchanan
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+// SPDX-FileCopyrightText: Copyright (C) 2022 Stuart Buchanan
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include <osgDB/ReadFile>
 
@@ -24,7 +9,7 @@
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 
 using namespace simgear;
-
+using namespace std::string_literals;
 
 // Constructor
 Atlas::Atlas(osg::ref_ptr<const SGReaderWriterOptions> options) {
@@ -91,9 +76,9 @@ void Atlas::addMaterial(int landclass, bool isWater, bool isSea, SGSharedPtr<SGM
     if (mat != NULL) {
 
         if (mat->get_num_textures(0) > Atlas::MAX_TEXTURES) {
-            SG_LOG(SG_GENERAL, SG_ALERT, "Unable to build texture atlas for landclass " 
-                << landclass << " aka " << mat->get_names()[0] 
-                << " too many textures: " << mat->get_num_textures(0) 
+            SG_LOG(SG_GENERAL, SG_ALERT, "Unable to build texture atlas for landclass "
+                << landclass << " aka " << mat->get_names()[0]
+                << " too many textures: " << mat->get_num_textures(0)
                 << " (maximum " << Atlas::MAX_TEXTURES << ")");
             return;
         }
@@ -121,7 +106,7 @@ void Atlas::addMaterial(int landclass, bool isWater, bool isSea, SGSharedPtr<SGM
         // The mapping from terrain-default.eff / terrain-overlay.eff is as follows
         //
         //  TEXTURE NAME texture-unit  Material texture index Default value
-        //  Primary texure      0             0               n/a
+        //  Primary texture     0             0               n/a
         //  gradient_texture    2            13               Textures/Terrain/rock_alt.png
         //  dot_texture         3            15               Textures/Terrain/sand6.png
         //  grain_texture       4            14               Textures/Terrain/grain_texture.png
@@ -145,7 +130,7 @@ void Atlas::addMaterial(int landclass, bool isWater, bool isSea, SGSharedPtr<SGM
                 if (i >  14) texture = std::string("Textures/Terrain/void.png");
             }
 
-            SGPath texturePath = SGPath("Textures");
+            SGPath texturePath = SGPath("Textures"s);
             std::string fullPath = SGModelLib::findDataFile(texture, _options, texturePath);
 
             if (fullPath.empty()) {
@@ -182,7 +167,7 @@ void Atlas::addMaterial(int landclass, bool isWater, bool isSea, SGSharedPtr<SGM
         }
 
         // We now have a textureList containing the full set of textures.  Pack the relevant ones into the Vec4 of the index Uniform.
-        // This is a bit of a hack to maintain compatibility with the WS2.0 material definitions, as the material definitions use the 
+        // This is a bit of a hack to maintain compatibility with the WS2.0 material definitions, as the material definitions use the
         // 11-15th textures for the various overlay textures for terrain-default.eff, we do the same for ws30.eff
         _textureLookup1->setElement(_materialLookupIndex, osg::Vec4f( (float) (textureList[0] / 255.0), (float) (textureList[11] / 255.0), (float) (textureList[12] / 255.0), (float) (textureList[13] / 255.0)));
         _textureLookup2->setElement(_materialLookupIndex, osg::Vec4f( (float) (textureList[14] / 255.0), (float) (textureList[15] / 255.0), (float) (textureList[20] / 255.0), (float) (textureList[21] / 255.0)));
@@ -192,7 +177,7 @@ void Atlas::addMaterial(int landclass, bool isWater, bool isSea, SGSharedPtr<SGM
     }
 
     ++_materialLookupIndex;
-}    
+}
 
 void Atlas::addUniforms(osg::StateSet* stateset) {
     stateset->addUniform(_dimensions);
@@ -202,8 +187,7 @@ void Atlas::addUniforms(osg::StateSet* stateset) {
     stateset->addUniform(_materialParams2);
     stateset->addUniform(_PBRParams);
     stateset->addUniform(_emission);
-    stateset->addUniform(_bumpmapAmplitude);    
-    stateset->addUniform(_heightAmplitude);    
+    stateset->addUniform(_bumpmapAmplitude);
+    stateset->addUniform(_heightAmplitude);
     stateset->addUniform(_shoreAtlastIndex);
 }
-

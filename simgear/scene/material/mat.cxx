@@ -51,6 +51,7 @@
 
 using std::map;
 using namespace simgear;
+using namespace std::string_literals;
 
 ////////////////////////////////////////////////////////////////////////
 // Constructors and destructor.
@@ -133,7 +134,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
             tname = "unknown.rgb";
         }
 
-        SGPath tpath("Textures");
+        SGPath tpath("Textures"s);
         tpath.append(tname);
         std::string fullTexPath = SGModelLib::findDataFile(tpath, options);
         if (fullTexPath.empty()) {
@@ -165,7 +166,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
                 tname = "unknown.rgb";
             }
 
-            SGPath tpath("Textures");
+            SGPath tpath("Textures"s);
             tpath.append(tname);
             std::string fullTexPath = SGModelLib::findDataFile(tpath, options);
             if (fullTexPath.empty()) {
@@ -190,7 +191,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     }
 
     if (textures.empty() && texturesets.empty()) {
-        SGPath tpath("Textures");
+        SGPath tpath("Textures"s);
         tpath.append("Terrain");
         tpath.append("unknown.rgb");
         _internal_state st( NULL, tpath.utf8Str(), true, options );
@@ -203,7 +204,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         std::string omname = masks[i]->getStringValue();
 
         if (! omname.empty()) {
-            SGPath ompath("Textures");
+            SGPath ompath("Textures"s);
             ompath.append(omname);
             std::string fullMaskPath = SGModelLib::findDataFile(ompath, options);
 

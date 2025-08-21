@@ -21,6 +21,7 @@
 using std::cout;
 using std::cerr;
 using std::endl;
+using namespace std::string_literals;
 
 #include <simgear/misc/test_macros.hxx>
 #include <simgear/misc/sg_path.hxx>
@@ -38,18 +39,18 @@ void test_dir()
 {
     simgear::Dir temp = simgear::Dir::tempDir("foo");
     cout << "created:" << temp.path() << endl;
-  
+
     SG_VERIFY(temp.exists());
     SG_VERIFY(temp.path().isDir());
     SG_VERIFY(!temp.path().isFile());
-    
+
     SGPath fileInDir = temp.file("foobaz");
     SG_VERIFY(!fileInDir.exists());
-    
+
     if (!temp.remove(true)) {
         cout << "remove failed!" << endl;
     }
-    
+
     cout << temp.path().modTime() << endl;
 
     std::cout << "Standard Locations:"
@@ -168,7 +169,8 @@ void test_path_dir()
 	SG_VERIFY(sub2.isFile());
 	SG_CHECK_EQUAL(sub2.sizeInBytes(), 250);
 
-    SGPath sub3 = p / "subß" / u8"file𝕽";
+    const std::string utf8Suffix(reinterpret_cast<const char*>(u8"file𝕽"));
+    SGPath sub3 = p / "subß" / utf8Suffix;
     sub3.create_dir(0755);
 
     {
@@ -182,7 +184,7 @@ void test_path_dir()
     sub3.set_cached(false);
     SG_VERIFY(sub3.exists());
     SG_CHECK_EQUAL(sub3.sizeInBytes(), 100);
-    SG_CHECK_EQUAL(sub3.file(), u8"file𝕽");
+    SG_CHECK_EQUAL(sub3.file(), utf8Suffix);
 
 	simgear::Dir subD(p / "subA");
 	simgear::PathList dirChildren = subD.children(simgear::Dir::TYPE_DIR | simgear::Dir::NO_DOT_OR_DOTDOT);
@@ -196,7 +198,7 @@ void test_path_dir()
     simgear::Dir subS(sub3.dirPath());
     fileChildren = subS.children(simgear::Dir::TYPE_FILE | simgear::Dir::NO_DOT_OR_DOTDOT);
     SG_CHECK_EQUAL(fileChildren.size(), 1);
-    SG_CHECK_EQUAL(fileChildren[0], subS.path() / u8"file𝕽");
+    SG_CHECK_EQUAL(fileChildren[0], subS.path() / utf8Suffix);
 
 }
 
@@ -210,8 +212,8 @@ void test_permissions()
     } else {
         pd.create(0700);
     }
-    
-	// windows doesn't seem to actualy create a read-only directory, so this
+
+	// windows doesn't seem to actually create a read-only directory, so this
 	// test fails in strange ways there.
 #if !defined(SG_WINDOWS)
     SGPath fileInRO = p / "read-only" / "fileA";
@@ -302,15 +304,15 @@ void test_comparisons()
 {
   std::cout << "Testing comparisons\n";
 
-  SG_CHECK_EQUAL(SGPath("/abc/def ghi"), SGPath("/abc/def ghi"));
-  SG_CHECK_NE(SGPath("/abc"), SGPath("abc"));
-  SG_CHECK_LT(SGPath(""), SGPath("/"));
-  SG_CHECK_LT(SGPath("A"), SGPath("a"));
-  SG_CHECK_LE(SGPath(""), SGPath("/"));
-  SG_CHECK_LE(SGPath("/"), SGPath("/"));
-  SG_CHECK_GT(SGPath("a"), SGPath("A"));
-  SG_CHECK_GE(SGPath("a"), SGPath("A"));
-  SG_CHECK_GE(SGPath("a"), SGPath("a"));
+  SG_CHECK_EQUAL(SGPath("/abc/def ghi"s), SGPath("/abc/def ghi"s));
+  SG_CHECK_NE(SGPath("/abc"s), SGPath("abc"s));
+  SG_CHECK_LT(SGPath(""s), SGPath("/"s));
+  SG_CHECK_LT(SGPath("A"s), SGPath("a"s));
+  SG_CHECK_LE(SGPath(""s), SGPath("/"s));
+  SG_CHECK_LE(SGPath("/"s), SGPath("/"s));
+  SG_CHECK_GT(SGPath("a"s), SGPath("A"s));
+  SG_CHECK_GE(SGPath("a"s), SGPath("A"s));
+  SG_CHECK_GE(SGPath("a"s), SGPath("a"s));
 
   std::vector<SGPath> origVector({
       std::string("/zer/gh/tr aze"),
@@ -334,7 +336,7 @@ void test_hash_function()
   std::cout << "Testing the std::hash<SGPath> specialization\n";
 
   const SGPath nullPath{};
-  const SGPath p{"/abc/def"};
+  const SGPath p{"/abc/def"s};
 
   SG_CHECK_EQUAL(std::hash<SGPath>{}(nullPath), std::hash<SGPath>{}(nullPath));
   SG_CHECK_EQUAL(std::hash<SGPath>{}(p), std::hash<SGPath>{}(p));
@@ -352,9 +354,9 @@ int main(int argc, char* argv[])
     SGPath pa;
     SG_VERIFY(pa.isNull());
     SG_CHECK_EQUAL(pa.exists(), false);
-    
+
 // test basic parsing
-    SGPath pb("/Foo/bar/something.png");
+    SGPath pb("/Foo/bar/something.png"s);
     SG_CHECK_EQUAL(pb.utf8Str(), std::string("/Foo/bar/something.png"));
     SG_CHECK_EQUAL(pb.local8BitStr(), std::string("/Foo/bar/something.png"));
     SG_CHECK_EQUAL(pb.dir(), std::string("/Foo/bar"));
@@ -364,9 +366,9 @@ int main(int argc, char* argv[])
     SG_CHECK_EQUAL(pb.extension(), std::string("png"));
     SG_VERIFY(pb.isAbsolute());
     SG_VERIFY(!pb.isRelative());
-    
+
 // relative paths
-    SGPath ra("where/to/begin.txt");
+    SGPath ra("where/to/begin.txt"s);
     SG_CHECK_EQUAL(ra.utf8Str(), std::string("where/to/begin.txt"));
     SG_CHECK_EQUAL(ra.local8BitStr(), std::string("where/to/begin.txt"));
     SG_CHECK_EQUAL(ra.dir(), std::string("where/to"));
@@ -374,35 +376,35 @@ int main(int argc, char* argv[])
     SG_CHECK_EQUAL(ra.file_base(), std::string("begin"));
     SG_VERIFY(!ra.isAbsolute());
     SG_VERIFY(ra.isRelative());
-    
+
 // dots in paths / missing extensions
-    SGPath pk("/Foo/bar.dot/thing");
+    SGPath pk("/Foo/bar.dot/thing"s);
     SG_CHECK_EQUAL(pk.dir(), std::string("/Foo/bar.dot"));
     SG_CHECK_EQUAL(pk.file(), std::string("thing"));
     SG_CHECK_EQUAL(pk.base(), std::string("/Foo/bar.dot/thing"));
     SG_CHECK_EQUAL(pk.file_base(), std::string("thing"));
     SG_CHECK_EQUAL(pk.extension(), std::string());
-    
+
 // multiple file extensions
-    SGPath pj("/Foo/zot.dot/thing.tar.gz");
+    SGPath pj("/Foo/zot.dot/thing.tar.gz"s);
     SG_CHECK_EQUAL(pj.dir(), std::string("/Foo/zot.dot"));
     SG_CHECK_EQUAL(pj.file(), std::string("thing.tar.gz"));
     SG_CHECK_EQUAL(pj.base(), std::string("/Foo/zot.dot/thing.tar"));
     SG_CHECK_EQUAL(pj.file_base(), std::string("thing"));
     SG_CHECK_EQUAL(pj.extension(), std::string("gz"));
     SG_CHECK_EQUAL(pj.complete_lower_extension(), std::string("tar.gz"));
-    
+
 // path fixing
-    SGPath rd("where\\to\\begin.txt");
+    SGPath rd("where\\to\\begin.txt"s);
     SG_CHECK_EQUAL(rd.utf8Str(), std::string("where/to/begin.txt"));
-    
+
 // test modification
 // append
-    SGPath d1("/usr/local");
+    SGPath d1("/usr/local"s);
     SGPath pc = d1;
     SG_CHECK_EQUAL(pc.utf8Str(), std::string("/usr/local"));
     pc.append("include");
-    
+
     SG_CHECK_EQUAL(pc.utf8Str(), std::string("/usr/local/include"));
     SG_CHECK_EQUAL(pc.file(), std::string("include"));
 
@@ -410,32 +412,32 @@ int main(int argc, char* argv[])
     SGPath pd = pb;
     pd.concat("-1");
     SG_CHECK_EQUAL(pd.utf8Str(), std::string("/Foo/bar/something.png-1"));
-    
+
 // create with relative path
-    SGPath rb(d1, "include/foo");
+    SGPath rb(d1, "include/foo"s);
     SG_CHECK_EQUAL(rb.utf8Str(), std::string("/usr/local/include/foo"));
     SG_VERIFY(rb.isAbsolute());
-    
+
 // lower-casing of file extensions
-    SGPath extA("FOO.ZIP");
+    SGPath extA("FOO.ZIP"s);
     SG_CHECK_EQUAL(extA.base(), "FOO");
     SG_CHECK_EQUAL(extA.extension(), "ZIP");
     SG_CHECK_EQUAL(extA.lower_extension(), "zip");
     SG_CHECK_EQUAL(extA.complete_lower_extension(), "zip");
-    
-    SGPath extB("BAH/FOO.HTML.GZ");
+
+    SGPath extB("BAH/FOO.HTML.GZ"s);
     SG_CHECK_EQUAL(extB.extension(), "GZ");
     SG_CHECK_EQUAL(extB.base(), "BAH/FOO.HTML");
     SG_CHECK_EQUAL(extB.lower_extension(), "gz");
     SG_CHECK_EQUAL(extB.complete_lower_extension(), "html.gz");
 #ifdef _WIN32
-    SGPath winAbs("C:\\Windows\\System32");
+    SGPath winAbs("C:\\Windows\\System32"s);
     SG_CHECK_EQUAL(winAbs.local8BitStr(), std::string("C:/Windows/System32"));
 
 #endif
-  
+
 // paths with only the file components
-    SGPath pf("something.txt.gz");
+    SGPath pf("something.txt.gz"s);
     SG_CHECK_EQUAL(pf.base(), "something.txt");
     SG_CHECK_EQUAL(pf.file(), "something.txt.gz");
     SG_CHECK_EQUAL(pf.dir(), "");
@@ -460,4 +462,3 @@ int main(int argc, char* argv[])
     cout << "all tests passed OK" << endl;
     return 0; // passed
 }
-

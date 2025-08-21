@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: Copyright (C) 2020  James Turner - james@flightgear.org
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #pragma once
@@ -23,7 +24,7 @@ using ErrorReportCallback = std::function<void(const std::string& msg, const std
 void setErrorReportCallback(ErrorReportCallback cb);
 
 /** kinds of failures we can report. This is *how* (or why) something failed. Extend
-  as necessary but update the corrsponding string translations if you do. More detail isn't
+  as necessary but update the corresponding string translations if you do. More detail isn't
  necessarily useful here: better to provide that in the 'details' string
  */
 enum class LoadFailure {
@@ -90,7 +91,7 @@ private:
 /**
  * @brief Report failure to load a resource, so they can be collated for reporting
  * to the user.
- * 
+ *
  * @param type - the reason for the failure, if it can be determined
  * @param msg - an informational message about what caused the failure
  * @param path - path on disk to the resource. In some cases this may be a relative path;

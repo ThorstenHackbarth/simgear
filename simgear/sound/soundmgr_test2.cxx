@@ -39,7 +39,7 @@ int main( int argc, char *argv[] ) {
     smgr->set_volume(0.9);
     smgr->activate();
 
-    SGPath srcDir(SRC_DIR);
+    SGPath srcDir(std::string{SRC_DIR});
 
     // prevent NaNs
     smgr->set_position( SGVec3d(0, 0, 0), SGGeod::fromDegFt(0, 0, 0) );

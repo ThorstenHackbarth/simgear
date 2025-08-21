@@ -17,7 +17,7 @@
 
 namespace simgear
 {
-    
+
 namespace pkg
 {
 
@@ -28,7 +28,7 @@ class Install : public SGReferenced
 {
 public:
     virtual ~Install();
-  
+
     typedef std::function<void(Install*)> Callback;
     typedef std::function<void(Install*, unsigned int, unsigned int)> ProgressCallback;
 
@@ -36,44 +36,44 @@ public:
      * create from a directory on disk, or fail.
      */
     static InstallRef createFromPath(const SGPath& aPath, CatalogRef aCat);
-    
-    unsigned int revsion() const
+
+    unsigned int revision() const
         { return m_revision; }
-    
+
     PackageRef package() const
-        { return m_package; } 
-    
+        { return m_package; }
+
     SGPath path() const
         { return m_path; }
-    
+
     bool hasUpdate() const;
-    
+
     void startUpdate();
 
     bool uninstall();
 
     bool isDownloading() const;
-    
+
     bool isQueued() const;
-    
+
     int downloadedPercent() const;
-    
+
     size_t downloadedBytes() const;
-    
+
     Delegate::StatusCode status() const;
-    
+
     /**
      * full path to the primary -set.xml file for this install
      */
     SGPath primarySetPath() const;
-    
+
     /**
      * if a download is in progress, cancel it. If this is the first install
      * of the package (as opposed to an update), the install will be cleaned
      * up once the last reference is gone.
      */
     void cancelDownload();
-    
+
     /**
      * Set the handler to be called when the installation successfully
      * completes.
@@ -117,7 +117,7 @@ public:
     {
       return always(std::bind(mem_func, instance, std::placeholders::_1));
     }
-    
+
     /**
      * Set the handler to be called during downloading the installation file
      * indicating the progress of the download.
@@ -138,23 +138,23 @@ public:
 
 private:
     friend class Package;
-    
+
     class PackageArchiveDownloader;
     friend class PackageArchiveDownloader;
-    
+
     Install(PackageRef aPkg, const SGPath& aPath);
-    
+
     void parseRevision();
     void writeRevisionFile();
-    
+
     void installResult(Delegate::StatusCode aReason);
     void installProgress(unsigned int aBytes, unsigned int aTotal);
     void startDownload();
-    
+
     PackageRef m_package;
     unsigned int m_revision; ///< revision on disk
     SGPath m_path; ///< installation point on disk
-    
+
     HTTP::Request_ptr m_download;
 
     Delegate::StatusCode m_status;
@@ -164,8 +164,8 @@ private:
                                     _cb_always;
     function_list<ProgressCallback> _cb_progress;
 };
-    
-    
+
+
 } // of namespace pkg
 
 } // namespace simgear

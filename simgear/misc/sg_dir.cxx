@@ -2,8 +2,9 @@
 // SPDX-FileCopyrightText: 2010 James Turner
 // SPDX-FileCopyrightText: 2010 Curtis L. Olson
 
-#include <simgear_config.h>
+#include <filesystem>
 #include <simgear/compiler.h>
+#include <simgear_config.h>
 
 #include <simgear/misc/sg_dir.hxx>
 #include <simgear/structure/exception.hxx>
@@ -70,19 +71,7 @@ void Dir::setRemoveOnDestroy()
 
 Dir Dir::current()
 {
-#if defined(SG_WINDOWS)
-    wchar_t* buf = _wgetcwd(NULL, 0);
-#else
-    char *buf = ::getcwd(NULL, 0);
-#endif
-    if (!buf) {
-        if  (errno == 2) throw sg_exception("The current directory is invalid");
-        else throw sg_exception(simgear::strutils::error_string(errno));
-    }
-
-    SGPath p(buf);
-    free(buf);
-    return Dir(p);
+    return Dir(SGPath(std::filesystem::current_path()));
 }
 
 Dir Dir::tempDir(const std::string& templ)
@@ -93,7 +82,7 @@ Dir Dir::tempDir(const std::string& templ)
     if (!tempPath) {
         tempPath = "/tmp";
     }
-    SGPath p(tempPath);
+    SGPath p{std::string{tempPath}};
     p.append(templ);
     // Mac OS-X / BSD manual says any number of 'X's, but GLibc manual
     // says exactly six, so that's what I'm going with
@@ -106,16 +95,17 @@ Dir Dir::tempDir(const std::string& templ)
         return Dir();
     }
 
-    return Dir(SGPath(buf));
+    return Dir{SGPath{std::string{buf}}};
 #else
 #if defined(SG_WINDOWS)
 	std::wstring wideTemplate = simgear::strutils::convertUtf8ToWString(templ);
 	wchar_t* buf = _wtempnam(0, wideTemplate.c_str());
-	SGPath p(buf);
-	free(buf); // unlike tempnam(), _wtempnam mallocs its result buffer
+    SGPath p{std::wstring(buf)};
+    free(buf); // unlike tempnam(), _wtempnam mallocs its result buffer
 #else
-    SGPath p(tempnam(0, templ.c_str()));
+    SGPath p(std::string(tempnam(0, templ.c_str())));
 #endif
+
     Dir t(p);
     if (!t.create(0700)) {
         SG_LOG(SG_IO, SG_WARN, "failed to create temporary directory at " << p);
@@ -186,7 +176,7 @@ PathList Dir::children(int types, const std::string& nameFilter) const
         // regular file
 
         // skip .foo files even on Windows. We use this in terraSync and other places
-        // to tread .dirindex files as hidden
+        // to treat .dirindex files as hidden
         if (!(types & INCLUDE_HIDDEN) && (utf8File.front() == '.')) {
             continue;
         }
@@ -377,7 +367,7 @@ bool Dir::removeChildren() const
 bool Dir::remove(bool recursive)
 {
     if (!exists()) {
-        SG_LOG(SG_IO, SG_WARN, "attempt to remove non-existant dir:" << _path);
+        SG_LOG(SG_IO, SG_WARN, "attempt to remove non-existent dir:" << _path);
         return false;
     }
 

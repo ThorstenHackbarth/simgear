@@ -112,8 +112,8 @@ namespace canvas
   {
     TypeMap const& type_map = getTypeMap();
 
-    TypeMap::map_by<name>::const_iterator it = type_map.by<name>().find(str);
-    if( it == type_map.by<name>().end() )
+    auto it = type_map.find(str);
+    if( it == type_map.end() )
       return UNKNOWN;
     return it->second;
   }
@@ -121,12 +121,14 @@ namespace canvas
   //----------------------------------------------------------------------------
   std::string Event::typeToStr(int type)
   {
-    auto const& map_by_id = getTypeMap().by<id>();
+    TypeMap const& type_map = getTypeMap();
+    auto it = std::find_if(type_map.cbegin(), type_map.cend(), [type](const TypeMap::value_type& v) {
+      return v.second == type;
+    });
 
-    auto it = map_by_id.find(type);
-    if( it == map_by_id.end() )
+    if( it == type_map.end() )
       return "unknown";
-    return it->second;
+    return it->first;
   }
 
   //----------------------------------------------------------------------------

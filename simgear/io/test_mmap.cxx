@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: Copyright (C) 2021 Erik Hofman
 
 ////////////////////////////////////////////////////////////////////////
 // Test harness.
@@ -25,7 +26,7 @@ using namespace simgear;
 
 void testTarGz()
 {
-    SGPath p = SGPath(SRC_DIR);
+    SGPath p = SGPath(std::string{SRC_DIR});
     p.append("test.tar.gz");
 
     SGMMapFile f(p);
@@ -41,7 +42,7 @@ void testTarGz()
 
 void testPlainTar()
 {
-    SGPath p = SGPath(SRC_DIR);
+    SGPath p = SGPath(std::string{SRC_DIR});
     p.append("test2.tar");
 
     SGMMapFile f(p);
@@ -57,7 +58,7 @@ void testPlainTar()
 
 void testExtractStreamed()
 {
-	SGPath p = SGPath(SRC_DIR);
+	SGPath p = SGPath(std::string{SRC_DIR});
 	p.append("test.tar.gz");
 
 	SGMMapFile f(p);
@@ -90,28 +91,28 @@ void testExtractLocalFile()
 
 void testFilterTar()
 {
-    SGPath p = SGPath(SRC_DIR);
+    SGPath p = SGPath(std::string{SRC_DIR});
     p.append("badTar.tgz");
-    
+
     SGMMapFile f(p);
     f.open(SG_IO_IN);
-    
+
     SGPath extractDir = simgear::Dir::current().path() / "test_filter_tar";
     simgear::Dir pd(extractDir);
     pd.removeChildren();
-    
+
     ArchiveExtractor ex(extractDir);
-    
+
     while (!f.eof()) {
         const uint8_t* buf = (const uint8_t*)f.ptr();
         size_t bufSize = f.forward(128);
         ex.extractBytes(buf, bufSize);
     }
-    
+
     ex.flush();
     SG_VERIFY(ex.isAtEndOfArchive());
     SG_VERIFY(ex.hasError() == false);
-    
+
     SG_VERIFY((extractDir / "tarWithBadContent/regular-file.txt").exists());
     SG_VERIFY(!(extractDir / "tarWithBadContent/symbolic-linked.png").exists());
     SG_VERIFY((extractDir / "tarWithBadContent/screenshot.png").exists());
@@ -123,7 +124,7 @@ void testFilterTar()
 
 void testExtractZip()
 {
-	SGPath p = SGPath(SRC_DIR);
+	SGPath p = SGPath(std::string{SRC_DIR});
 	p.append("zippy.zip");
 
 	SGMMapFile f(p);
@@ -152,24 +153,24 @@ void testExtractZip()
 
 void testPAXAttributes()
 {
-    SGPath p = SGPath(SRC_DIR);
+    SGPath p = SGPath(std::string{SRC_DIR});
     p.append("pax-extended.tar");
-    
+
     SGMMapFile f(p);
     f.open(SG_IO_IN);
-    
+
     SGPath extractDir = simgear::Dir::current().path() / "test_pax_extended";
     simgear::Dir pd(extractDir);
     pd.removeChildren();
-    
+
     ArchiveExtractor ex(extractDir);
-    
+
     while (!f.eof()) {
         const uint8_t* buf = (const uint8_t*)f.ptr();
         size_t bufSize = f.forward(128);
         ex.extractBytes(buf, bufSize);
     }
-    
+
     ex.flush();
     SG_VERIFY(ex.isAtEndOfArchive());
     SG_VERIFY(ex.hasError() == false);
@@ -178,7 +179,7 @@ void testPAXAttributes()
 
 void testExtractXZ()
 {
-    SGPath p = SGPath(SRC_DIR);
+    SGPath p = SGPath(std::string{SRC_DIR});
     p.append("test.tar.xz");
 
     SGMMapFile f(p);
@@ -215,7 +216,7 @@ int main(int ac, char ** av)
 
     // disabled to avoiding checking in large PAX archive
     // testPAXAttributes();
-    
+
 	std::cout << "all tests passed" << std::endl;
     return 0;
 }

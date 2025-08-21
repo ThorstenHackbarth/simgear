@@ -190,7 +190,7 @@ int main( int argc, char *argv[] )
     source_vel[0] = 0.0; source_vel[1] = 0.0; source_vel[2] = 0.0;
 
     // Load the sample file
-      buffer = createBufferFromFile(SGPath(AUDIOFILE));
+      buffer = createBufferFromFile(SGPath(std::string{AUDIOFILE}));
       if (buffer == AL_NONE) {
         SG_LOG( SG_GENERAL, SG_ALERT, "Failed to buffer data.");
       }

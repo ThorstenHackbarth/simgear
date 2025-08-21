@@ -464,8 +464,10 @@ void test_escape()
                  " ab\\nc \\\\def\\t\\r \\\\ ghi\\\\");
   // U+0152 is LATIN CAPITAL LIGATURE OE. The last word is Egg translated in
   // French and encoded in UTF-8 ('Œuf' if you can read UTF-8).
-  SG_CHECK_EQUAL(strutils::escape(u8"Un \"Bel\" '\u0152uf'"),
-                 "Un \\\"Bel\\\" '\\305\\222uf'");
+
+  const auto utf8Data = u8"Un \"Bel\" '\u0152uf'";
+  const std::string testString(reinterpret_cast<const char*>(utf8Data));
+  SG_CHECK_EQUAL(strutils::escape(testString), "Un \\\"Bel\\\" '\\305\\222uf'");
   SG_CHECK_EQUAL(strutils::escape("\a\b\f\n\r\t\v"),
                  "\\a\\b\\f\\n\\r\\t\\v");
 

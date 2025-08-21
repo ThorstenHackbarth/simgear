@@ -6,12 +6,9 @@
  * @brief Canvas Event event model similar to DOM Level 3 Event Model
  */
 
-#ifndef CANVAS_EVENT_HXX_
-#define CANVAS_EVENT_HXX_
+#pragma once
 
 #include "canvas_fwd.hxx"
-#include <boost/bimap.hpp>
-
 namespace simgear
 {
 namespace canvas
@@ -118,12 +115,7 @@ namespace canvas
       static std::string typeToStr(int type);
 
     protected:
-      struct name {};
-      struct id {};
-      typedef boost::bimaps::bimap<
-        boost::bimaps::tagged<std::string, name>,
-        boost::bimaps::tagged<int, id>
-      > TypeMap;
+      using TypeMap = std::map<std::string, int>;
 
       static TypeMap& getTypeMap();
 
@@ -131,5 +123,3 @@ namespace canvas
 
 } // namespace canvas
 } // namespace simgear
-
-#endif /* CANVAS_EVENT_HXX_ */
