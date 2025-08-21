@@ -1,23 +1,6 @@
-/* -*-c++-*-
- *
- * Copyright (C) 2012 Stuart Buchanan
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
- *
- */
+// -*-c++-*-
+// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-FileCopyrightText: 2012 Stuart Buchanan
 
 #ifdef HAVE_CONFIG_H
 #  include <simgear_config.h>
@@ -552,8 +535,10 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       if (b == 1)  type = BuildingType::MEDIUM;
       if (b == 2)  type = BuildingType::LARGE;
 
-      // Rotation is in the file as degrees, but in the datastructure normalized
-      // to 0.0 - 1.0
+      // Rotation is in the file as degrees
+      // First we wrap the rotation value to be between 0 and 360, even if it's negative
+      r = SGMisc<float>::normalizePeriodic(0.0f, 360.f, r);
+      // In the datastructure, rotation needs to be normalized to 0.0 - 1.0
       float rot = (float) (r / 360.0f);
 
       if (w == 0.0f) {
