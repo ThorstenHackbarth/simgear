@@ -18,10 +18,11 @@
 #include <cstring>
 #include <stdio.h>
 
+#include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/debug/logstream.hxx>
-#include <simgear/structure/exception.hxx>
-#include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/ResourceManager.hxx>
+#include <simgear/misc/sg_path.hxx>
+#include <simgear/structure/exception.hxx>
 
 #include "soundmgr.hxx"
 #include "sample.hxx"
@@ -71,14 +72,23 @@ std::string SGSoundSampleInfo::random_string()
 SGSoundSample::SGSoundSample(const SGPath& file) :
     _is_file(true)
 {
+    if (!file.exists()) {
+        simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::AudioFX, "SGSoundSample: not found:", file);
+    }
+
     _refname = file.utf8Str();
 }
 
-// Delegating constructor that goes through the ResourceManager
-SGSoundSample::SGSoundSample(const string& file, const SGPath& dir) :
-    SGSoundSample(
-        simgear::ResourceManager::instance()->findPath(file, dir))
-{ }
+SGSoundSample::SGSoundSample(const string& file, const SGPath& dir) : _is_file(true)
+{
+    auto p = simgear::ResourceManager::instance()->findPath(file, dir);
+    if (p.isNull()) {
+        simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::AudioFX,
+                               "SGSoundSample: couldn't find '" + file + "' (relative to '" + dir.utf8Str() + "')", sg_location{file});
+    }
+
+    _refname = p.utf8Str();
+}
 
 // constructor
 SGSoundSample::SGSoundSample( std::unique_ptr<unsigned char, decltype(free)*> data,
