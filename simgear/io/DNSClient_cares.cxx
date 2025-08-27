@@ -67,6 +67,7 @@ public:
 
         if (status != ARES_SUCCESS) {
             SG_LOG(SG_IO, SG_ALERT, "DNS query failed: " << ares_strerror(status) );
+            r->setError(status);
         } else {
             // this is not a very oo´ish approach
             switch( r->getType() ) {
@@ -194,9 +195,7 @@ Request::Request( const std::string & dn ) :
 {
 }
 
-Request::~Request()
-{
-}
+Request::~Request() = default;
 
 void Request::cancel()
 {
@@ -206,6 +205,21 @@ void Request::cancel()
 bool Request::isTimeout() const
 {
     return (time(NULL) - _start) > _timeout_secs;
+}
+
+void Request::setError(int code)
+{
+    _errorCode = code;
+}
+
+bool Request::hasError() const
+{
+    return _errorCode != ARES_SUCCESS;
+}
+
+std::string Request::errorMessage() const
+{
+    return ares_strerror(_errorCode);
 }
 
 NAPTRRequest::NAPTRRequest( const std::string & dn ) :

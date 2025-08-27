@@ -2,25 +2,10 @@
 //
 // Started by Curtis Olson, November 2002.
 //
-// Copyright (C) 2002  Curtis L. Olson  - http://www.flightgear.org/~curt
-// Copyright (C) 2008  Alexander R. Perry <alex.perry@ieee.org>
-// Copyright (C) 2011  Thorsten Brehm <brehmt@gmail.com>
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2002 Curtis L. Olson
+// SPDX-FileCopyrightText: 2008 Alexander R. Perry <alex.perry@ieee.org>
+// SPDX-FileCopyrightText: 2011 Thorsten Brehm <brehmt@gmail.com>
 
 #include <simgear_config.h>
 #include <simgear/compiler.h>
@@ -70,6 +55,7 @@
 
 using namespace simgear;
 using std::string;
+using namespace std::string_literals;
 
 namespace UpdateInterval
 {
@@ -549,6 +535,11 @@ std::string SGTerraSync::WorkerThread::dnsSelectServerForService(const std::stri
     SG_LOG(SG_TERRASYNC,SG_DEBUG,"DNS NAPTR query for '" << _dnsdn << "' '" << naptrRequest->qservice << "'" );
     while (!r->isComplete() && !r->isTimeout()) {
         dnsClient.update(0);
+    }
+
+    if (naptrRequest->hasError()) {
+        SG_LOG(SG_TERRASYNC, SG_ALERT, "DNS query failure for DNSDN '"s << _dnsdn << "': " << naptrRequest->errorMessage());
+        return {};
     }
 
     if( naptrRequest->entries.empty() ) {
@@ -1183,7 +1174,7 @@ void SGTerraSync::reinit()
             if (ns == "google") {
                 ns = "8.8.8.8";
             }
-            
+
             SG_LOG(SG_TERRASYNC,SG_INFO,"DNS server override:" << ns);
             _workerThread->setDNSServer(ns);
         }
@@ -1230,7 +1221,7 @@ void SGTerraSync::bind()
 
     //_terraRoot->getNode("use-built-in-svn", true)->setAttribute(SGPropertyNode::USERARCHIVE,false);
     //_terraRoot->getNode("use-svn", true)->setAttribute(SGPropertyNode::USERARCHIVE,false);
-    _terraRoot->getNode("intialized", true)->setBoolValue(true);
+    _terraRoot->getNode("initialized", true)->setBoolValue(true);
 
     // stalled is used as a signal handler (to connect listeners triggering GUI pop-ups)
     _stalledNode = _terraRoot->getNode("stalled", true);

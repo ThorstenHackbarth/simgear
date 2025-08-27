@@ -43,6 +43,10 @@ public:
 
     virtual void submit( Client * client) = 0;
 
+    void setError(int code);
+    bool hasError() const;
+    std::string errorMessage() const;
+
     void cancel();
 
     std::string cname;
@@ -54,10 +58,11 @@ protected:
     UDNSQueryPtr _query = nullptr;
     std::string _dn;
     int _type;
-    bool _complete;
+    bool _complete = false;
     time_t _timeout_secs;
     time_t _start;
     bool _cancelled = false;
+    int _errorCode = 0; // zero corresponds to ARES_SUCCESS
 };
 typedef SGSharedPtr<Request> Request_ptr;
 
