@@ -73,9 +73,10 @@ public:
   HTTP::Request_ptr updateDir(HTTPDirectory *dir, const std::string &hash,
                               size_t sz);
 
-  void failedToGetRootIndex(HTTPRepository::ResultCode st);
-  void failedToUpdateChild(const SGPath &relativePath,
-                           HTTPRepository::ResultCode fileStatus);
+  void failedToGetRootIndex(HTTPRepository::ResultCode st, const std::string& details);
+  void failedToUpdateChild(const SGPath& relativePath,
+                           HTTPRepository::ResultCode fileStatus,
+                           const std::string& details);
 
   void updatedChildSuccessfully(const SGPath &relativePath);
 

@@ -37,11 +37,14 @@
 #include <simgear/timing/timestamp.hxx>
 
 #include <simgear/misc/sg_hash.hxx>
+#include <string>
 
 #include "HTTPRepository_private.hxx"
 
 namespace simgear
 {
+
+using namespace std::string_literals;
 
 namespace {
 
@@ -196,13 +199,13 @@ public:
         _repository->updatedChildSuccessfully(_relativePath);
     }
 
-    void failedToUpdate(HTTPRepository::ResultCode status)
+    void failedToUpdate(HTTPRepository::ResultCode status, const std::string& details)
     {
         if (_relativePath.empty()) {
             // root dir failed
-            _repository->failedToGetRootIndex(status);
+            _repository->failedToGetRootIndex(status, details);
         } else {
-            _repository->failedToUpdateChild(_relativePath, status);
+            _repository->failedToUpdateChild(_relativePath, status, details);
         }
     }
 
@@ -313,7 +316,7 @@ public:
                               LocalFileMatcher(c));
 
         const bool isNew = (p == fsChildren.end());
-        const bool upToDate = hashForChild(c) == c.hash;
+        const bool isCurrent = hashForChild(c) == c.hash;
 
         if (!isNew) {
           orphans.erase(std::remove(orphans.begin(), orphans.end(), *p),
@@ -329,7 +332,7 @@ public:
           const auto pathOnDisk = isNew ? absolutePath() / c.name : *p;
           // never handle deletes here, do them at the end
           const auto action =
-              isNew ? SAct::Add : (upToDate ? SAct::UpToDate : SAct::Update);
+              isNew ? SAct::Add : (isCurrent ? SAct::UpToDate : SAct::Update);
           const HTTPRepository::SyncItem item = {relativePath(), c.type, c.name,
                                                  action, pathOnDisk};
 
@@ -342,16 +345,16 @@ public:
         if (isNew) {
           // File or directory does not exist on local disk, so needs to be updated.
           toBeUpdated.push_back(c);
-        } else if (!upToDate) {
-          // File/directory exists, but hash doesn't match.
-          toBeUpdated.push_back(c);
+        } else if (!isCurrent) {
+            // File/directory exists, but hash doesn't match.
+            toBeUpdated.push_back(c);
         } else {
-          // File/Directory exists and hash is valid.
-          if (c.type == HTTPRepository::DirectoryType) {
-            // If it's a directory,perform a recursive check.
-            HTTPDirectory *childDir = childDirectory(c.name);
-            _repository->scheduleUpdateOfChildren(childDir);
-          }
+            // File/Directory exists and hash is valid.
+            if (c.type == HTTPRepository::DirectoryType) {
+                // If it's a directory,perform a recursive check.
+                HTTPDirectory* childDir = childDirectory(c.name);
+                _repository->scheduleUpdateOfChildren(childDir);
+            }
         }
       } // of repository-defined (well, .dirIndex) children iteration
 
@@ -389,7 +392,9 @@ public:
       try {
           removeOrphans(orphans);
       } catch (sg_exception& e) {
-          _repository->failedToUpdateChild(_relativePath, HTTPRepository::ResultCode::REPO_ERROR_IO);
+          _repository->failedToUpdateChild(_relativePath,
+                                           HTTPRepository::ResultCode::REPO_ERROR_IO,
+                                           "IO failure while removing orphans:"s + e.getFormattedMessage());
       }
 
       scheduleUpdates(toBeUpdated);
@@ -483,16 +488,16 @@ public:
               file.close();
 
               if (!extractor.isAtEndOfArchive()) {
-                  SG_LOG(SG_TERRASYNC, SG_ALERT, "Corrupt tarball " << relativePath);
                   repo->failedToUpdateChild(relativePath,
-                                            HTTPRepository::REPO_ERROR_IO);
+                                            HTTPRepository::REPO_ERROR_IO,
+                                            "ArchiveExtractTask: got EOF msimatch");
                   return HTTPRepoPrivate::ProcessFailed;
               }
 
               if (extractor.hasError()) {
-                  SG_LOG(SG_TERRASYNC, SG_ALERT, "Error extracting " << relativePath);
                   repo->failedToUpdateChild(relativePath,
-                                            HTTPRepository::REPO_ERROR_IO);
+                                            HTTPRepository::REPO_ERROR_IO,
+                                            "ArchiveExtractTask: extractor error");
                   return HTTPRepoPrivate::ProcessFailed;
               }
 
@@ -534,12 +539,12 @@ public:
             SG_LOG(SG_TERRASYNC, SG_WARN, "updated file but not found in dir:" << _relativePath << " " << file);
         } else {
             if (it->hash != hash) {
-                SG_LOG(SG_TERRASYNC, SG_WARN, "Checksum error for " << absolutePath() << "/" << file << " " << it->hash << " " << hash);
                 // we don't erase the file on a hash mismatch, because if we're syncing during the
                 // middle of a server-side update, the downloaded file may actually become valid.
                 _repository->failedToUpdateChild(
                     _relativePath + "/" + file,
-                    HTTPRepository::REPO_ERROR_CHECKSUM);
+                    HTTPRepository::REPO_ERROR_CHECKSUM,
+                    "Checksum error after updating file: "s + it->hash + " vs "s + hash);
             } else {
                 updatedFileContents(it->path, hash);
                 _repository->updatedChildSuccessfully(_relativePath + "/" +
@@ -567,7 +572,7 @@ public:
                         // we use a Task helper to extract tarballs incrementally.
                         // without this, archive extraction blocks here, which
                         // prevents other repositories downloading / updating.
-                        // Unfortunately due Windows AV (Defender, etc) we cna block
+                        // Unfortunately due Windows AV (Defender, etc) we can block
                         // here for many minutes.
 
                         // use a lambda to own this shared_ptr; this means when the
@@ -589,11 +594,12 @@ public:
     }
 
     void didFailToUpdateFile(const std::string& file,
-                             HTTPRepository::ResultCode status)
+                             HTTPRepository::ResultCode status,
+                             const std::string& details)
     {
         SGPath fpath(_relativePath);
         fpath.append(file);
-        _repository->failedToUpdateChild(fpath, status);
+        _repository->failedToUpdateChild(fpath, status, details);
     }
 
     std::string hashForPath(const SGPath& p) const
@@ -956,8 +962,7 @@ size_t HTTPRepository::bytesToDownload() const
     for (r = _d->activeRequests.begin(); r != _d->activeRequests.end(); ++r) {
         if ((*r)->contentSize() > 0) {
             // Content size for root dirindex of a repository is zero,
-            // and returing a negative value breaks everyting, so just ignore
-            // it
+            // and returning a negative value breaks everything, so just ignore it
             result += (*r)->contentSize() - (*r)->responseBytesReceived();
         }
     }
@@ -1010,7 +1015,7 @@ HTTPRepository::failure() const
 
     void HTTPRepoGetRequest::cancel()
     {
-        _directory->repository()->http->cancelRequest(this, "Repository cancelled");
+        _directory->repository()->http->cancelRequest(this, "Repository cancelled"s);
         _directory = 0;
     }
 
@@ -1033,7 +1038,7 @@ HTTPRepository::failure() const
                 if (!ok) {
                     ioFailureOccurred = true;
                     _directory->repository()->http->cancelRequest(
-                        this, "Unable to create output file:" + pathInRepo.utf8Str());
+                        this, "Unable to create output file:"s + pathInRepo.utf8Str());
                 }
             }
 
@@ -1079,19 +1084,13 @@ HTTPRepository::failure() const
                     strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
                 _directory->didUpdateFile(fileName, hash, contentSize());
             } else if (responseCode() == 404) {
-                SG_LOG(SG_TERRASYNC, SG_WARN,
-                       "terrasync file not found on server: "
-                           << fileName << " for " << _directory->absolutePath());
                 _directory->didFailToUpdateFile(
-                    fileName, HTTPRepository::REPO_ERROR_FILE_NOT_FOUND);
+                    fileName, HTTPRepository::REPO_ERROR_FILE_NOT_FOUND,
+                    "File not found on the server"s);
             } else {
-                SG_LOG(SG_TERRASYNC, SG_WARN,
-                       "terrasync file download error on server: "
-                           << fileName << " for " << _directory->absolutePath()
-                           << "\n\tserver responded: " << responseCode() << "/"
-                           << responseReason());
                 _directory->didFailToUpdateFile(fileName,
-                                                HTTPRepository::REPO_ERROR_HTTP);
+                                                HTTPRepository::REPO_ERROR_HTTP,
+                                                "HTTP request failed with code:"s + std::to_string(responseCode()) + "/"s + responseReason());
                 // should we every retry here?
             }
 
@@ -1122,12 +1121,12 @@ HTTPRepository::failure() const
         }
 
         if (_directory) {
-          _directory->didFailToUpdateFile(fileName, code);
+            _directory->didFailToUpdateFile(fileName, code, "HTTP client failed request for:"s + url());
 
-          const auto doRetry = code == HTTPRepository::REPO_ERROR_SOCKET
-                                   ? HTTPRepoPrivate::RequestFinish::Retry
-                                   : HTTPRepoPrivate::RequestFinish::Done;
-          _directory->repository()->finishedRequest(this, doRetry);
+            const auto doRetry = code == HTTPRepository::REPO_ERROR_SOCKET
+                                     ? HTTPRepoPrivate::RequestFinish::Retry
+                                     : HTTPRepoPrivate::RequestFinish::Done;
+            _directory->repository()->finishedRequest(this, doRetry);
         }
       }
 
@@ -1192,19 +1191,12 @@ HTTPRepository::failure() const
             std::string hash =
                 strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
             if (!_targetHash.empty() && (hash != _targetHash)) {
-              SG_LOG(SG_TERRASYNC, SG_ALERT,
-                     "Checksum error getting dirIndex for:"
-                         << _directory->relativePath() << "; expected "
-                         << _targetHash << " but received " << hash
-                         << " url()=" << url()
-                         );
+                _directory->failedToUpdate(HTTPRepository::REPO_ERROR_CHECKSUM, "checksum error, expected:"s + _targetHash + ", but got:"s + hash);
 
-              _directory->failedToUpdate(HTTPRepository::REPO_ERROR_CHECKSUM);
-
-              // don't retry checksums failures
-              _directory->repository()->finishedRequest(
-                  this, HTTPRepoPrivate::RequestFinish::Done);
-              return;
+                // don't retry checksums failures
+                _directory->repository()->finishedRequest(
+                    this, HTTPRepoPrivate::RequestFinish::Done);
+                return;
             }
 
             std::string curHash = _directory->hashForPath(path());
@@ -1231,7 +1223,6 @@ HTTPRepository::failure() const
               _directory->dirIndexUpdated(hash);
 
               SG_LOG(SG_TERRASYNC, SG_DEBUG, "from url()=" << url() << " have updated _directory: " << _directory);
-              //SG_LOG(SG_TERRASYNC, SG_INFO, "updated dir index " << _directory->absolutePath());
             }
 
             _directory->repository()->totalDownloaded += contentSize();
@@ -1246,14 +1237,14 @@ HTTPRepository::failure() const
                      "after update of:" << _directory->absolutePath()
                                         << " child update took:"
                                         << st.elapsedMSec());
-            } catch (sg_exception &) {
-              _directory->failedToUpdate(HTTPRepository::REPO_ERROR_IO);
+            } catch (sg_exception& e) {
+                _directory->failedToUpdate(HTTPRepository::REPO_ERROR_IO, "Exception updating children:" + e.getFormattedMessage());
             }
           } else if (responseCode() == 404) {
-            _directory->failedToUpdate(
-                HTTPRepository::REPO_ERROR_FILE_NOT_FOUND);
+              _directory->failedToUpdate(
+                  HTTPRepository::REPO_ERROR_FILE_NOT_FOUND, "Server returned 404/NOT FOUND");
           } else {
-            _directory->failedToUpdate(HTTPRepository::REPO_ERROR_HTTP);
+              _directory->failedToUpdate(HTTPRepository::REPO_ERROR_HTTP, "HTTP failed with:" + std::to_string(responseCode()) + "/"s + responseReason());
           }
 
           _directory->repository()->finishedRequest(
@@ -1268,14 +1259,12 @@ HTTPRepository::failure() const
             code = HTTPRepository::REPO_ERROR_CANCELLED;
           }
 
-          SG_LOG(SG_TERRASYNC, SG_WARN,
-                 "Socket failure getting directory: " << url());
           if (_directory) {
-            _directory->failedToUpdate(code);
-            const auto doRetry = code == HTTPRepository::REPO_ERROR_SOCKET
-                                     ? HTTPRepoPrivate::RequestFinish::Retry
-                                     : HTTPRepoPrivate::RequestFinish::Done;
-            _directory->repository()->finishedRequest(this, doRetry);
+              _directory->failedToUpdate(code, "HTTP layer failed request for:"s + url());
+              const auto doRetry = code == HTTPRepository::REPO_ERROR_SOCKET
+                                       ? HTTPRepoPrivate::RequestFinish::Retry
+                                       : HTTPRepoPrivate::RequestFinish::Done;
+              _directory->repository()->finishedRequest(this, doRetry);
           }
         }
 
@@ -1309,7 +1298,7 @@ HTTPRepository::failure() const
         }
 
         flushHashCaches();
-        directories.clear(); // wil delete them all
+        directories.clear(); // will delete them all
     }
 
     HTTP::Request_ptr HTTPRepoPrivate::updateFile(HTTPDirectory* dir, const std::string& name, size_t sz)
@@ -1404,34 +1393,29 @@ HTTPRepository::failure() const
       checkForComplete();
     }
 
-    void HTTPRepoPrivate::failedToGetRootIndex(HTTPRepository::ResultCode st)
+    void HTTPRepoPrivate::failedToGetRootIndex(HTTPRepository::ResultCode st, const std::string& details)
     {
         if (st == HTTPRepository::REPO_ERROR_FILE_NOT_FOUND) {
             status = HTTPRepository::REPO_ERROR_NOT_FOUND;
         } else {
             simgear::reportFailure(simgear::LoadFailure::NetworkError, simgear::ErrorCode::TerraSync,
-                                   "failed to get TerraSync repository root:" + innerResultCodeAsString(st),
+                                   "failed to get TerraSync repository root:" + innerResultCodeAsString(st) + "\n\t" + details,
                                    sg_location{baseUrl});
-            SG_LOG(SG_TERRASYNC, SG_WARN, "Failed to get root of repo:" << baseUrl << " " << st);
             status = st;
         }
     }
 
     void HTTPRepoPrivate::failedToUpdateChild(const SGPath& relativePath,
-                                              HTTPRepository::ResultCode fileStatus)
+                                              HTTPRepository::ResultCode fileStatus,
+                                              const std::string& details)
     {
       if (fileStatus == HTTPRepository::REPO_ERROR_CANCELLED) {
         // if we were cancelled, don't report or log
         return;
       } else {
-        SG_LOG(SG_TERRASYNC, SG_WARN,
-               "failed to update entry:" << relativePath << " status/code: "
-                                         << innerResultCodeAsString(fileStatus)
-                                         << "/" << fileStatus);
-
-        simgear::reportFailure(simgear::LoadFailure::NetworkError, simgear::ErrorCode::TerraSync,
-                               "failed to update entry:" + innerResultCodeAsString(fileStatus),
-                               sg_location{relativePath});
+          simgear::reportFailure(simgear::LoadFailure::NetworkError, simgear::ErrorCode::TerraSync,
+                                 "failed to update entry:" + innerResultCodeAsString(fileStatus) + "\n\t" + details,
+                                 sg_location{relativePath});
       }
 
       HTTPRepository::Failure f;
