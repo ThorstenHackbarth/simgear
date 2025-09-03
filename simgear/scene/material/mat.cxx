@@ -2,7 +2,7 @@
 //
 // Written by Curtis Olson, started May 1998.
 //
-// SPDX-FileCopyrightText: Copyright (C) 1998 - 2000  Curtis L. Olson
+// SPDX-FileCopyrightText: 1998 - 2000 Curtis L. Olson
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include <simgear_config.h>
@@ -280,19 +280,34 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     building_coverage = props->getDoubleValue("building-coverage", 0.0);
     building_spacing = props->getDoubleValue("building-spacing-m", 5.0);
 
-    std::string bt = props->getStringValue( "building-texture",
-                                            "Textures/buildings.png" );
+    SGPath bt(props->getStringValue("building-texture", "Textures/Buildings/global.png"));
     building_texture = SGModelLib::findDataFile(bt, options);
 
     if (building_texture.empty()) {
-        SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \"" << bt);
+        SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture " << bt);
     }
 
-    bt = props->getStringValue("building-lightmap", "Textures/buildings-lightmap.png");
-    building_lightmap = SGModelLib::findDataFile(bt, options);
+    const std::string bt_base = bt.base();
 
-    if (building_lightmap.empty()) {
-        SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \"" << bt);
+    bt = SGPath(props->getStringValue("building-normalmap", bt_base + "-normalmap.png"));
+    building_normalmap = SGModelLib::findDataFile(bt, options);
+
+    if (building_normalmap.empty()) {
+        SG_LOG(SG_GENERAL, SG_WARN, "Cannot find normal texture " << bt);
+    }
+
+    bt = SGPath(props->getStringValue("building-orm-texture", bt_base + "-orm.png"));
+    building_orm_texture = SGModelLib::findDataFile(bt, options);
+
+    if (building_orm_texture.empty()) {
+        SG_LOG(SG_GENERAL, SG_WARN, "Cannot find orm texture " << bt);
+    }
+
+    bt = SGPath(props->getStringValue("building-emissive-texture", bt_base + "-emissive.png"));
+    building_emissive_texture = SGModelLib::findDataFile(bt, options);
+
+    if (building_emissive_texture.empty()) {
+        SG_LOG(SG_GENERAL, SG_WARN, "Cannot find emissive texture " << bt);
     }
 
     building_small_ratio = props->getDoubleValue("building-small-ratio", 0.8);

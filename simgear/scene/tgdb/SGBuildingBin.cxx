@@ -565,7 +565,9 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
       }
 
       _textureName = mat->get_building_texture();
-      _lightMapName = mat->get_building_lightmap();
+      _normalMapName = mat->get_building_normalmap();
+      _ormTextureName = mat->get_building_orm_texture();
+      _emissiveTextureName = mat->get_building_emissive_texture();
       buildingRange = mat->get_building_range();
       SG_LOG(SG_TERRAIN, SG_DEBUG, "Building texture " << _textureName);
   }
@@ -831,8 +833,16 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
         // Main texture - n=0
         params->getChild("texture", 0, true)->getChild("image", 0, true)->setStringValue(_textureName);
 
-        // Light map - n=3
-        params->getChild("texture", 3, true)->getChild("image", 0, true)->setStringValue(_lightMapName);
+        // Normal map - n=1
+        setTextureParameters(params, 1, _normalMapName);
+
+        // ORM texture - n=2
+        if (setTextureParameters(params, 2, _ormTextureName)) {
+            params->getChild("metallic-factor", 0, true)->setDoubleValue(1.0);
+        }
+
+        // Emissive texture - n=3
+        setTextureParameters(params, 3, _emissiveTextureName);
 
         effect = makeEffect(effectProp, true, options);
         if (iter == buildingEffectMap.end())
@@ -877,6 +887,29 @@ typedef QuadTreeBuilder<LOD*, SGBuildingBin::BuildingInstance, MakeBuildingLeaf,
     }
 
     return group;
+  }
+
+  bool SGBuildingBin::setTextureParameters(SGPropertyNode* texParamsNode, int textureIndex, std::string textureName)
+  {
+    if (textureIndex < 0) {
+        // Invalid Index
+        return false;
+    }
+
+    if (textureName.empty()) {
+        return false;
+    }
+
+    SGPropertyNode* texNode = texParamsNode->getChild("texture", textureIndex, true);
+
+    texNode->getChild("type", 0, true)->setStringValue("2d");
+    texNode->getChild("image", 0, true)->setStringValue(textureName);
+    texNode->getChild("filter", 0, true)->setStringValue("linear-mipmap-linear");
+    texNode->getChild("wrap-s", 0, true)->setStringValue("repeat");
+    texNode->getChild("wrap-t", 0, true)->setStringValue("clamp-to-edge");
+    texNode->getChild("internal-format", 0, true)->setStringValue("normalized");
+
+    return true;
   }
 
   // We may end up with a quadtree with many empty leaves. One might say

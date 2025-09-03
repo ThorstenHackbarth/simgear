@@ -1,27 +1,8 @@
 // mat.hxx -- a material in the scene graph.
-// TODO: this class needs to be renamed.
 //
-// Written by Curtis Olson, started May 1998.
-// Overhauled by David Megginson, December 2001
-//
-// Copyright (C) 1998 - 2000  Curtis L. Olson  - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-
+// SPDX-FileCopyrightText: 1998 - 2000 Curtis L. Olson
+// SPDX-FileCopyrightText: 2001 David Megginson <david@megginson.com>
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
 #ifndef _SG_MAT_HXX
 #define _SG_MAT_HXX
@@ -194,7 +175,7 @@ public:
   inline double get_line_feature_tex_x0() const { return line_feature_tex_x0; };
   inline double get_line_feature_tex_x1() const { return line_feature_tex_x1; };
   inline double get_line_feature_offset_m() const { return line_feature_offset_m; };
-  
+
 
   /**
    * Get the building coverage.
@@ -224,13 +205,31 @@ public:
   const std::string& get_building_texture () const { return building_texture; }
 
   /**
-   * Get the building lightmap.
+   * Get the building normalmap.
    *
-   * This is the lightmap used for auto-generated buildings.
+   * This is the normalmap used for auto-generated buildings.
    *
-   * @return The lightmap for auto-generated buildings.
+   * @return The normalmap for auto-generated buildings.
    */
-  const std::string& get_building_lightmap () const { return building_lightmap; }
+  const std::string& get_building_normalmap () const { return building_normalmap; }
+
+  /**
+   * Get the building ORM texture.
+   *
+   * This is the orm_texture used for auto-generated buildings.
+   *
+   * @return The orm_texture for auto-generated buildings.
+   */
+  const std::string& get_building_orm_texture () const { return building_orm_texture; }
+
+  /**
+   * Get the building emissive texture.
+   *
+   * This is the emissive_texture used for auto-generated buildings.
+   *
+   * @return The emissive_texture for auto-generated buildings.
+   */
+  const std::string& get_building_emissive_texture () const { return building_emissive_texture; }
 
   // Ratio of the 3 random building sizes
   inline double get_building_small_fraction () const { return building_small_ratio / (building_small_ratio + building_medium_ratio + building_large_ratio); }
@@ -363,7 +362,7 @@ public:
   inline double    get_occlusion() const { return occlusion; }
 
   /**
-   * Get the noise amplitude for tesselation shader that generates an additional rough heightmap
+   * Get the noise amplitude for tessellation shader that generates an additional rough heightmap
    */
   inline osg::Vec4 get_height_amplitude() const { return toOsg(height_amplitude);}
   inline osg::Vec4 get_bumpmap_amplitude() const { return toOsg(bumpmap_amplitude);}
@@ -465,7 +464,7 @@ private:
 
   // coverage of night lighting.
   double light_coverage;
-  
+
   // Edge lighting
   double light_edge_spacing_m;
   double light_edge_size_cm;
@@ -473,7 +472,7 @@ private:
   double light_edge_intensity_cd;
   double light_edge_angle_horizontal_deg;
   double light_edge_angle_vertical_deg;
-  SGVec4f light_edge_colour; 
+  SGVec4f light_edge_colour;
   bool   light_edge_offset;
   bool   light_edge_left;
   bool   light_edge_right;
@@ -490,7 +489,9 @@ private:
 
   // building texture & lightmap
   std::string building_texture;
-  std::string building_lightmap;
+  std::string building_normalmap;
+  std::string building_orm_texture;
+  std::string building_emissive_texture;
 
   // Ratio of the 3 random building sizes
   double building_small_ratio;
@@ -563,7 +564,7 @@ private:
   double roughness;
   double occlusion;
 
-  // Noise amplitude for tessellation shader that generates an additional heigh peturbation
+  // Noise amplitude for tessellation shader that generates an additional height peturbation
   SGVec4d height_amplitude;
 
   // Noise amplitude for bumpmapping

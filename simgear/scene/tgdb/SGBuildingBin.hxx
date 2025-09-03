@@ -152,7 +152,9 @@ private:
 
     std::string _materialName;
     std::string _textureName;
-    std::string _lightMapName;
+    std::string _normalMapName;
+    std::string _ormTextureName;
+    std::string _emissiveTextureName;
 
     // Visibility range for buildings
     float buildingRange;
@@ -190,6 +192,7 @@ public:
   bool checkMinDist (SGVec3f p, float radius);
 
   const std::string& getMaterialName() const { return _materialName; }
+  bool setTextureParameters(SGPropertyNode* texParamsNode, int textureIndex, std::string textureName);
 
   BuildingType getBuildingType(float roll);
   float getBuildingMaxRadius(BuildingType);
