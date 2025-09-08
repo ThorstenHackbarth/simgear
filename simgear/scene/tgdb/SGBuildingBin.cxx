@@ -369,7 +369,7 @@ struct MakeBuildingLeaf
         c->push_back( osg::Vec4(0, 1, 1, 0) ); // color - used to differentiate wall from roof
 
         for (int i = 0; i < 6; ++i) {
-          n->push_back( osg::Vec3(0, 0, -1.0) );    // normal
+          n->push_back( osg::Vec3(0, 0, 1.0) );    // normal
         }
 
         assert(v->size() == 78);
