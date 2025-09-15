@@ -37,6 +37,7 @@ namespace canvas
   const std::string GEO = "-geo";
   const std::string HDG = "hdg";
   const std::string Map::TYPE_NAME = "map";
+  const std::string AZIMUTHAL_EQUIDISTANT = "azimuthalequidistant";
   const std::string WEB_MERCATOR = "webmercator";
   const std::string REF_LAT = "ref-lat";
   const std::string REF_LON = "ref-lon";
@@ -90,12 +91,12 @@ namespace canvas
         GeoCoord lat = parseGeoCoord(geo_node->getLat());
         if( lat.type != GeoCoord::LATITUDE )
           continue;
-        
+
         GeoCoord lon = parseGeoCoord(geo_node->getLon());
         if( lon.type != GeoCoord::LONGITUDE )
           continue;
-        
-        // save the parsed values so we can re-use them if only projection
+
+        // save the parsed values so we can reuse them if only projection
         // is changed (very common case for moving vehicle)
         latD = lat.value;
         lonD = lon.value;
@@ -103,7 +104,7 @@ namespace canvas
       } else {
         std::tie(latD, lonD) = geo_node->getCachedLatLon();
       }
-      
+
       Projection::ScreenPosition pos = _projection->worldToScreen(latD, lonD);
       geo_node->setScreenPos(pos.x, pos.y);
 
@@ -191,7 +192,9 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Map::projectionNodeChanged(SGPropertyNode* child)
   {
-    if(child && child->getStringValue() == WEB_MERCATOR)
+    if(child && child->getStringValue() == AZIMUTHAL_EQUIDISTANT)
+      _projection = std::make_shared<AzimuthalEquidistantProjection>();
+    else if(child && child->getStringValue() == WEB_MERCATOR)
       _projection = std::make_shared<WebMercatorProjection>();
     else
       _projection = std::make_shared<SansonFlamsteedProjection>();

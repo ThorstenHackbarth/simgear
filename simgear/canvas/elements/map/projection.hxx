@@ -141,6 +141,60 @@ namespace canvas
               _cos_angle,
               _sin_angle,
               _range;
+
+      /**
+       * Returns Earth radius at a given latitude (Ellipsoide equation with two
+       * equal axis)
+       */
+      float getEarthRadius(float lat) const
+      {
+        static constexpr float rec  = 6378137.f / 1852;      // earth radius, equator (?)
+        static constexpr float rpol = 6356752.314f / 1852;   // earth radius, polar   (?)
+
+        const double a = cos(lat) / rec;
+        const double b = sin(lat) / rpol;
+        return 1.0f / sqrt( a * a + b * b );
+      };
+  };
+
+  /**
+   * azimuthal equidistant projection, relative to the projection center.
+   */
+  class AzimuthalEquidistantProjection:
+    public HorizontalProjection
+  {
+    protected:
+
+      virtual ScreenPosition project(double lat, double lon) const
+      {
+        const double d_lon = lon - _ref_lon;
+        const double r = getEarthRadius(lat);
+        const double c = acos( sin(_ref_lat) * sin(lat) + cos(_ref_lat) * cos(lat) * cos(d_lon) );
+
+        if (c == 0.0){
+            return ScreenPosition(0, 0); // angular distance from center is 0
+        }
+
+        double x, y;
+        if (_ref_lat == (90 * SG_DEGREES_TO_RADIANS))
+        {
+          x = (SGD_PI / 2 - lat) * sin(d_lon);
+          y = -(SGD_PI / 2 - lat) * cos(d_lon);
+        }
+        else if (_ref_lat == -(90 * SG_DEGREES_TO_RADIANS))
+        {
+          x = (SGD_PI / 2 + lat) * sin(d_lon);
+          y = (SGD_PI / 2 + lat) * cos(d_lon);
+        }
+        else
+        {
+          const double k = c / sin(c);
+          x = k * cos(lat) * sin(d_lon);
+          y = k * ( cos(_ref_lat) * sin(lat) - sin(_ref_lat) * cos(lat) * cos(d_lon) );
+        }
+
+        return ScreenPosition(r * x, r * y);
+      }
   };
 
   /**
@@ -163,20 +217,6 @@ namespace canvas
         pos.y = r * d_lat;
 
         return pos;
-      }
-
-      /**
-       * Returns Earth radius at a given latitude (Ellipsoide equation with two
-       * equal axis)
-       */
-      float getEarthRadius(float lat) const
-      {
-        const float rec  = 6378137.f / 1852;      // earth radius, equator (?)
-        const float rpol = 6356752.314f / 1852;   // earth radius, polar   (?)
-
-        double a = cos(lat) / rec;
-        double b = sin(lat) / rpol;
-        return 1.0f / sqrt( a * a + b * b );
       }
   };
 
