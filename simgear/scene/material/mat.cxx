@@ -293,21 +293,24 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     building_normalmap = SGModelLib::findDataFile(bt, options);
 
     if (building_normalmap.empty()) {
-        SG_LOG(SG_GENERAL, SG_WARN, "Cannot find normal texture " << bt);
+        simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::LoadingTexture,
+                               "Missing building normal-map:" + bt.utf8Str(), sg_location{props});
     }
 
     bt = SGPath(props->getStringValue("building-orm-texture", bt_base + "-orm.png"));
     building_orm_texture = SGModelLib::findDataFile(bt, options);
 
     if (building_orm_texture.empty()) {
-        SG_LOG(SG_GENERAL, SG_WARN, "Cannot find orm texture " << bt);
+        simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::LoadingTexture,
+                               "Missing building ORM texture:" + bt.utf8Str(), sg_location{props});
     }
 
     bt = SGPath(props->getStringValue("building-emissive-texture", bt_base + "-emissive.png"));
     building_emissive_texture = SGModelLib::findDataFile(bt, options);
 
     if (building_emissive_texture.empty()) {
-        SG_LOG(SG_GENERAL, SG_WARN, "Cannot find emissive texture " << bt);
+        simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::LoadingTexture,
+                               "Missing building emmissive texture:" + bt.utf8Str(), sg_location{props});
     }
 
     building_small_ratio = props->getDoubleValue("building-small-ratio", 0.8);
