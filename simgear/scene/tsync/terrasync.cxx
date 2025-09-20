@@ -32,6 +32,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <random>
 
 #include <simgear/version.h>
 
@@ -549,35 +550,44 @@ std::string SGTerraSync::WorkerThread::dnsSelectServerForService(const std::stri
 
     // walk through responses, they are ordered by 1. order and 2. preference
     // For now, only take entries with lowest order
-    // TODO: try all available servers in the order given by preference and order
     int order = naptrRequest->entries[0]->order;
 
-    // get all servers with this order and the same (for now only lowest preference)
+    // get all servers with this order
     DNS::NAPTRRequest::NAPTR_list availableServers;
-    for (const auto& entry : naptrRequest->entries) {
-        if (entry->order != order)
-            continue;
+    std::copy_if(
+        naptrRequest->entries.begin(),
+        naptrRequest->entries.end(),
+        std::back_inserter(availableServers),
+        [order](const simgear::DNS::NAPTRRequest::NAPTR_ptr item) {
 
-        const string regex = entry->regexp;
-        if (false == simgear::strutils::starts_with(regex, "!^.*$!")) {
-            SG_LOG(SG_TERRASYNC, SG_WARN, "ignoring unsupported regexp: " << regex);
-            continue;
-        }
+            if( item->order != order ) return false;
 
-        if (false == simgear::strutils::ends_with(regex, "!")) {
-            SG_LOG(SG_TERRASYNC, SG_WARN, "ignoring unsupported regexp: " << regex);
-            continue;
-        }
+            const string regex = item->regexp;
+            if ( !( simgear::strutils::starts_with(regex, "!^.*$!") && simgear::strutils::ends_with(regex, "!")) ) {
+                SG_LOG(SG_TERRASYNC, SG_WARN, "ignoring unsupported regexp: " << regex);
+                return false;
+            }
 
-        // always use first entry
-        if (availableServers.empty() || entry->preference == availableServers[0]->preference) {
-            SG_LOG(SG_TERRASYNC, SG_DEBUG, "available server regexp: " << regex);
-            availableServers.push_back(entry);
+            SG_LOG(SG_TERRASYNC, SG_DEBUG, "considering server regexp: " << regex << " preference: " << item->preference);
+            return true;
         }
+    );
+
+    // Extract weights into a separate vector
+    std::vector<int> preferences;
+    for (auto& item : availableServers) {
+        preferences.push_back(item->preference);
     }
 
+    // Random engine
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    // Discrete distribution based on preference
+    std::discrete_distribution<> dist(preferences.begin(), preferences.end());
+
     // now pick a random entry from the available servers
-    auto idx = static_cast<int>(sg_random() * availableServers.size());
+    auto idx = dist(gen);
     const auto server = availableServers.at(idx)->regexp;
     std::string ret = server.substr(6, server.length() - 7);
     SG_LOG(SG_TERRASYNC, SG_INFO, "service=" << service << " returning entry # " << idx << ": " << ret);
