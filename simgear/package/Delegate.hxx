@@ -33,18 +33,19 @@ public:
     typedef enum {
         STATUS_SUCCESS = 0,
         FAIL_UNKNOWN = 1,
-        STATUS_IN_PROGRESS, ///< downloading/installation in progress
-        FAIL_CHECKSUM,      ///< package MD5 verificstion failed
-        FAIL_DOWNLOAD,      ///< network issue
-        FAIL_EXTRACT,       ///< package archive failed to extract cleanly
-        FAIL_FILESYSTEM,    ///< unknown filesystem error occurred
-        FAIL_VERSION,       ///< version check mismatch
-        FAIL_NOT_FOUND,     ///< package URL returned a 404
+        STATUS_IN_PROGRESS,  ///< downloading/installation in progress
+        FAIL_CHECKSUM,       ///< package MD5 verificstion failed
+        FAIL_DOWNLOAD,       ///< network issue
+        FAIL_EXTRACT,        ///< package archive failed to extract cleanly
+        FAIL_FILESYSTEM,     ///< unknown filesystem error occurred
+        FAIL_VERSION,        ///< version check mismatch
+        FAIL_NOT_FOUND,      ///< package URL returned a 404
         FAIL_HTTP_FORBIDDEN, ///< URL returned a 403. Marked specially to catch rate-limiting
-        FAIL_VALIDATION,    ///< catalog or package failed to validate
+        FAIL_VALIDATION,     ///< catalog or package failed to validate
         STATUS_REFRESHED,
         USER_CANCELLED,
-        USER_DISABLED
+        USER_DISABLED,
+        FAIL_OFFLINE ///< network is offline, no connection
     } StatusCode;
 
 
@@ -52,7 +53,7 @@ public:
 
 
     /**
-     * emitted when a catalog refesh completes, either success or failure
+     * emitted when a catalog refresh completes, either success or failure
      * If catalog is null, this means /all/ catalogs have been refreshed
      */
     virtual void catalogRefreshed(CatalogRef, StatusCode aReason) = 0;
@@ -67,7 +68,7 @@ public:
      * Notification when catalogs/packages are added or removed
      */
     virtual void availablePackagesChanged() {}
-    
+
     /**
      * More general purpose notification when install is queued / cancelled / started
      * stopped. Reason value is only in certain cases.
@@ -75,7 +76,7 @@ public:
     virtual void installStatusChanged(InstallRef aInstall, StatusCode aReason);
 
 	virtual void dataForThumbnail(const std::string& aThumbnailUrl,
-		size_t lenth, const uint8_t* bytes);
+		size_t length, const uint8_t* bytes);
 };
 
 } // of namespace pkg

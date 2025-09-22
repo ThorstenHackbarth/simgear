@@ -189,6 +189,10 @@ public:
             return;
         }
 
+        if (!isOnline) {
+            return; // defer untuil network is online
+        }
+
         std::string u = pendingThumbnails.front();
         pendingThumbnails.pop_front();
 
@@ -298,6 +302,15 @@ public:
       } // of lines iteration
     }
 
+    void flushPendingRequests()
+    {
+        for (auto req : httpPendingRequests) {
+            http->makeRequest(req);
+        }
+
+        httpPendingRequests.clear();
+    }
+
     DelegateVec delegates;
 
     SGPath path;
@@ -307,6 +320,7 @@ public:
     CatalogList disabledCatalogs;
     unsigned int maxAgeSeconds;
     std::string version;
+    bool isOnline = true;
 
     std::set<CatalogRef> refreshing;
     typedef std::deque<InstallRef> UpdateDeque;
@@ -365,19 +379,35 @@ unsigned int Root::maxAgeSeconds() const
     return d->maxAgeSeconds;
 }
 
+void Root::setOnlineMode(bool online)
+{
+    if (d->isOnline == online) {
+        return;
+    }
+
+    d->isOnline = online;
+    if (online) {
+        d->flushPendingRequests();
+    }
+}
+
+bool Root::isOnline() const
+{
+    return d->isOnline;
+}
+
 void Root::setHTTPClient(HTTP::Client* aHTTP)
 {
     d->http = aHTTP;
-    for (auto req : d->httpPendingRequests) {
-        d->http->makeRequest(req);
-    }
 
-    d->httpPendingRequests.clear();
+    if (d->isOnline) {
+        d->flushPendingRequests();
+    }
 }
 
 void Root::makeHTTPRequest(HTTP::Request *req)
 {
-    if (d->http) {
+    if (d->http && d->isOnline) {
         d->http->makeRequest(req);
         return;
     }
@@ -391,9 +421,9 @@ void Root::cancelHTTPRequest(HTTP::Request *req, const std::string &reason)
         d->http->cancelRequest(req, reason);
     }
 
-    std::deque<HTTP::Request_ptr>::iterator it = std::find(d->httpPendingRequests.begin(),
-                                                           d->httpPendingRequests.end(),
-                                                           req);
+    auto it = std::find(d->httpPendingRequests.begin(),
+                        d->httpPendingRequests.end(),
+                        req);
     if (it != d->httpPendingRequests.end()) {
         d->httpPendingRequests.erase(it);
     }
@@ -422,7 +452,7 @@ Root::Root(const SGPath& aPath, const std::string& aVersion) :
 
     for (SGPath c : dir.children(Dir::TYPE_DIR | Dir::NO_DOT_OR_DOTDOT)) {
         // note this will set the catalog status, which will insert into
-        // disabled catalogs automatically if necesary
+        // disabled catalogs automatically if necessary
         auto cat = Catalog::createFromPath(this, c);
         if (cat && cat->isEnabled()) {
             d->catalogs.insert({cat->id(), cat});
@@ -432,10 +462,7 @@ Root::Root(const SGPath& aPath, const std::string& aVersion) :
     } // of child directories iteration
 }
 
-Root::~Root()
-{
-
-}
+Root::~Root() = default;
 
 int Root::catalogVersion() const
 {
@@ -712,8 +739,8 @@ void Root::catalogRefreshStatus(CatalogRef aCat, Delegate::StatusCode aReason)
     d->fireRefreshStatus(aCat, aReason);
 
     if (aCat->isUserEnabled() &&
-        (aReason == Delegate::STATUS_REFRESHED) && 
-        (catIt == d->catalogs.end())) 
+        (aReason == Delegate::STATUS_REFRESHED) &&
+        (catIt == d->catalogs.end()))
     {
         assert(!aCat->id().empty());
         d->catalogs.insert(catIt, CatalogDict::value_type(aCat->id(), aCat));

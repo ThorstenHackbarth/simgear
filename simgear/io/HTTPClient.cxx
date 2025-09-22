@@ -25,11 +25,12 @@
 
 #include <simgear/io/sg_netChat.hxx>
 
-#include <simgear/misc/strutils.hxx>
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
-#include <simgear/timing/timestamp.hxx>
+#include <simgear/misc/strutils.hxx>
 #include <simgear/structure/exception.hxx>
+#include <simgear/timing/timestamp.hxx>
+#include <string>
 
 #include "HTTPClient_private.hxx"
 #include "HTTPTestApi_private.hxx"
@@ -41,6 +42,8 @@
 #    define SIMGEAR_VERSION "simgear-development"
 #  endif
 #endif
+
+using namespace std::string_literals;
 
 namespace simgear
 {
@@ -210,16 +213,17 @@ void Client::update(int waitTimeout)
 
           if (responseCode == 200) {
             req->finalResult(0, "");
-          }
-          else {
-            if (responseCode == 0) {
-                SG_LOG(SG_IO, SG_ALERT, "Unexpected responseCode=" << responseCode
-                        << " rawReq->url()=" << rawReq->url()
-                        << " msg->data.result=" << msg->data.result
-                        );
-            }
-            // Need to pass non-zero response to req->finalResult().
-            req->finalResult(responseCode ? responseCode : 2, "response code is not 200");
+          } else {
+              std::string reason;
+              if (responseCode == 0) {
+                  reason = "CURL error: "s + curl_easy_strerror(msg->data.result) + " (" + std::to_string(msg->data.result) + ") retrieving URL:" + rawReq->url();
+                  responseCode = 2;
+              } else {
+                  reason = "HTTP response is not 200: received" + std::to_string(responseCode);
+              }
+
+              // Need to pass non-zero response to req->finalResult().
+              req->finalResult(responseCode, reason);
           }
 
         curl_multi_remove_handle(d->curlMulti, e);

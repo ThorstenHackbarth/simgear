@@ -18,12 +18,12 @@ class SGPropertyNode;
 
 namespace simgear
 {
-    
+
 namespace HTTP {
     class Client;
     class Request;
 }
-    
+
 namespace pkg
 {
 
@@ -32,28 +32,36 @@ class Root : public SGReferenced
 public:
     Root(const SGPath& aPath, const std::string& aVersion);
     virtual ~Root();
-    
+
     SGPath path() const;
-    
+
     void setLocale(const std::string& aLocale);
-        
+
     void addDelegate(Delegate* aDelegate);
-    
+
     void removeDelegate(Delegate* aDelegate);
-    
+
     std::string getLocale() const;
-    
+
     CatalogList catalogs() const;
-    
+
     /**
-     * retrive all catalogs, including currently disabled ones
+     * retrieve all catalogs, including currently disabled ones
      */
     CatalogList allCatalogs() const;
-    
-    
+
+
     void setMaxAgeSeconds(unsigned int seconds);
     unsigned int maxAgeSeconds() const;
-    
+
+    /**
+     * @brief Set if the network is online / reachable or not. In offline mode,
+     * updates checks and installation are disabled.
+     */
+    void setOnlineMode(bool online);
+
+    bool isOnline() const;
+
     void setHTTPClient(HTTP::Client* aHTTP);
 
     /**
@@ -67,9 +75,9 @@ public:
      * Cancel an HTTP request.
      */
     void cancelHTTPRequest(HTTP::Request* req, const std::string& reason);
-    
+
     /**
-     * The catalog XML/property version in use. This is used to make incomaptible
+     * The catalog XML/property version in use. This is used to make incompatible
      * changes to the package/catalog syntax
      */
     int catalogVersion() const;
@@ -96,39 +104,39 @@ public:
      * filter consists of required / minimum values, AND-ed together.
      */
     PackageList packagesMatching(const SGPropertyNode* aFilter) const;
-    
+
     /**
      * retrieve all the packages which are installed
      * and have a pending update
-     */ 
+     */
     PackageList packagesNeedingUpdate() const;
-     
+
     PackageRef getPackageById(const std::string& aId) const;
-    
+
     CatalogRef getCatalogById(const std::string& aId) const;
-    
+
     CatalogRef getCatalogByUrl(const std::string& aUrl) const;
-    
+
     void scheduleToUpdate(InstallRef aInstall);
-    
+
     /**
      * remove a catalog. Will uninstall all packages originating
      * from the catalog too.
      */
     bool removeCatalogById(const std::string& aId);
-    
+
     /**
      * remove a catalog by reference (used when abandoning installs, since
      * there may not be a valid catalog Id)
      */
     bool removeCatalog(CatalogRef cat);
 
-    
+
     /**
      * request thumbnail data from the cache / network
      */
     void requestThumbnailData(const std::string& aUrl);
-    
+
     bool isInstallQueued(InstallRef aInstall) const;
 
     /**
@@ -150,42 +158,42 @@ public:
      * If the path starts with a type-based prefix (eg 'Aircraft' or 'AI/Aircraft'), the
      * corresponding package type will be considered. The next item must correspond to
      * the package directory name.
-     * 
+     *
      * If the path contains components more specific than this, they will be checked
-     * against matching packkages 'provides' list. If the path does not contain such
+     * against matching packages 'provides' list. If the path does not contain such
      * components, a match of the type+directory name will be considered sufficient.
-     * 
-     * @param path 
-     * @return PackageList 
+     *
+     * @param path
+     * @return PackageList
      */
     PackageList packagesProviding(const std::string& path, bool onlyInstalled) const;
 
 private:
     friend class Install;
-    friend class Catalog;    
+    friend class Catalog;
     friend class Package;
-    
+
     InstallRef existingInstallForPackage(PackageRef p) const;
-    
+
     void catalogRefreshStatus(CatalogRef aCat, Delegate::StatusCode aReason);
-        
+
     void startNext(InstallRef aCurrent);
-    
+
     void startInstall(InstallRef aInstall);
     void installProgress(InstallRef aInstall, unsigned int aBytes, unsigned int aTotal);
     void finishInstall(InstallRef aInstall, Delegate::StatusCode aReason);
     void cancelDownload(InstallRef aInstall);
-    
+
     void registerInstall(InstallRef ins);
     void unregisterInstall(InstallRef ins);
-    
+
     class ThumbnailDownloader;
     class RootPrivate;
     std::unique_ptr<RootPrivate> d;
 };
-  
+
 typedef SGSharedPtr<Root> RootRef;
-  
+
 } // of namespace pkg
 
 } // namespace simgear

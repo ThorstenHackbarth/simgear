@@ -2,8 +2,9 @@
 // SPDX-FileCopyrightText: Copyright (C) 2013  James Turner - james@flightgear.org
 
 
-#include <simgear_config.h>
+#include "simgear/debug/debug_types.h"
 #include <simgear/package/Catalog.hxx>
+#include <simgear_config.h>
 
 #include <algorithm>
 #include <cassert>
@@ -146,6 +147,13 @@ protected:
 
     void onFail() override
     {
+        const auto root = m_owner->root();
+        if (!root->isOnline()) {
+            // if we get a network failure, but we're offline, stay quiet
+            m_owner->refreshComplete(Delegate::FAIL_OFFLINE);
+            return;
+        }
+
         // network level failure
         SG_LOG(SG_GENERAL, SG_WARN, "catalog network failure for:" << m_owner->url());
         m_owner->refreshComplete(Delegate::FAIL_DOWNLOAD);
@@ -339,6 +347,11 @@ void Catalog::refresh()
 {
     if (m_refreshRequest.valid()) {
         // refresh in progress
+        return;
+    }
+
+    if (!m_root->isOnline()) {
+        SG_LOG(SG_NETWORK, SG_INFO, "Catalog refresh skipped in offline mode.");
         return;
     }
 

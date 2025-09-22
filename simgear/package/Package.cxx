@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: Copyright (C) 2013  James Turner - james@flightgear.org
 
 
+#include "simgear/debug/debug_types.h"
 #include <simgear_config.h>
 
 #include <simgear/package/Package.hxx>
@@ -248,37 +249,44 @@ InstallRef Package::install()
 
   // start a new install
     ins = new Install(this, pathOnDisk());
-    m_catalog->root()->scheduleToUpdate(ins);
+
+
+    if (m_catalog->root()->isOnline()) {
+        m_catalog->root()->scheduleToUpdate(ins);
+    } else {
+        SG_LOG(SG_NETWORK, SG_WARN, "Package::install: skipping since we are offline.");
+    }
 
     _install_cb(this, ins);
 
     return ins;
 }
 
-InstallRef Package::markForInstall() {
-  InstallRef ins = existingInstall();
-  if (ins) {
+InstallRef Package::markForInstall()
+{
+    InstallRef ins = existingInstall();
+    if (ins) {
+        return ins;
+    }
+
+    const auto pd = pathOnDisk();
+
+    Dir dir(pd);
+    if (!dir.create(0700)) {
+        SG_LOG(SG_IO, SG_ALERT,
+               "Package::markForInstall: couldn't create directory at:" << pd);
+        return {};
+    }
+
+    ins = new Install{this, pd};
+    _install_cb(this, ins); // not sure if we should trigger the callback for this
+
+    // repeat for dependencies to be kind
+    for (auto dep : dependencies()) {
+        dep->markForInstall();
+    }
+
     return ins;
-  }
-
-  const auto pd = pathOnDisk();
-
-  Dir dir(pd);
-  if (!dir.create(0700)) {
-    SG_LOG(SG_IO, SG_ALERT,
-           "Package::markForInstall: couldn't create directory at:" << pd);
-    return {};
-  }
-
-  ins = new Install{this, pd};
-  _install_cb(this, ins); // not sure if we should trigger the callback for this
-
-  // repeat for dependencies to be kind
-  for (auto dep : dependencies()) {
-    dep->markForInstall();
-  }
-
-  return ins;
 }
 
 InstallRef Package::existingInstall(const InstallCallback& cb) const
@@ -496,7 +504,7 @@ unsigned int Package::indexOfVariant(const std::string& vid) const
 
     string_list::const_iterator it = std::find(m_variants.begin(), m_variants.end(), actualId);
     if (it == m_variants.end()) {
-        throw sg_exception("Unknow variant " + vid + " in package " + id());
+        throw sg_exception("Unknown variant " + vid + " in package " + id());
     }
 
     return std::distance(m_variants.begin(), it);

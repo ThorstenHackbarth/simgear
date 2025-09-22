@@ -40,7 +40,7 @@ public:
         }
 
         selectMirrorUrl();
-        
+
         m_extractPath = aOwner->path().dir();
         m_extractPath.append("_extract_" + aOwner->package()->md5());
 
@@ -82,7 +82,7 @@ protected:
         m_activeURL = m_urls.at(randomizedIndex);
         m_urls.erase(m_urls.begin() + randomizedIndex);
     }
-    
+
     virtual std::string url() const override
     {
         return m_activeURL;
@@ -100,7 +100,7 @@ protected:
 		m_extractor.reset(new ArchiveExtractor(m_extractPath));
         memset(&m_md5, 0, sizeof(SG_MD5_CTX));
         SG_MD5Init(&m_md5);
-        
+
         m_owner->startDownload();
     }
 
@@ -111,7 +111,7 @@ protected:
         if (m_extractor->hasError()) {
             return;
         }
-        
+
 		const uint8_t* ubytes = (uint8_t*) s;
         SG_MD5Update(&m_md5, ubytes, n);
         m_downloaded += n;
@@ -199,8 +199,11 @@ protected:
 
     void onFail() override
     {
+        const auto root = m_owner->package()->catalog()->root();
         if (responseCode() == -1) {
             doFailure(Delegate::USER_CANCELLED);
+        } else if (!root->isOnline()) {
+            doFailure(Delegate::FAIL_OFFLINE);
         } else {
             doFailure(Delegate::FAIL_DOWNLOAD);
         }
@@ -213,10 +216,10 @@ private:
         if (dir.exists()) {
             dir.remove(true /* recursive */);
         }
-        
+
         const auto canRetry = (aReason == Delegate::FAIL_NOT_FOUND) ||
             (aReason == Delegate::FAIL_DOWNLOAD) || (aReason == Delegate::FAIL_CHECKSUM);
-        
+
         if (canRetry && !m_urls.empty()) {
             SG_LOG(SG_GENERAL, SG_WARN, "archive download failed from:" << m_activeURL
                    << "\n\twill retry with next mirror");
@@ -232,7 +235,7 @@ private:
         m_owner->installResult(aReason);
     }
 
-    
+
     InstallRef m_owner;
     std::string m_activeURL;
     string_list m_urls;
