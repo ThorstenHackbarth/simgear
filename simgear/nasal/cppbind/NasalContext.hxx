@@ -31,8 +31,8 @@ namespace nasal
       String newString(const char* str);
 
       /** Raise a nasal runtime error */
-      template<class... Args>
-      void runtimeError(const char* fmt, Args ... args) const
+      template <class... Args>
+      [[noreturn]] void runtimeError(const char* fmt, Args... args) const
       {
         naRuntimeError(c_ctx(), fmt, args...);
       }

@@ -6,6 +6,13 @@
 ///
 #ifndef _NASAL_H
 #define _NASAL_H
+
+#ifdef __cplusplus
+    #define NASAL_NORETURN [[noreturn]]
+#else
+    #define NASAL_NORETURN
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -82,7 +89,7 @@ void naTempSave(naContext c, naRef r);
 // is a Nasal string representing the "file" from which the code is
 // read.  The "first line" is typically 1, but is settable for
 // situations where the Nasal code is embedded in another context with
-// its own numbering convetions.  If an error occurs, returns nil and
+// its own numbering conventions.  If an error occurs, returns nil and
 // sets the errLine pointer to point to the line at fault.  The string
 // representation of the error can be retrieved with naGetError() on
 // the context.
@@ -128,7 +135,7 @@ naRef naCallMethodCtx( naContext ctx,
                        naRef* args,
                        naRef locals );
 
-// Same as naCallMethodCtx but creates (and afterwards destroyes) a new context
+// Same as naCallMethodCtx but creates (and afterwards destroys) a new context
 naRef naCallMethod(naRef code, naRef self, int argc, naRef* args, naRef locals);
 
 typedef void (*naErrorHandler)(naContext);
@@ -143,11 +150,11 @@ naErrorHandler naSetErrorHandler(naErrorHandler cb);
 // error via the return value, and MUST be used carefully.  If in
 // doubt, return naNil() as your error condition.  Works like
 // printf().
-void naRuntimeError(naContext c, const char* fmt, ...);
+NASAL_NORETURN void naRuntimeError(naContext c, const char* fmt, ...);
 
 // "Re-throws" a runtime error caught from the subcontext.  Acts as a
 // naRuntimeError() called on the parent context.  Does not return.
-void naRethrowError(naContext subc);
+NASAL_NORETURN void naRethrowError(naContext subc);
 
 // Retrieve the specified member from the object, respecting the
 // "parents" array as for "object.field".  Returns zero for missing
