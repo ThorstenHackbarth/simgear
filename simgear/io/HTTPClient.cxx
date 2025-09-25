@@ -512,6 +512,10 @@ size_t Client::requestReadCallback(char *ptr, size_t size, size_t nmemb, void *u
 
 bool isRedirectStatus(int code)
 {
+    if (code == 304) {
+        return false;
+    }
+
     return ((code >= 300) && (code < 400));
 }
 
@@ -536,11 +540,13 @@ size_t Client::requestHeaderCallback(char *rawBuffer, size_t size, size_t nitems
   }
 
   if (h.empty()) {
+      // end of headers
       // got a 100-continue response; restart
       if (req->responseCode() == 100) {
           req->setReadyState(HTTP::Request::OPENED);
           return byteSize;
       }
+
 
     req->responseHeadersComplete();
     return byteSize;

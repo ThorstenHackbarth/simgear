@@ -22,6 +22,7 @@
 
 #include <fcntl.h>
 
+#include "simgear/debug/debug_types.h"
 #include "simgear/debug/logstream.hxx"
 #include "simgear/misc/strutils.hxx"
 
@@ -149,6 +150,7 @@ class HTTPDirectory
 
     mutable HashCache hashes;
     mutable bool hashCacheDirty = false;
+    std::string _lastModified;
 
 public:
     HTTPDirectory(HTTPRepoPrivate* repo, const std::string& path) :
@@ -177,6 +179,11 @@ public:
         return _repository;
     }
 
+    std::string lastModified() const
+    {
+        return _lastModified;
+    }
+
     std::string url() const
     {
       if (_relativePath.empty()) { // root directory of the repo
@@ -186,8 +193,13 @@ public:
         return _repository->baseUrl + "/" + _relativePath;
     }
 
-    void dirIndexUpdated(const std::string& hash)
+    void dirIndexUpdated(const std::string& hash, const std::string& lastMod)
     {
+        if (lastMod != _lastModified) {
+            _lastModified = lastMod;
+            hashCacheDirty = true;
+        }
+
         SGPath fpath(absolutePath());
         fpath.append(".dirindex");
         updatedFileContents(fpath, hash);
@@ -640,6 +652,11 @@ public:
 
         SGPath cachePath = absolutePath() / ".dirhash";
         sg_ofstream stream(cachePath, std::ios::out | std::ios::trunc | std::ios::binary);
+
+        if (!_lastModified.empty()) {
+            stream << "#last-modified:" << _lastModified << "\n";
+        }
+
         for (const auto& e : hashes) {
             const auto& entry = e.second;
             stream << entry.filePath << "*" << entry.modTime << "*"
@@ -793,6 +810,7 @@ private:
     void parseHashCache()
     {
         hashes.clear();
+        _lastModified.clear();
         SGPath cachePath = absolutePath() / ".dirhash";
         if (!cachePath.exists()) {
             return;
@@ -804,6 +822,13 @@ private:
             std::string line;
             std::getline(stream, line);
             line = simgear::strutils::strip(line);
+
+            // store Last-modified in a comment for backwards compat
+            if (simgear::strutils::starts_with(line, "#last-modified:")) {
+                _lastModified = line.substr(15);
+                continue;
+            }
+
             if (line.empty() || line[0] == '#')
                 continue;
 
@@ -1160,6 +1185,9 @@ HTTPRepository::failure() const
             _targetHash(targetHash)
         {
             sha1_init(&hashContext);
+            if (!d->lastModified().empty()) {
+                setIfModifiedSince(d->lastModified());
+            }
         }
 
         void setIsRootDir()
@@ -1185,67 +1213,79 @@ HTTPRepository::failure() const
         }
 
         void onDone() override {
-          SG_LOG(SG_TERRASYNC, SG_DEBUG, "onDone(): url()=" << url() << " _directory=" << _directory
-                << " responseCode()=" << responseCode());
-          if (responseCode() == 200) {
-            std::string hash =
-                strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
-            if (!_targetHash.empty() && (hash != _targetHash)) {
-                _directory->failedToUpdate(HTTPRepository::REPO_ERROR_CHECKSUM, "checksum error, expected:"s + _targetHash + ", but got:"s + hash);
+            SG_LOG(SG_TERRASYNC, SG_DEBUG, "onDone(): url()=" << url() << " _directory=" << _directory << " responseCode()=" << responseCode());
+            if (responseCode() == 200) {
+                std::string hash =
+                    strutils::encodeHex(sha1_result(&hashContext), HASH_LENGTH);
+                if (!_targetHash.empty() && (hash != _targetHash)) {
+                    _directory->failedToUpdate(HTTPRepository::REPO_ERROR_CHECKSUM, "checksum error, expected:"s + _targetHash + ", but got:"s + hash);
 
-                // don't retry checksums failures
-                _directory->repository()->finishedRequest(
-                    this, HTTPRepoPrivate::RequestFinish::Done);
-                return;
-            }
-
-            std::string curHash = _directory->hashForPath(path());
-            if (hash != curHash) {
-              simgear::Dir d(_directory->absolutePath());
-              if (!d.exists()) {
-                if (!d.create(0700)) {
-                  throw sg_io_exception("Unable to create directory", d.path());
+                    // don't retry checksums failures
+                    _directory->repository()->finishedRequest(
+                        this, HTTPRepoPrivate::RequestFinish::Done);
+                    return;
                 }
-              }
 
-              // dir index data has changed, so write to disk and update
-              // the hash accordingly
-              sg_ofstream of(pathInRepo(), std::ios::trunc | std::ios::out |
-                                               std::ios::binary);
-              if (!of.is_open()) {
-                throw sg_io_exception(
-                    "Failed to open directory index file for writing",
-                    pathInRepo());
-              }
+                std::string curHash = _directory->hashForPath(path());
+                if (hash != curHash) {
+                    simgear::Dir d(_directory->absolutePath());
+                    if (!d.exists()) {
+                        if (!d.create(0700)) {
+                            throw sg_io_exception("Unable to create directory", d.path());
+                        }
+                    }
 
-              of.write(body.data(), body.size());
-              of.close();
-              _directory->dirIndexUpdated(hash);
+                    // dir index data has changed, so write to disk and update
+                    // the hash accordingly
+                    sg_ofstream of(pathInRepo(), std::ios::trunc | std::ios::out |
+                                                     std::ios::binary);
+                    if (!of.is_open()) {
+                        throw sg_io_exception(
+                            "Failed to open directory index file for writing",
+                            pathInRepo());
+                    }
 
-              SG_LOG(SG_TERRASYNC, SG_DEBUG, "from url()=" << url() << " have updated _directory: " << _directory);
+                    of.write(body.data(), body.size());
+                    of.close();
+                    _directory->dirIndexUpdated(hash, lastModified());
+
+                    SG_LOG(SG_TERRASYNC, SG_DEBUG, "from url()=" << url() << " have updated _directory: " << _directory);
+                }
+
+                _directory->repository()->totalDownloaded += contentSize();
+
+                try {
+                    // either way we've confirmed the index is valid so update children now
+                    SGTimeStamp st;
+                    st.stamp();
+                    _directory->updateChildrenBasedOnHash();
+                    SG_LOG(SG_TERRASYNC, SG_DEBUG,
+                           "after update of:" << _directory->absolutePath()
+                                              << " child update took:"
+                                              << st.elapsedMSec());
+                } catch (sg_exception& e) {
+                    _directory->failedToUpdate(HTTPRepository::REPO_ERROR_IO, "Exception updating children:" + e.getFormattedMessage());
+                }
+            } else if (responseCode() == 404) {
+                _directory->failedToUpdate(
+                    HTTPRepository::REPO_ERROR_FILE_NOT_FOUND, "Server returned 404/NOT FOUND");
+            } else if (responseCode() == 304) {
+                SG_LOG(SG_TERRASYNC, SG_DEBUG, "Server said :" << url() << " has not been modified.");
+                try {
+                    // the dirindex is up to date, let's check the children
+                    SGTimeStamp st;
+                    st.stamp();
+                    _directory->updateChildrenBasedOnHash();
+                    SG_LOG(SG_TERRASYNC, SG_DEBUG,
+                           "after non-update of:" << _directory->absolutePath()
+                                                  << " child update took:"
+                                                  << st.elapsedMSec());
+                } catch (sg_exception& e) {
+                    _directory->failedToUpdate(HTTPRepository::REPO_ERROR_IO, "Exception updating children:" + e.getFormattedMessage());
+                }
+            } else {
+                _directory->failedToUpdate(HTTPRepository::REPO_ERROR_HTTP, "HTTP failed with:" + std::to_string(responseCode()) + "/"s + responseReason());
             }
-
-            _directory->repository()->totalDownloaded += contentSize();
-
-            try {
-              // either way we've confirmed the index is valid so update
-              // children now
-              SGTimeStamp st;
-              st.stamp();
-              _directory->updateChildrenBasedOnHash();
-              SG_LOG(SG_TERRASYNC, SG_DEBUG,
-                     "after update of:" << _directory->absolutePath()
-                                        << " child update took:"
-                                        << st.elapsedMSec());
-            } catch (sg_exception& e) {
-                _directory->failedToUpdate(HTTPRepository::REPO_ERROR_IO, "Exception updating children:" + e.getFormattedMessage());
-            }
-          } else if (responseCode() == 404) {
-              _directory->failedToUpdate(
-                  HTTPRepository::REPO_ERROR_FILE_NOT_FOUND, "Server returned 404/NOT FOUND");
-          } else {
-              _directory->failedToUpdate(HTTPRepository::REPO_ERROR_HTTP, "HTTP failed with:" + std::to_string(responseCode()) + "/"s + responseReason());
-          }
 
           _directory->repository()->finishedRequest(
               this, HTTPRepoPrivate::RequestFinish::Done);

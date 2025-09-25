@@ -22,26 +22,14 @@ namespace HTTP
 extern const int DEFAULT_HTTP_PORT;
 
 //------------------------------------------------------------------------------
-Request::Request(const std::string& url, const std::string method):
-  _client(0),
-  _method(method),
-  _url(url),
-  _responseVersion(HTTP_VERSION_UNKNOWN),
-  _responseStatus(0),
-  _responseLength(0),
-  _receivedBodyBytes(0),
-  _ready_state(UNSENT),
-  _willClose(false),
-  _connectionCloseHeader(false)
+Request::Request(const std::string& url, const std::string method) : _client(0),
+                                                                     _method(method),
+                                                                     _url(url)
 {
-
 }
 
 //------------------------------------------------------------------------------
-Request::~Request()
-{
-
-}
+Request::~Request() = default;
 
 void Request::prepareForRetry() {
   setReadyState(UNSENT);
@@ -133,6 +121,12 @@ void Request::setAcceptEncoding(const char* enc)
 }
 
 //------------------------------------------------------------------------------
+void Request::setIfModifiedSince(const std::string& when)
+{
+    _request_headers["If-Modified-Since"] = when;
+}
+
+//------------------------------------------------------------------------------
 const char* Request::getAcceptEncoding()
 {
   return (_enc_set) ? _enc.c_str() : nullptr;
@@ -174,8 +168,8 @@ void Request::responseHeader(const std::string& key, const std::string& value)
 {
   if( key == "connection" ) {
     _connectionCloseHeader = (value.find("close") != std::string::npos);
-      // track willClose seperately because other conditions (abort, for
-      // example) can also set it
+    // track willClose separately because other conditions (abort, for
+    // example) can also set it
     _willClose = _connectionCloseHeader;
   } else if (key == "content-length") {
     int sz = strutils::to_int(value);
@@ -218,16 +212,14 @@ void Request::onDone()
 //------------------------------------------------------------------------------
 void Request::onFail()
 {
-  // log if we FAIELD< but not if we CANCELLED
-  if (_ready_state == FAILED) {
-    SG_LOG
-    (
-      SG_IO,
-      SG_INFO,
-      "request failed:" << url() << " : "
-                        << responseCode() << "/" << responseReason()
-    );
-  }
+    // log if we FAILED but not if we CANCELLED
+    if (_ready_state == FAILED) {
+        SG_LOG(
+            SG_IO,
+            SG_INFO,
+            "request failed:" << url() << " : "
+                              << responseCode() << "/" << responseReason());
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -368,13 +360,13 @@ void Request::setSuccess(int code)
         setReadyState(DONE);
     }
 }
-    
+
 //------------------------------------------------------------------------------
 void Request::setFailure(int code, const std::string& reason)
 {
   // we use -1 for cancellation, don't be noisy in that case
-  if (code >= 0) { 
-    SG_LOG(SG_IO, SG_WARN, "HTTP request: set failure:" << code << " reason " << reason);
+  if (code >= 0) {
+      SG_LOG(SG_IO, SG_WARN, "HTTP request: set failure:" << code << " reason " << reason);
   }
 
   _responseStatus = code;
@@ -388,34 +380,30 @@ void Request::setFailure(int code, const std::string& reason)
 //------------------------------------------------------------------------------
 void Request::setReadyState(ReadyState state)
 {
-  _ready_state = state;
-  if( state == DONE )
-  {
-    // Finish C++ part of request to ensure everything is finished (for example
-    // files and streams are closed) before calling any callback (possibly using
-    // such files)
-    onDone();
-    onAlways();
+    SG_LOG(SG_IO, SG_BULK, "Request::setReadyState:" << state << " (old state was:" << _ready_state << ")");
 
-    _cb_done(this);
-  }
-  else if( state == FAILED )
-  {
-    onFail();
-    onAlways();
+    _ready_state = state;
+    if (state == DONE) {
+        // Finish C++ part of request to ensure everything is finished (for example
+        // files and streams are closed) before calling any callback (possibly using
+        // such files)
+        onDone();
+        onAlways();
 
-    _cb_fail(this);
-  }
-  else if (state == CANCELLED )
-  {
-    onFail(); // do this for compatability
-    onAlways();
-    _cb_fail(this);
-  }
-  else
-    return;
+        _cb_done(this);
+    } else if (state == FAILED) {
+        onFail();
+        onAlways();
 
-  _cb_always(this);
+        _cb_fail(this);
+    } else if (state == CANCELLED) {
+        onFail(); // do this for compatibility
+        onAlways();
+        _cb_fail(this);
+    } else
+        return;
+
+    _cb_always(this);
 }
 
 //------------------------------------------------------------------------------
@@ -472,6 +460,29 @@ size_t Request::getBodyData(char* s, size_t offset, size_t max_count) const
 
   return bytes_to_read;
 }
+
+//------------------------------------------------------------------------------
+std::string Request::responseEntityTag() const
+{
+    auto it = _responseHeaders.find("etag");
+    if (it == _responseHeaders.end()) {
+        return {};
+    }
+
+    return it->second;
+}
+
+//------------------------------------------------------------------------------
+std::string Request::lastModified() const
+{
+    auto it = _responseHeaders.find("last-modified");
+    if (it == _responseHeaders.end()) {
+        return {};
+    }
+
+    return it->second;
+}
+
 
 } // of namespace HTTP
 } // of namespace simgear

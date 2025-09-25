@@ -111,7 +111,7 @@ public:
     void setBodyData( const SGPropertyNode* data );
 
     virtual void setUrl(const std::string& url);
-    
+
     /*
      * Set Range header, e.g. "1234-" to skip first 1234 bytes.
      *
@@ -123,7 +123,7 @@ public:
      * if we are updating a file that was fully downloaded previously.
      */
     virtual void setRange(const std::string& range);
-    
+
     /*
      * Control underlying curl library's automatic decompression support. <enc>
      * is passed directly to curl_easy_setopt(CURLOPT_ACCEPT_ENCODING); see
@@ -132,8 +132,15 @@ public:
      * E.g. pass env="" to allow any available compression algorithm.
      */
     virtual void setAcceptEncoding(const char* enc);
-    
+
     const char* getAcceptEncoding();
+
+    /**
+     * @brief Set the HTTP If-Modified-Since header to the specified date
+     *
+     * The server may then send a 304 response, indicating the content has not been modified
+     */
+    void setIfModifiedSince(const std::string& when);
 
     virtual std::string method() const
         { return _method; }
@@ -141,13 +148,13 @@ public:
         { return _url; }
     virtual std::string range() const
         { return _range; }
-    
+
     /*
      * Limits download speed using CURLOPT_MAX_RECV_SPEED_LARGE.
      */
     void setMaxBytesPerSec(unsigned long maxBytesPerSec)
         { _maxBytesPerSec = maxBytesPerSec; }
-    
+
     unsigned long getMaxBytesPerSec() const
         { return _maxBytesPerSec; }
 
@@ -229,7 +236,12 @@ public:
 
     virtual void prepareForRetry();
 
-  protected:
+    /// retrieve the HTTP ETag response header for caching
+    std::string responseEntityTag() const;
+
+    std::string lastModified() const;
+
+protected:
     Request(const std::string& url, const std::string method = "GET");
 
     virtual void requestStart();
@@ -281,20 +293,20 @@ public:
     std::string   _request_data;
     std::string   _request_media_type;
 
-    HTTPVersion   _responseVersion;
-    int           _responseStatus;
+    HTTPVersion _responseVersion = HTTP_VERSION_UNKNOWN;
+    int _responseStatus = 0;
     std::string   _responseReason;
     StringMap     _responseHeaders;
-    unsigned int  _responseLength;
-    unsigned int  _receivedBodyBytes;
+    unsigned int _responseLength = 0;
+    unsigned int _receivedBodyBytes = 0;
 
     function_list<Callback> _cb_done,
                             _cb_fail,
                             _cb_always;
 
-    ReadyState    _ready_state;
-    bool          _willClose;
-    bool          _connectionCloseHeader;
+    ReadyState _ready_state = UNSENT;
+    bool _willClose = false;
+    bool _connectionCloseHeader = false;
     unsigned long _maxBytesPerSec = 0;
 };
 
