@@ -1,21 +1,8 @@
 // ModelRegistry.cxx -- interface to the OSG model registry
 //
-// Copyright (C) 2005-2007 Mathias Froehlich
-// Copyright (C) 2007  Tim Moore <timoore@redhat.com>
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2007 Tim Moore <timoore@redhat.com>
+// SPDX-FileCopyrightText: 2005 Mathias Froehlich
 
 #include <simgear_config.h>
 
@@ -208,7 +195,7 @@ static int nearestPowerOfTwo(int _v)
         _v = (int)v;
     return v;
 }
-    
+
 static bool isPowerOfTwo(int v)
 {
     return ((v & (v - 1)) == 0);
@@ -250,7 +237,7 @@ ModelRegistry::readImage(const string& fileName,
     const Options* opt)
 {
     // experimental feature to see if we can reload textures during model load
-    // as otherwise texture creation/editting requires a restart or a change to 
+    // as otherwise texture creation/editing requires a restart or a change to
     // a different filenaem
     //if (SGSceneFeatures::instance()->getReloadCache()) {
     //    SG_LOG(SG_IO, SG_INFO, "Clearing DDS-TC LRU Cache");
@@ -315,7 +302,7 @@ ModelRegistry::readImage(const string& fileName,
         SGPath file(absFileName);
         std::stringstream tstream;
 
-        // calucate and use hash for storing cached image. This also
+        // calculate and use hash for storing cached image. This also
         // helps with sharing of identical images between models.
         if (fileExists(absFileName)) {
             SGFile f(absFileName);
@@ -523,7 +510,7 @@ ModelRegistry::readImage(const string& fileName,
                                 //if (processor) {
                                 //    processor->generateMipMap(*srcImage, true, osgDB::ImageProcessor::USE_CPU);
                                 //}
-                                //else 
+                                //else
                                 {
                                     simgear::effect::MipMapTuple mipmapFunctions(simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE, simgear::effect::AVERAGE);
                                     srcImage = simgear::effect::computeMipmap(srcImage, mipmapFunctions);
@@ -713,7 +700,7 @@ string ArchiveSubstitutePolicy::substitute(const string& name,
         // of the parent .osg file.  However, there is an OSG bug which means this does not work
         // in the case of archives, where any directory within the archive is lost.
         // To work around this, WS30 creates archives without any directories within them, but
-        // any filepath reference in a zip file that includes a sub-directory needs to be 
+        // any filepath reference in a zip file that includes a sub-directory needs to be
         // stripped out.
         //
         // So we need to change
@@ -772,16 +759,6 @@ ModelRegistry::addNodeCallbackForExtension(const string& extension,
     nodeCallbackMap.insert(CallbackMap::value_type(extension, callback));
 }
 
-static bool fileNameIsFGDataModelXML(const std::string& fileName)
-{
-    if (!simgear::strutils::ends_with(fileName, ".xml")) {
-        return false;
-    }
-
-    // we could instead white-list all the renamed files here?
-    return simgear::strutils::starts_with(fileName, "Models/");
-}
-
 ReaderWriter::ReadResult
 ModelRegistry::readNode(const string& fileName,
                         const Options* opt)
@@ -790,7 +767,7 @@ ModelRegistry::readNode(const string& fileName,
         return osgDB::ReaderWriter::ReadResult::FILE_NOT_HANDLED;
     }
 
-    // propogate error context from the caller
+    // propagate error context from the caller
     simgear::ErrorReportContext ec;
     auto sgopt = dynamic_cast<const SGReaderWriterOptions*>(opt);
     if (sgopt) {
@@ -809,22 +786,6 @@ ModelRegistry::readNode(const string& fileName,
         result = _defaultCallback->readNode(fileName, opt);
 
     if (!result.validNode()) {
-        if (fileNameIsFGDataModelXML(fileName)) {
-            const auto finalDotPos = fileName.rfind(".");
-            const auto plainModelFileName = fileName.substr(0, finalDotPos) + ".ac";
-
-            // try this AC reader; if it succeeds, we can use that.
-            auto iter = nodeCallbackMap.find("ac");
-            result = iter->second->readNode(plainModelFileName, opt);
-            if (result.validNode()) {
-                // TODO: allow extracting keys from the error-context;
-                // would need an additional callback added with a return value
-                // const auto stgName = ec.get("terrain-stg");
-                SG_LOG(SG_IO, SG_DEV_WARN, "Couldn't find XML model, found via .AC instead:" << plainModelFileName);
-                return result;
-            }
-        }
-
         simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::ThreeDModelLoad,
                                "Failed to load 3D model:" + result.message(), sg_location{fileName});
     }
@@ -1018,7 +979,7 @@ public:
 
 struct OSGOptimizePolicy : public OptimizeModelPolicy {
 
-    
+
     OSGOptimizePolicy(const string& extension) :
         OptimizeModelPolicy(extension)
     {
@@ -1097,13 +1058,13 @@ struct IVEProcessPolicy {
 
 typedef ModelRegistryCallback<IVEProcessPolicy, DefaultCachePolicy,
     IVEOptimizePolicy,
-    OSGSubstitutePolicy, 
+    OSGSubstitutePolicy,
     BuildLeafBVHPolicy>
     IVECallback;
 
 typedef ModelRegistryCallback<IVEProcessPolicy, NoCachePolicy,
     OSGOptimizePolicy,
-    ArchiveSubstitutePolicy, 
+    ArchiveSubstitutePolicy,
     BuildLeafBVHPolicy>
     OSGCallback;
 

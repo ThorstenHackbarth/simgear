@@ -430,30 +430,6 @@ void addTooltipAnimations(const SGPath& path, SGPropertyNode_ptr props, osg::ref
     SG_LOG(SG_INPUT, SG_DEBUG, "auto-tooltips: num_new_animations=" << num_new_animations);
 }
 
-static std::optional<SGPath> isModelWithRemovedXMLWrapper(const SGPath& model)
-{
-    if (model.extension() != "xml") {
-        return {};
-    }
-
-    const auto grandparentDirPath = model.dirPath().dirPath();
-    if (grandparentDirPath.file() != "Models") {
-        return {};
-    }
-
-    const auto names = std::vector<std::string>{
-        "marker",
-        "ndb",
-    };
-
-    const auto it = std::find(names.begin(), names.end(), model.file_base());
-    if (it != names.end()) {
-        return SGPath{model.dirPath() / (*it + ".ac")};
-    }
-
-    return {};
-}
-
 /*
  * Search a parent group by name and attach a child node to it
  *
@@ -513,27 +489,6 @@ sgLoad3DModel_internal(const SGPath& path,
 {
     SGPath modelpath(path);
     SGPath texturepath(path);
-
-    if (!path.exists()) {
-        // tolerate .xml paths where we removed the wrapper XML
-        // because this is a resolved path, only works when the bare model
-        // is in the same location.
-
-        // NOTE: there is separate logic to handle this situation, in the ModelRegistry,
-        // for the DelayedModelLoadCallback case. (See fileNameIsFGDataModelXML)]
-        // Would be nice to share the implementation but inside an OSG RegistryCallback,
-        // it's tricky to work with SGPaths as our code here does.
-        auto b = isModelWithRemovedXMLWrapper(path);
-        if (b) {
-            modelpath = b.value_or(SGPath{});
-            texturepath = b.value_or(SGPath{});
-            SG_LOG(SG_IO, SG_DEV_WARN, "Requested model which previously used an XML wrapper:" << path << " mapped to " << modelpath);
-        } else {
-            simgear::reportFailure(simgear::LoadFailure::NotFound, simgear::ErrorCode::XMLModelLoad,
-                                   "Failed to load model XML: not found", path);
-            return std::make_tuple(0, (osg::Node*) nullptr);
-        }
-    }
 
     osg::ref_ptr<SGReaderWriterOptions> options;
     options = SGReaderWriterOptions::copyOrCreate(dbOptions);
