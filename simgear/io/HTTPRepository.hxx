@@ -65,6 +65,13 @@ public:
   virtual size_t bytesToExtract() const;
 
   /**
+   * @brief Specify if we should cache the local state of entries
+   * which were checked within the timeout period (currently 24 hours).
+   *
+   * This exists for unit-testing, where we want to make many checks rapidly
+   */
+  void setRecheckTimeoutEnabled(bool enabled);
+  /**
    * optionally provide the location of an installer copy of this
    * repository. When a file is missing it will be copied from this tree.
    */
@@ -102,6 +109,8 @@ public:
 
   private:
     bool isBare() const;
+
+    bool isRecheckTimeoutEnabled() const;
 
     std::unique_ptr<HTTPRepoPrivate> _d;
 };

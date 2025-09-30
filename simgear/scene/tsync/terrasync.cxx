@@ -58,16 +58,6 @@ using namespace simgear;
 using std::string;
 using namespace std::string_literals;
 
-namespace UpdateInterval
-{
-    // interval in seconds to allow an update to repeat after a successful update (=daily)
-    static const double SuccessfulAttempt = 24*60*60;
-    // interval in seconds to allow another update after a failed attempt (10 minutes)
-    static const double FailedAttempt     = 10*60;
-}
-
-typedef std::map<std::string, time_t> TileAgeCache;
-
 ///////////////////////////////////////////////////////////////////////////////
 // helper functions ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -105,11 +95,9 @@ public:
         OSMTile ///< OSm2City per-Tile data
     };
 
-    enum Status
-    {
+    enum Status {
         Invalid = 0,
         Waiting,
-        Cached, ///< using already cached result
         Updated,
         NotFound,
         Failed
@@ -147,8 +135,7 @@ std::ostream& operator << (std::ostream& out, const SyncItem::Type& t)
 std::ostream& operator << (std::ostream& out, const SyncItem::Status& s)
 {
     if (s == SyncItem::Invalid)     return out << "Invalid";
-    if (s == SyncItem::Waiting)     return out << "Waiting";
-    if (s == SyncItem::Cached)      return out << "Cached";
+    if (s == SyncItem::Waiting) return out << "Waiting";
     if (s == SyncItem::Updated)     return out << "Updated";
     if (s == SyncItem::NotFound)    return out << "NotFound";
     if (s == SyncItem::Failed)      return out << "Failed";
@@ -223,7 +210,6 @@ struct TerrasyncThreadState
                              _updated_tile_count(0),
                              _success_count(0),
                              _consecutive_errors(0),
-                             _cache_hits(0),
                              _transfer_rate(0),
                              _total_kb_downloaded(0),
                              _totalKbPending(0),
@@ -236,8 +222,7 @@ struct TerrasyncThreadState
     int  _fail_count;
     int  _updated_tile_count;
     int  _success_count;
-    int  _consecutive_errors;
-    int  _cache_hits;
+    int _consecutive_errors;
     int _transfer_rate;
     // kbytes, not bytes, because bytes might overflow 2^31
     int _total_kb_downloaded;
@@ -335,12 +320,6 @@ public:
 
     void setInstalledDir(const SGPath& p)  { _installRoot = p; }
 
-   void   setCacheHits(unsigned int hits)
-    {
-        std::lock_guard<std::mutex> g(_stateLock);
-        _state._cache_hits = hits;
-    }
-
     TerrasyncThreadState threadsafeCopyState()
     {
         TerrasyncThreadState st;
@@ -353,16 +332,8 @@ public:
 
     bool isDirActive(const std::string& path) const;
 
-    void setCachePath(const SGPath &p) { _persistentCachePath = p; }
-
   private:
       std::string dnsSelectServerForService(const std::string& service);
-
-      void incrementCacheHits()
-      {
-          std::lock_guard<std::mutex> g(_stateLock);
-          _state._cache_hits++;
-    }
 
    virtual void run();
 
@@ -378,13 +349,9 @@ public:
 
     // common helpers between both internal and external models
 
-    SyncItem::Status isPathCached(const SyncItem& next) const;
     void updated(SyncItem item, bool isNewDirectory);
     void fail(SyncItem failedItem);
     void notFound(SyncItem notFoundItem);
-
-    void initCompletedTilesPersistentCache();
-    void writeCompletedTilesPersistentCache() const;
 
     HTTP::Client _http;
     SyncSlot _syncSlots[NUM_SYNC_SLOTS];
@@ -392,12 +359,8 @@ public:
     bool _stop, _running;
     SGBlockingDeque <SyncItem> waitingTiles;
 
-    TileAgeCache _completedTiles;
-    TileAgeCache _notFoundItems;
-
     SGBlockingDeque <SyncItem> _freshTiles;
     string _local_dir;
-    SGPath _persistentCachePath;
     string _httpServer;
     string _osmCityServer;
     string _osmCityService = "o2c";
@@ -443,10 +406,6 @@ void SGTerraSync::WorkerThread::stop()
     for (unsigned int slot = 0; slot < NUM_SYNC_SLOTS; ++slot) {
         _syncSlots[slot] = {};
     }
-
-    // clear these so if re-init-ing, we check again
-    _completedTiles.clear();
-    _notFoundItems.clear();
 
     _http.reset();
     _http.setUserAgent("terrascenery-" SG_STRINGIZE(SIMGEAR_VERSION));
@@ -609,7 +568,6 @@ void SGTerraSync::WorkerThread::run()
         _running = true;
     }
 
-    initCompletedTilesPersistentCache();
     runInternal();
 
     {
@@ -653,7 +611,6 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
                 SG_LOG(SG_TERRASYNC, SG_ALERT, "Failed to download Airports_archive, will download discrete files next time");
                 simgear::Dir d(_local_dir + "/Airports");
                 d.create(0755);
-                _completedTiles.erase(slot.currentItem._dir);
             }
         } else {
             updated(slot.currentItem, slot.isNewDirectory);
@@ -892,37 +849,9 @@ void SGTerraSync::WorkerThread::runInternal()
     } // of thread running loop
 }
 
-SyncItem::Status SGTerraSync::WorkerThread::isPathCached(const SyncItem& next) const
-{
-    auto ii = _completedTiles.find(next._dir);
-    if (ii == _completedTiles.end()) {
-        ii = _notFoundItems.find( next._dir );
-        // Invalid means 'not cached', otherwise we want to return to
-        // higher levels the cache status
-        SyncItem::Status ret = (ii == _notFoundItems.end()) ? SyncItem::Invalid : SyncItem::NotFound;
-        SG_LOG(SG_TERRASYNC, SG_DEBUG, "next=" << next << " returning ret=" << ret);
-        return ret;
-    }
-
-    // check if the path still physically exists. This is needed to
-    // cope with the user manipulating our cache dir
-    SGPath p(_local_dir);
-    p.append(next._dir);
-    if (!p.exists()) {
-        SG_LOG(SG_TERRASYNC, SG_DEBUG, "next=" << next << " returning SyncItem::Invalid");
-        return SyncItem::Invalid;
-    }
-
-    time_t now = time(0);
-    SyncItem::Status ret = (ii->second > now) ? SyncItem::Cached : SyncItem::Invalid;
-    SG_LOG(SG_TERRASYNC, SG_DEBUG, "next=" << next << " returning ret=" << ret);
-    return ret;
-}
-
 void SGTerraSync::WorkerThread::fail(SyncItem failedItem)
 {
     std::lock_guard<std::mutex> g(_stateLock);
-    time_t now = time(0);
 
     if (_osmCityServer.empty() && (failedItem._type == SyncItem::OSMTile)) {
         // don't count these as errors, otherwise normal sync will keep
@@ -937,30 +866,19 @@ void SGTerraSync::WorkerThread::fail(SyncItem failedItem)
     // not we also end up here for partial syncs
     SG_LOG(SG_TERRASYNC, SG_WARN,
            "Failed to sync'" << failedItem._dir << "'");
-    _completedTiles[ failedItem._dir ] = now + UpdateInterval::FailedAttempt;
 }
 
 void SGTerraSync::WorkerThread::notFound(SyncItem item)
 {
-    // treat not found as authoritative, so use the same cache expiry
-    // as successful download. Important for MP models and similar so
-    // we don't spam the server with lookups for models that don't
-    // exist
-
     SG_LOG(SG_TERRASYNC, SG_WARN, "Not found for: '" << item._dir << "'");
-
-    time_t now = time(0);
     item._status = SyncItem::NotFound;
     _freshTiles.push_back(item);
-    _notFoundItems[ item._dir ] = now + UpdateInterval::SuccessfulAttempt;
-    writeCompletedTilesPersistentCache();
 }
 
 void SGTerraSync::WorkerThread::updated(SyncItem item, bool isNewDirectory)
 {
     {
         std::lock_guard<std::mutex> g(_stateLock);
-        time_t now = time(0);
         _state._consecutive_errors = 0;
         _state._success_count++;
         SG_LOG(SG_TERRASYNC,SG_INFO,
@@ -972,10 +890,7 @@ void SGTerraSync::WorkerThread::updated(SyncItem item, bool isNewDirectory)
         }
 
         _freshTiles.push_back(item);
-        _completedTiles[ item._dir ] = now + UpdateInterval::SuccessfulAttempt;
     }
-
-    writeCompletedTilesPersistentCache();
 }
 
 void SGTerraSync::WorkerThread::drainWaitingTiles()
@@ -983,21 +898,8 @@ void SGTerraSync::WorkerThread::drainWaitingTiles()
     // drain the waiting tiles queue into the sync slot queues.
     while (!waitingTiles.empty()) {
         SyncItem next = waitingTiles.pop_front();
-        SyncItem::Status cacheStatus = isPathCached(next);
-        SG_LOG(SG_TERRASYNC, SG_INFO, "next._type=" << next._type
-                << " next._dir=" << next._dir
-                << " cacheStatus=" << cacheStatus
-                );
-        if (cacheStatus != SyncItem::Invalid) {
-            incrementCacheHits();
-            SG_LOG(SG_TERRASYNC, SG_BULK, "TerraSync Cache hit for: '" << next._dir << "'");
-            next._status = cacheStatus;
-            _freshTiles.push_back(next);
-            continue;
-        }
-
         const auto slot = syncSlotForType(next._type);
-        SG_LOG(SG_TERRASYNC, SG_INFO, "adding to _syncSlots slot=" << slot);
+        SG_LOG(SG_TERRASYNC, SG_DEBUG, "adding to _syncSlots slot=" << slot);
         _syncSlots[slot].queue.push_back(next);
     }
 }
@@ -1032,76 +934,6 @@ bool SGTerraSync::WorkerThread::isDirActive(const std::string& path) const
     } // of sync slots iteration
 
     return false;
-}
-
-void SGTerraSync::WorkerThread::initCompletedTilesPersistentCache() {
-  if (!_persistentCachePath.exists()) {
-    return;
-  }
-
-  SGPropertyNode_ptr cacheRoot(new SGPropertyNode);
-  time_t now = time(0);
-
-  try {
-    readProperties(_persistentCachePath, cacheRoot);
-  } catch (sg_exception &e) {
-    SG_LOG(SG_TERRASYNC, SG_INFO, "corrupted persistent cache, discarding");
-    return;
-  }
-
-  for (int i = 0; i < cacheRoot->nChildren(); ++i) {
-    SGPropertyNode *entry = cacheRoot->getChild(i);
-    bool isNotFound = (entry->getNameString() == "not-found");
-    string tileName = entry->getStringValue("path");
-    time_t stamp = entry->getIntValue("stamp");
-    SG_LOG(SG_TERRASYNC, SG_DEBUG, "tileName=" << tileName
-            << " isNotFound=" << isNotFound
-            << " stamp=" << stamp
-            << " now=" << now
-            << " stamp<now=" << (stamp < now)
-            );
-    if (stamp < now) {
-      continue;
-    }
-
-    if (isNotFound) {
-      _notFoundItems[tileName] = stamp;
-    } else {
-      _completedTiles[tileName] = stamp;
-    }
-  }
-}
-
-void SGTerraSync::WorkerThread::writeCompletedTilesPersistentCache() const {
-  // cache is disabled
-  if (_persistentCachePath.isNull()) {
-    SG_LOG(SG_TERRASYNC, SG_DEBUG, "_persistentCachePath.isNull()");
-    return;
-  }
-
-  sg_ofstream f(_persistentCachePath, std::ios::trunc);
-  if (!f.is_open()) {
-    SG_LOG(SG_TERRASYNC, SG_DEBUG, "!f.is_open() _persistentCachePath=" << _persistentCachePath);
-    return;
-  }
-
-  SGPropertyNode_ptr cacheRoot(new SGPropertyNode);
-  TileAgeCache::const_iterator it = _completedTiles.begin();
-  for (; it != _completedTiles.end(); ++it) {
-    SGPropertyNode *entry = cacheRoot->addChild("entry");
-    entry->setStringValue("path", it->first);
-    entry->setIntValue("stamp", it->second);
-  }
-
-  it = _notFoundItems.begin();
-  for (; it != _notFoundItems.end(); ++it) {
-    SGPropertyNode *entry = cacheRoot->addChild("not-found");
-    entry->setStringValue("path", it->first);
-    entry->setIntValue("stamp", it->second);
-  }
-
-  writeProperties(f, cacheRoot, true /* write_all */);
-  f.close();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1204,12 +1036,6 @@ void SGTerraSync::reinit()
         SGPath installPath(_terraRoot->getStringValue("installation-dir"));
         _workerThread->setInstalledDir(installPath);
 
-        if (_terraRoot->getBoolValue("enable-persistent-cache", true)) {
-          _workerThread->setCachePath(sceneryRoot / "RecheckCache");
-        }
-
-        _workerThread->setCacheHits(_terraRoot->getIntValue("cache-hit", 0));
-
         if (_workerThread->start())
         {
             syncAirportsModels();
@@ -1244,7 +1070,6 @@ void SGTerraSync::bind()
     _updateCountNode = _terraRoot->getNode("update-count", true);
     _errorCountNode = _terraRoot->getNode("error-count", true);
     _tileCountNode = _terraRoot->getNode("tile-count", true);
-    _cacheHitsNode = _terraRoot->getNode("cache-hits", true);
     _transferRateBytesSecNode = _terraRoot->getNode("transfer-rate-bytes-sec", true);
     _pendingKbytesNode = _terraRoot->getNode("pending-kbytes", true);
     _downloadedKBtesNode = _terraRoot->getNode("downloaded-kbytes", true);
@@ -1264,12 +1089,10 @@ void SGTerraSync::unbind()
     _terraRoot.clear();
     _stalledNode.clear();
     _activeNode.clear();
-    _cacheHits.clear();
     _busyNode.clear();
     _updateCountNode.clear();
     _errorCountNode.clear();
     _tileCountNode.clear();
-    _cacheHitsNode.clear();
     _transferRateBytesSecNode.clear();
     _pendingKbytesNode.clear();
     _downloadedKBtesNode.clear();
@@ -1306,7 +1129,6 @@ void SGTerraSync::update(double)
     _updateCountNode->setIntValue(copiedState._success_count);
     _errorCountNode->setIntValue(copiedState._fail_count);
     _tileCountNode->setIntValue(copiedState._updated_tile_count);
-    _cacheHitsNode->setIntValue(copiedState._cache_hits);
     _transferRateBytesSecNode->setIntValue(copiedState._transfer_rate);
     _pendingKbytesNode->setIntValue(copiedState._totalKbPending);
     _downloadedKBtesNode->setIntValue(copiedState._total_kb_downloaded);

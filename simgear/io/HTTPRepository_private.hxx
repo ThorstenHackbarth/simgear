@@ -67,8 +67,9 @@ public:
   size_t bytesToExtract = 0;
   size_t bytesExtracted = 0;
   HTTPRepository::SyncPredicate syncPredicate;
+  bool isRecheckTimeoutEnabled = true;
 
-  HTTP::Request_ptr updateFile(HTTPDirectory *dir, const std::string &name,
+  HTTP::Request_ptr updateFile(HTTPDirectory* dir, const std::string& name,
                                size_t sz);
   HTTP::Request_ptr updateDir(HTTPDirectory *dir, const std::string &hash,
                               size_t sz);

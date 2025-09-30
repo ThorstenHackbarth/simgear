@@ -6,6 +6,9 @@
  * @brief Plain HTTP TerraSync remote client
  */
 
+#include <chrono>
+#include <cstddef>
+#include <exception>
 #include <simgear_config.h>
 
 #include "HTTPRepository.hxx"
@@ -152,6 +155,9 @@ class HTTPDirectory
     mutable bool hashCacheDirty = false;
     std::string _lastModified;
 
+    using SystemSeconds = std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>;
+    SystemSeconds _lastChecked; // defaults to beginning of Epoch
+
 public:
     HTTPDirectory(HTTPRepoPrivate* repo, const std::string& path) :
         _repository(repo),
@@ -193,12 +199,25 @@ public:
         return _repository->baseUrl + "/" + _relativePath;
     }
 
+    bool wasCheckedRecently() const
+    {
+        return (std::chrono::system_clock::now() - _lastChecked) < std::chrono::hours(24);
+    }
+
+    void didCheck()
+    {
+        _lastChecked = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::now());
+        hashCacheDirty = true;
+    }
+
     void dirIndexUpdated(const std::string& hash, const std::string& lastMod)
     {
         if (lastMod != _lastModified) {
             _lastModified = lastMod;
             hashCacheDirty = true;
         }
+
+        didCheck();
 
         SGPath fpath(absolutePath());
         fpath.append(".dirindex");
@@ -299,6 +318,22 @@ public:
 
         if (it != paths.end()) {
             paths.erase(it);
+        }
+    }
+
+    void updateChildrenAfterRefresh()
+    {
+        try {
+            // the dirindex is up to date, let's check the children
+            SGTimeStamp st;
+            st.stamp();
+            updateChildrenBasedOnHash();
+            SG_LOG(SG_TERRASYNC, SG_DEBUG,
+                   "after non-update of:" << absolutePath()
+                                          << " child update took:"
+                                          << st.elapsedMSec());
+        } catch (sg_exception& e) {
+            failedToUpdate(HTTPRepository::REPO_ERROR_IO, "Exception updating children:" + e.getFormattedMessage());
         }
     }
 
@@ -421,8 +456,8 @@ public:
     void removeOrphans(const PathList orphans)
     {
         for (const auto& o : orphans) {
-            if (o.file() == ".dirindex") continue;
-            if (o.file() == ".hash") continue;
+            if (o.file() == ".dirindex"s) continue;
+            if (o.file() == ".dirhash"s) continue;
             removeChild(o);
         }
     }
@@ -657,6 +692,9 @@ public:
             stream << "#last-modified:" << _lastModified << "\n";
         }
 
+        // Unix seconds since the epoch began
+        stream << "#last-checked:" << _lastChecked.time_since_epoch().count() << "\n";
+
         for (const auto& e : hashes) {
             const auto& entry = e.second;
             stream << entry.filePath << "*" << entry.modTime << "*"
@@ -829,6 +867,16 @@ private:
                 continue;
             }
 
+            if (simgear::strutils::starts_with(line, "#last-checked:")) {
+                try {
+                    const auto seconds = std::stoll(line.substr(14));
+                    _lastChecked = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::time_point() + std::chrono::seconds(seconds));
+                } catch (std::exception& e) {
+                    SG_LOG(SG_TERRASYNC, SG_WARN, "Failed to parse:" << line.substr(14) << ":" << e.what());
+                }
+                continue;
+            }
+
             if (line.empty() || line[0] == '#')
                 continue;
 
@@ -898,9 +946,7 @@ HTTPRepository::HTTPRepository(const SGPath& base, HTTP::Client *cl) :
     _d->rootDir.reset(new HTTPDirectory(_d.get(), ""));
 }
 
-HTTPRepository::~HTTPRepository()
-{
-}
+HTTPRepository::~HTTPRepository() = default;
 
 void HTTPRepository::setBaseUrl(const std::string &url)
 {
@@ -1038,11 +1084,21 @@ HTTPRepository::failure() const
     return _d->status;
 }
 
-    void HTTPRepoGetRequest::cancel()
-    {
-        _directory->repository()->http->cancelRequest(this, "Repository cancelled"s);
-        _directory = 0;
-    }
+void HTTPRepository::setRecheckTimeoutEnabled(bool enabled)
+{
+    _d->isRecheckTimeoutEnabled = enabled;
+}
+
+bool HTTPRepository::isRecheckTimeoutEnabled() const
+{
+    return _d->isRecheckTimeoutEnabled;
+}
+
+void HTTPRepoGetRequest::cancel()
+{
+    _directory->repository()->http->cancelRequest(this, "Repository cancelled"s);
+    _directory = 0;
+}
 
     class FileGetRequest : public HTTPRepoGetRequest
     {
@@ -1058,6 +1114,11 @@ HTTPRepository::failure() const
     protected:
         void gotBodyData(const char* s, int n) override
         {
+            if (responseCode() != 200) {
+                // ensure we don't write 5xx or 4xx content to disk
+                return;
+            }
+
             if (!file.get()) {
                 const bool ok = createOutputFile();
                 if (!ok) {
@@ -1148,9 +1209,7 @@ HTTPRepository::failure() const
         if (_directory) {
             _directory->didFailToUpdateFile(fileName, code, "HTTP client failed request for:"s + url());
 
-            const auto doRetry = code == HTTPRepository::REPO_ERROR_SOCKET
-                                     ? HTTPRepoPrivate::RequestFinish::Retry
-                                     : HTTPRepoPrivate::RequestFinish::Done;
+            const auto doRetry = HTTPRepoPrivate::RequestFinish::Done;
             _directory->repository()->finishedRequest(this, doRetry);
         }
       }
@@ -1207,10 +1266,16 @@ HTTPRepository::failure() const
         }
 
       protected:
-        void gotBodyData(const char *s, int n) override {
-          body += std::string(s, n);
-          sha1_write(&hashContext, s, n);
-        }
+          void gotBodyData(const char* s, int n) override
+          {
+              if (responseCode() != 200) {
+                  // ensure we don't write 5xx or 4xx content to disk
+                  return;
+              }
+
+              body += std::string(s, n);
+              sha1_write(&hashContext, s, n);
+          }
 
         void onDone() override {
             SG_LOG(SG_TERRASYNC, SG_DEBUG, "onDone(): url()=" << url() << " _directory=" << _directory << " responseCode()=" << responseCode());
@@ -1253,36 +1318,15 @@ HTTPRepository::failure() const
                 }
 
                 _directory->repository()->totalDownloaded += contentSize();
-
-                try {
-                    // either way we've confirmed the index is valid so update children now
-                    SGTimeStamp st;
-                    st.stamp();
-                    _directory->updateChildrenBasedOnHash();
-                    SG_LOG(SG_TERRASYNC, SG_DEBUG,
-                           "after update of:" << _directory->absolutePath()
-                                              << " child update took:"
-                                              << st.elapsedMSec());
-                } catch (sg_exception& e) {
-                    _directory->failedToUpdate(HTTPRepository::REPO_ERROR_IO, "Exception updating children:" + e.getFormattedMessage());
-                }
+                _directory->didCheck();
+                _directory->updateChildrenAfterRefresh();
             } else if (responseCode() == 404) {
                 _directory->failedToUpdate(
                     HTTPRepository::REPO_ERROR_FILE_NOT_FOUND, "Server returned 404/NOT FOUND");
             } else if (responseCode() == 304) {
-                SG_LOG(SG_TERRASYNC, SG_DEBUG, "Server said :" << url() << " has not been modified.");
-                try {
-                    // the dirindex is up to date, let's check the children
-                    SGTimeStamp st;
-                    st.stamp();
-                    _directory->updateChildrenBasedOnHash();
-                    SG_LOG(SG_TERRASYNC, SG_DEBUG,
-                           "after non-update of:" << _directory->absolutePath()
-                                                  << " child update took:"
-                                                  << st.elapsedMSec());
-                } catch (sg_exception& e) {
-                    _directory->failedToUpdate(HTTPRepository::REPO_ERROR_IO, "Exception updating children:" + e.getFormattedMessage());
-                }
+                SG_LOG(SG_TERRASYNC, SG_INFO, "Server said :" << url() << " has not been modified.");
+                _directory->didCheck();
+                _directory->updateChildrenAfterRefresh();
             } else {
                 _directory->failedToUpdate(HTTPRepository::REPO_ERROR_HTTP, "HTTP failed with:" + std::to_string(responseCode()) + "/"s + responseReason());
             }
@@ -1301,9 +1345,7 @@ HTTPRepository::failure() const
 
           if (_directory) {
               _directory->failedToUpdate(code, "HTTP layer failed request for:"s + url());
-              const auto doRetry = code == HTTPRepository::REPO_ERROR_SOCKET
-                                       ? HTTPRepoPrivate::RequestFinish::Retry
-                                       : HTTPRepoPrivate::RequestFinish::Done;
+              const auto doRetry = HTTPRepoPrivate::RequestFinish::Done;
               _directory->repository()->finishedRequest(this, doRetry);
           }
         }
@@ -1351,6 +1393,12 @@ HTTPRepository::failure() const
 
     HTTP::Request_ptr HTTPRepoPrivate::updateDir(HTTPDirectory* dir, const std::string& hash, size_t sz)
     {
+        if (isRecheckTimeoutEnabled && dir->wasCheckedRecently()) {
+            SG_LOG(SG_TERRASYNC, SG_DEBUG, "Directory " << dir->absolutePath() << " was checked recently, skipping server-side check");
+            dir->updateChildrenAfterRefresh();
+            return {};
+        }
+
         RepoRequestPtr r(new DirGetRequest(dir, hash));
         r->setContentSize(sz);
         makeRequest(r);

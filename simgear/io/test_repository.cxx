@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2016 James Turner <zakalawe@mac.com>
 
 #include <cassert>
 #include <cstdlib>
@@ -83,6 +84,7 @@ public:
     int requestCount;
     bool getWillFail;
     bool returnCorruptData;
+    mutable std::string cachedSHA;
 
     AccessCallback accessCallback;
 
@@ -219,7 +221,8 @@ std::string TestRepoEntry::hash() const
     sha1_init(&info);
     std::string d(data());
     sha1_write(&info, d.data(), d.size());
-    return strutils::encodeHex(sha1_result(&info), HASH_LENGTH);
+    cachedSHA = strutils::encodeHex(sha1_result(&info), HASH_LENGTH);
+    return cachedSHA;
 }
 
 void TestRepoEntry::clearRequestCounts()
@@ -262,7 +265,7 @@ public:
             if (suffix != std::string::npos) {
                 lookingForDir = true;
                 if (suffix > 0) {
-                    // trim the preceeding '/' as well, for non-root dirs
+                    // trim the preceding '/' as well, for non-root dirs
                     suffix--;
                 }
 
@@ -445,6 +448,7 @@ void testBasicClone(HTTP::Client* cl)
 
     repo.reset(new HTTPRepository(p, cl));
     repo->setBaseUrl("http://localhost:2000/repo");
+    repo->setRecheckTimeoutEnabled(false);
     repo->update();
 
     waitForUpdateComplete(cl, repo.get());
@@ -482,9 +486,10 @@ void testUpdateNoChanges(HTTP::Client* cl)
 
 	repo.reset(new HTTPRepository(p, cl));
 	repo->setBaseUrl("http://localhost:2000/repo");
-	repo->update();
+    repo->setRecheckTimeoutEnabled(false);
+    repo->update();
 
-	waitForUpdateComplete(cl, repo.get());
+    waitForUpdateComplete(cl, repo.get());
 
 	verifyFileState(p, "fileA");
 	verifyFileState(p, "dirC/subdirA/subsubA/fileCAAA");
@@ -513,6 +518,7 @@ void testModifyLocalFiles(HTTP::Client* cl)
     repo.reset(new HTTPRepository(p, cl));
     repo->setBaseUrl("http://localhost:2000/repo");
     repo->update();
+    repo->setRecheckTimeoutEnabled(false);
 
     waitForUpdateComplete(cl, repo.get());
     verifyFileState(p, "dirB/subdirA/fileBAA");
@@ -592,6 +598,8 @@ void testLossOfLocalFiles(HTTP::Client* cl)
     repo.reset(new HTTPRepository(p, cl));
     repo->setBaseUrl("http://localhost:2000/repo");
     repo->update();
+    repo->setRecheckTimeoutEnabled(false);
+
     waitForUpdateComplete(cl, repo.get());
     verifyFileState(p, "dirB/subdirA/fileBAA");
 
@@ -747,10 +755,10 @@ void testDestroyDuringSync(HTTP::Client* cl)
     repo.reset();
 
     if (cl->hasActiveRequests()) {
-        throw sg_exception("destory of repo didn't clean up requests");
+        throw sg_exception("destroy of repo didn't clean up requests");
     }
 
-    std::cout << "Passed test destory during sync" << std::endl;
+    std::cout << "Passed test destroy during sync" << std::endl;
 }
 
 void testCopyInstalledChildren(HTTP::Client* cl)
@@ -951,7 +959,12 @@ int main(int argc, char* argv[])
     cl.clearAllConnections();
 
     testCopyInstalledChildren(&cl);
-    testRetryAfterSocketFailure(&cl);
+
+// test disabled since retry-on-socket-errors is currently disabled in
+// HTTPRepository code.
+#if 0
+   testRetryAfterSocketFailure(&cl);
+#endif
     testPersistentSocketFailure(&cl);
 
     std::cout << "all tests passed ok" << std::endl;

@@ -1,25 +1,9 @@
 // terrasync.hxx -- scenery fetcher
 //
-// Copyright (C) 2011  Thorsten Brehm <brehmt@gmail.com>
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2011 JThorsten Brehm
 
-#ifndef TERRASYNC_HXX_
-#define TERRASYNC_HXX_
+#pragma once
 
 #include <set>
 
@@ -68,7 +52,7 @@ public:
 
     void setSceneryPathSuffixes(const string_list& suffixes);
 
-    /// retrive the associated log object, for displaying log
+    /// retrieve the associated log object, for displaying log
     /// output somewhere (a UI, presumably)
     BufferedLogCallback* log() const
         { return _log; }
@@ -101,7 +85,6 @@ private:
     WorkerThread* _workerThread;
     SGPropertyNode_ptr _terraRoot;
     SGPropertyNode_ptr _stalledNode;
-    SGPropertyNode_ptr _cacheHits;
     SGPropertyNode_ptr _busyNode;
     SGPropertyNode_ptr _activeNode;
     SGPropertyNode_ptr _enabledNode;
@@ -133,6 +116,4 @@ private:
     unsigned int _retryBackOffSeconds = 0;
 };
 
-}
-
-#endif /* TERRASYNC_HXX_ */
+} // namespace simgear
