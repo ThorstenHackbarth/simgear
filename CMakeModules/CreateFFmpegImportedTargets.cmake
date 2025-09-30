@@ -31,7 +31,7 @@ function(find_ffmpeg_library retval basename)
 endfunction()
 
 
-set (Simgear_FFmpeg_Components avcodec avformat avutil swscale)
+set (Simgear_FFmpeg_Components avcodec avformat avutil swscale swresample)
 
 foreach (comp ${Simgear_FFmpeg_Components})
     string(TOUPPER ${comp} _ffmpeg_module_UC)
@@ -52,3 +52,20 @@ foreach (comp ${Simgear_FFmpeg_Components})
         set_property(TARGET ${tgt} PROPERTY IMPORTED_LOCATION ${releaseLib})
     endif()
 endforeach()
+
+target_link_libraries(imported_AVCODEC INTERFACE FFmpeg::swscale FFmpeg::swresample)
+
+if (APPLE)
+    find_library(COREAUDIO_FRAMEWORK CoreAudio)
+    find_library(COREVIDEO_FRAMEWORK CoreVideo)
+    find_library(COREMEDIA_FRAMEWORK CoreMedia)
+    find_library(VT_FRAMEWORK VideoToolbox)
+    find_library(AT_FRAMEWORK AudioToolbox)
+    find_library(SECURITY_FRAMEWORK Security)
+    find_library(iconv_lib iconv)
+    find_library(bz_lib NAMES bz2 bzip2)
+
+    #target_link_libraries(avformat INTERFACE -framework BZip2)
+    target_link_libraries(imported_AVUTIL INTERFACE ${COREVIDEO_FRAMEWORK} ${VT_FRAMEWORK})
+    target_link_libraries(imported_AVCODEC INTERFACE ${COREVIDEO_FRAMEWORK} ${COREAUDIO_FRAMEWORK} ${COREMEDIA_FRAMEWORK} ${SECURITY_FRAMEWORK} ${VT_FRAMEWORK} ${AT_FRAMEWORK} imported_SWSCALE ${iconv_lib} ${bz_lib})
+endif()
