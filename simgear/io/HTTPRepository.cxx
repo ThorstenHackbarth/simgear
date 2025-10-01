@@ -688,6 +688,9 @@ public:
         SGPath cachePath = absolutePath() / ".dirhash";
         sg_ofstream stream(cachePath, std::ios::out | std::ios::trunc | std::ios::binary);
 
+        // store Last-modified and Las-checked in comments. This allows older
+        // versions of FG to parse the files without lots of warning spam
+
         if (!_lastModified.empty()) {
             stream << "#last-modified:" << _lastModified << "\n";
         }
@@ -861,7 +864,8 @@ private:
             std::getline(stream, line);
             line = simgear::strutils::strip(line);
 
-            // store Last-modified in a comment for backwards compat
+            // store Last-modified and Las-checked in comments. This allows older
+            // versions of FG to parse the files without lots of warning spam
             if (simgear::strutils::starts_with(line, "#last-modified:")) {
                 _lastModified = line.substr(15);
                 continue;
@@ -877,14 +881,17 @@ private:
                 continue;
             }
 
+            // skip comments and blank lines
             if (line.empty() || line[0] == '#')
                 continue;
 
             string_list tokens = simgear::strutils::split(line, "*");
             if (tokens.size() < 4) {
-                SG_LOG(SG_TERRASYNC, SG_WARN, "invalid entry in '" << cachePath << "': '" << line << "' (ignoring line)");
+                // skip entries which don't fit the pattern. This allows adding different directives
+                // to the file in the future if needed
                 continue;
             }
+
             const std::string nameData = simgear::strutils::strip(tokens[0]);
             const std::string timeData = simgear::strutils::strip(tokens[1]);
             const std::string sizeData = simgear::strutils::strip(tokens[2]);
