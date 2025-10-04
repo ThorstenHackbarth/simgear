@@ -206,7 +206,7 @@ ObjectInstanceBin::ObjectInstanceBin(const std::string modelFileName, const std:
     _STGFilePath = STGFilePath;
 
     if (effect == "default") {
-        _effect = "Effects/object-instancing";
+        _effect = "Effects/model-pbr-instancing";
     } else {
         _effect = effect;
     }
