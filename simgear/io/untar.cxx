@@ -164,6 +164,8 @@ typedef struct
 
             if (newState >= ERROR_STATE) {
                 SG_LOG(SG_IO, SG_WARN, "ArchiveExtract entered error state");
+                currentFile->close();
+                currentFile.reset();
             }
 
             state = newState;
@@ -229,7 +231,7 @@ typedef struct
 
             // careful handling here for tar compressors which don't use PAX path
             // attribute to handle filenames longer than 100 bytes, or exactly 100 bytes.
-            // longer than 100 bytes use the prefix, but we need to add a path seperator.
+            // longer than 100 bytes use the prefix, but we need to add a path separator.
             // exactly 100 bytes don't use prefix, but there is no trailing NULL.
             // https://sourceforge.net/p/flightgear/codetickets/2953/
 
@@ -279,12 +281,12 @@ typedef struct
                 }
                 setState(READING_HEADER);
             } else if ((header.typeflag == REGTYPE) || (header.typeflag == AREGTYPE)) {
-                // create enclosing directory heirarchy as required
+                // create enclosing directory hierarchy as required
                 Dir parentDir(p.dir());
                 if (!parentDir.exists()) {
                     bool ok = parentDir.create(0755);
                     if (!ok) {
-                        throw sg_io_exception("failed to create directory heirarchy for extraction", p);
+                        throw sg_io_exception("failed to create directory hierarchy for extraction", p);
                     }
                 }
 
@@ -633,7 +635,7 @@ public:
         free(buf);
         unzClose(zip);
     }
-    
+
     void extractCurrentFile(unzFile zip, char* buffer, size_t bufferSize)
     {
         unz_file_info fileInfo;
@@ -644,8 +646,8 @@ public:
         if (result != Z_OK) {
             throw sg_io_exception("Failed to get zip current file info");
         }
-        
-		std::string name(buffer);
+
+        std::string name(buffer);
 		if (!isSafePath(name)) {
             SG_LOG(SG_IO, SG_WARN, "unsafe zip path, skipping::" << name);
             return;
@@ -677,13 +679,13 @@ public:
 		SGPath path = extractRootPath() / name;
         mostRecentPath = name;
 
-        // create enclosing directory heirarchy as required
-		Dir parentDir(path.dir());
+        // create enclosing directory hierarchy as required
+        Dir parentDir(path.dir());
 		if (!parentDir.exists()) {
 			bool ok = parentDir.create(0755);
 			if (!ok) {
-				throw sg_io_exception("failed to create directory heirarchy for extraction", path);
-			}
+                throw sg_io_exception("failed to create directory hierarchy for extraction", path);
+            }
 		}
 
 		outFile.open(path, std::ios::binary | std::ios::trunc | std::ios::out);
@@ -694,8 +696,8 @@ public:
 		while (!eof) {
 			int bytes = unzReadCurrentFile(zip, buffer, bufferSize);
 			if (bytes < 0) {
-				throw sg_io_exception("unzip failure reading curent archive", sg_location(name));
-			}
+                throw sg_io_exception("unzip failure reading current archive", sg_location(name));
+            }
 			else if (bytes == 0) {
 				eof = true;
 			}

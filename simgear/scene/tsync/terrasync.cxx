@@ -7,8 +7,9 @@
 // SPDX-FileCopyrightText: 2008 Alexander R. Perry <alex.perry@ieee.org>
 // SPDX-FileCopyrightText: 2011 Thorsten Brehm <brehmt@gmail.com>
 
-#include <simgear_config.h>
+#include "simgear/debug/ErrorReportingCallback.hxx"
 #include <simgear/compiler.h>
+#include <simgear_config.h>
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -498,12 +499,14 @@ std::string SGTerraSync::WorkerThread::dnsSelectServerForService(const std::stri
     }
 
     if (naptrRequest->hasError()) {
-        SG_LOG(SG_TERRASYNC, SG_ALERT, "DNS query failure for DNSDN '"s << _dnsdn << "': " << naptrRequest->errorMessage());
+        simgear::reportFailure(simgear::LoadFailure::NetworkError, simgear::ErrorCode::TerraSync,
+                               "DNS query failed for DNSDN:"s + _dnsdn + ":" + naptrRequest->errorMessage());
         return {};
     }
 
     if( naptrRequest->entries.empty() ) {
-        SG_LOG(SG_TERRASYNC, SG_ALERT, "Warning: no DNS entry found for '" << _dnsdn << "' '" << naptrRequest->qservice << "'" );
+        simgear::reportFailure(simgear::LoadFailure::NetworkError, simgear::ErrorCode::TerraSync,
+                               "No DNS entries found for DNSDN:"s + _dnsdn + " with service '"s + naptrRequest->qservice + "'"s);
         return {};
     }
 
