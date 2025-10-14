@@ -135,7 +135,7 @@ naRef naVec_remove(naRef vec, int index)
     if (IS_VEC(vec)) {
         struct VecRec* v = PTR(vec).vec->rec;
         if (!v || v->size == 0) return naNil();
-        if ((index < 0) || (index >= v->size - 1)) return naNil();
+        if ((index < 0) || (index >= v->size)) return naNil();
 
         o = v->array[index];
         // must use memmove since this range overlaps itself

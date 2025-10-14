@@ -59,10 +59,9 @@ static naRef f_vec_remove(naContext c, naRef me, int argc, naRef* args)
 
     int len = naVec_size(vec);
     int i;
-    for (i = 0; i < len; i++) {
+    for (i = len - 1; i >= 0; i--) {
         if (naEqual(naVec_get(vec, i), value)) {
             naVec_remove(vec, i);
-            --len;
         }
     }
 
@@ -188,7 +187,7 @@ static naRef f_str(naContext c, naRef me, int argc, naRef* args)
 {
     if (argc < 1)
         ARGERR();
-    
+
     return naStringValue(c, args[0]);
 }
 
@@ -281,7 +280,7 @@ static naRef f_vecindex(naContext c, naRef me, int argc, naRef* args)
         if (naEqual(naVec_get(vec, i), value))
             return naNum(i);
     }
-    
+
     return naNil();
 }
 
@@ -431,7 +430,7 @@ char* dosprintf(char* f, ...)
 
     va_list va;
     va_start(va, f);
-   
+
     int len = vsnprintf(0, 0, f, va);
     va_end(va);
 
@@ -499,7 +498,7 @@ static naRef f_sprintf(naContext c, naRef me, int argc, naRef* args)
     format = naStringValue(c, argc > 0 ? args[0] : naNil());
     if(naIsNil(format)) ERR("bad format string in sprintf()");
     s = naStr_data(format);
-                               
+
     while((next = nextFormat(c, s, &fstr, &flen, &t))) {
         APPEND(NEWSTR(c, s, fstr-s)); // stuff before the format string
         if(flen == 2 && fstr[1] == '%') {
@@ -763,7 +762,7 @@ static naRef f_range(naContext c, naRef me, int argc, naRef* args)
 
     if ((argc < 1) || (argc > 3) || !naIsNum(args[0]))
         naRuntimeError(c, "Bad/missing argument to range()");
-    
+
     if (argc > 1) {
         if (!naIsNum(args[1])) {
             naRuntimeError(c, "Invalid argument to range()");
@@ -778,6 +777,9 @@ static naRef f_range(naContext c, naRef me, int argc, naRef* args)
             }
 
             step = (int) args[2].num;
+            if (step <= 0) {
+                naRuntimeError(c, "Step argument for range() must be > 0");
+            }
         }
     } else {
         // single arg mode
