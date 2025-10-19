@@ -1,19 +1,9 @@
-// Copyright (C) 2008 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
+/*
+ * SPDX-FileName: BVHPageNodeOSG.hxx
+ * SPDX-FileComment: Bounding Volume Hierarchy for OSG
+ * SPDX-FileCopyrightText: Copyright (C) 2008- 2025  Mathias Froehlich
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ */
 
 #ifndef BVHPageNodeOSG_hxx
 #define BVHPageNodeOSG_hxx
@@ -22,12 +12,13 @@
 
 #include "../../bvh/BVHPageNode.hxx"
 
-#include <osg/ref_ptr>
 #include <osg/Referenced>
+#include <osg/ref_ptr>
 
 namespace simgear {
 
-class BVHPageNodeOSG : public BVHPageNode {
+class BVHPageNodeOSG : public BVHPageNode
+{
 public:
     BVHPageNodeOSG(const std::string& name, const SGSphered& boundingSphere,
                    const osg::ref_ptr<const osg::Referenced>& options);
@@ -35,13 +26,13 @@ public:
                    const SGSphered& boundingSphere,
                    const osg::ref_ptr<const osg::Referenced>& options);
     virtual ~BVHPageNodeOSG();
-    
+
     virtual BVHPageRequest* newRequest();
 
     void setBoundingSphere(const SGSphered& sphere);
 
-    static SGSharedPtr<BVHNode>
-    load(const std::string& name, const osg::ref_ptr<const osg::Referenced>& options, bool forceFlatter=false);
+    static SGSharedPtr<BVHNode> load(const std::string& name, const osg::ref_ptr<const osg::Referenced>& options, bool forceFlatter = false);
+    static SGSharedPtr<BVHNode> load(const string_list nameList, const osg::ref_ptr<const osg::Referenced>& options, bool forceFlatter = false);
 
 protected:
     virtual SGSphered computeBoundingSphere() const;
@@ -51,7 +42,7 @@ private:
     class _NodeVisitor;
     class _Request;
 
-    /// The submodels apropriate for intersection tests.
+    /// The submodels appropriate for intersection tests.
     std::vector<std::string> _modelList;
     /// The bounding sphere as given by the lod node.
     SGSphered _boundingSphere;
@@ -59,6 +50,6 @@ private:
     osg::ref_ptr<const osg::Referenced> _options;
 };
 
-}
+} // namespace simgear
 
 #endif

@@ -1,22 +1,12 @@
-// Copyright (C) 2008 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
+/*
+ * SPDX-FileName: BVHPageNodeOSG.hxx
+ * SPDX-FileComment: Bounding Volume Hierarchy for OSG
+ * SPDX-FileCopyrightText: Copyright (C) 2008 - 2025  Mathias Froehlich
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ */
 
 #ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
+#include <simgear_config.h>
 #endif
 
 #include "BVHPageNodeOSG.hxx"
@@ -24,8 +14,6 @@
 #include "../../bvh/BVHPageRequest.hxx"
 #include "../../bvh/BVHPager.hxx"
 
-#include <osg/Version>
-#include <osg/io_utils>
 #include <osg/Camera>
 #include <osg/Drawable>
 #include <osg/Geode>
@@ -33,14 +21,16 @@
 #include <osg/PagedLOD>
 #include <osg/ProxyNode>
 #include <osg/Transform>
+#include <osg/Version>
+#include <osg/io_utils>
 #include <osgDB/ReadFile>
 #include <osgTerrain/TerrainTile>
 
+#include <simgear/math/SGGeometry.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
-#include <simgear/scene/util/SGNodeMasks.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
-#include <simgear/math/SGGeometry.hxx>
+#include <simgear/scene/util/SGNodeMasks.hxx>
 
 #include <simgear/bvh/BVHStaticGeometryBuilder.hxx>
 #include <simgear/bvh/BVHTerrainTile.hxx>
@@ -49,20 +39,27 @@
 
 namespace simgear {
 
-class BVHPageNodeOSG::_NodeVisitor : public osg::NodeVisitor {
+class BVHPageNodeOSG::_NodeVisitor : public osg::NodeVisitor
+{
 public:
     struct _PrimitiveCollector : public PrimitiveCollector {
-        _PrimitiveCollector(_NodeVisitor& nodeVisitor) :
-            _nodeVisitor(nodeVisitor)
-        { }
+        _PrimitiveCollector(_NodeVisitor& nodeVisitor) : _nodeVisitor(nodeVisitor)
+        {
+        }
         virtual ~_PrimitiveCollector()
-        { }
+        {
+        }
         virtual void addPoint(const osg::Vec3d& v1)
-        { }
+        {
+        }
         virtual void addLine(const osg::Vec3d& v1, const osg::Vec3d& v2)
-        { }
+        {
+        }
         virtual void addTriangle(const osg::Vec3d& v1, const osg::Vec3d& v2, const osg::Vec3d& v3)
-        { _nodeVisitor.addTriangle(v1, v2, v3); }
+        {
+            _nodeVisitor.addTriangle(v1, v2, v3);
+        }
+
     private:
         _NodeVisitor& _nodeVisitor;
     };
@@ -72,7 +69,7 @@ public:
         {
             if (_nodeVector.empty())
                 return SGSharedPtr<BVHNode>();
-            
+
             if (!matrix.isIdentity()) {
                 // If we have a non trivial matrix we need a
                 // transform node in any case.
@@ -94,7 +91,7 @@ public:
                 return group;
             }
         }
-        
+
         void addNode(const SGSharedPtr<BVHNode>& node)
         {
             if (!node.valid())
@@ -103,19 +100,18 @@ public:
                 return;
             _nodeVector.push_back(node);
         }
-        
+
     private:
-        typedef std::vector<SGSharedPtr<BVHNode> > _NodeVector;
-        
+        typedef std::vector<SGSharedPtr<BVHNode>> _NodeVector;
+
         // The current pending node vector.
         _NodeVector _nodeVector;
     };
-    
-    _NodeVisitor(bool flatten, const osg::Matrix& localToWorldMatrix = osg::Matrix()) :
-        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN),
-        _localToWorldMatrix(localToWorldMatrix),
-        _geometryBuilder(new BVHStaticGeometryBuilder),
-        _flatten(flatten)
+
+    _NodeVisitor(bool flatten, const osg::Matrix& localToWorldMatrix = osg::Matrix()) : osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN),
+                                                                                        _localToWorldMatrix(localToWorldMatrix),
+                                                                                        _geometryBuilder(new BVHStaticGeometryBuilder),
+                                                                                        _flatten(flatten)
     {
         setTraversalMask(SG_NODEMASK_TERRAIN_BIT);
     }
@@ -149,7 +145,7 @@ public:
             _geometryBuilder->setCurrentMaterial(material);
 
         _PrimitiveCollector primitiveCollector(*this);
-        for(unsigned i = 0; i < geode.getNumDrawables(); ++i)
+        for (unsigned i = 0; i < geode.getNumDrawables(); ++i)
             geode.getDrawable(i)->accept(primitiveCollector);
 
         _geometryBuilder->setCurrentMaterial(oldMaterial);
@@ -244,7 +240,7 @@ public:
             }
             _nodeBin.addNode(nodeBin.getNode(_localToWorldMatrix));
         }
-        
+
         // For the rest that might be already there, traverse this as lod
         apply(static_cast<osg::LOD&>(pagedLOD));
     }
@@ -310,7 +306,7 @@ public:
             _geometryBuilder.clear();
         }
 
-        return _nodeBin.getNode(matrix*_centerMatrix);
+        return _nodeBin.getNode(matrix * _centerMatrix);
     }
 
 private:
@@ -328,10 +324,10 @@ private:
     bool _flatten;
 };
 
-class BVHPageNodeOSG::_Request : public BVHPageRequest {
+class BVHPageNodeOSG::_Request : public BVHPageRequest
+{
 public:
-    _Request(BVHPageNodeOSG* pageNode) :
-        _pageNode(pageNode)
+    _Request(BVHPageNodeOSG* pageNode) : _pageNode(pageNode)
     {
     }
     virtual ~_Request()
@@ -363,8 +359,32 @@ public:
 
 private:
     SGSharedPtr<BVHPageNodeOSG> _pageNode;
-    std::vector<SGSharedPtr<BVHNode> > _nodeVector;
+    std::vector<SGSharedPtr<BVHNode>> _nodeVector;
 };
+
+SGSharedPtr<BVHNode>
+BVHPageNodeOSG::load(const string_list nameList, const osg::ref_ptr<const osg::Referenced>& options, bool forceFlatten)
+{
+    auto opt = dynamic_cast<const osgDB::Options*>(options.get());
+
+    // Simple Group node to collect all the loaded files.
+    const osg::ref_ptr<osg::Group> group = new osg::Group();
+
+    for (auto n : nameList) {
+        const osg::ref_ptr<osg::Node> node = osgDB::readRefNodeFile(n, opt);
+
+        if (node.valid()) {
+            group->addChild(node);
+        }
+    }
+
+    bool flatten = forceFlatten || (group->getBound()._radius < 30000);
+    _NodeVisitor nodeVisitor(flatten);
+    if (flatten)
+        nodeVisitor.setCenter(group->getBound()._center);
+    group->accept(nodeVisitor);
+    return nodeVisitor.getNode();
+}
 
 SGSharedPtr<BVHNode>
 BVHPageNodeOSG::load(const std::string& name, const osg::ref_ptr<const osg::Referenced>& options, bool forceFlatten)
@@ -385,34 +405,31 @@ BVHPageNodeOSG::load(const std::string& name, const osg::ref_ptr<const osg::Refe
 
 BVHPageNodeOSG::BVHPageNodeOSG(const std::string& name,
                                const SGSphered& boundingSphere,
-                               const osg::ref_ptr<const osg::Referenced>& options) :
-    _boundingSphere(boundingSphere),
-    _options(options)
+                               const osg::ref_ptr<const osg::Referenced>& options) : _boundingSphere(boundingSphere),
+                                                                                     _options(options)
 {
     _modelList.push_back(name);
 }
 
 BVHPageNodeOSG::BVHPageNodeOSG(const std::vector<std::string>& nameList,
                                const SGSphered& boundingSphere,
-                               const osg::ref_ptr<const osg::Referenced>& options) :
-    _modelList(nameList),
-    _boundingSphere(boundingSphere),
-    _options(options)
+                               const osg::ref_ptr<const osg::Referenced>& options) : _modelList(nameList),
+                                                                                     _boundingSphere(boundingSphere),
+                                                                                     _options(options)
 {
 }
 
 BVHPageNodeOSG::~BVHPageNodeOSG()
 {
 }
-    
+
 BVHPageRequest*
 BVHPageNodeOSG::newRequest()
 {
     return new _Request(this);
 }
 
-void
-BVHPageNodeOSG::setBoundingSphere(const SGSphered& sphere)
+void BVHPageNodeOSG::setBoundingSphere(const SGSphered& sphere)
 {
     _boundingSphere = sphere;
     invalidateParentBound();
@@ -424,11 +441,10 @@ BVHPageNodeOSG::computeBoundingSphere() const
     return _boundingSphere;
 }
 
-void
-BVHPageNodeOSG::invalidateBound()
+void BVHPageNodeOSG::invalidateBound()
 {
     // Don't propagate invalidate bound to its parent
     // Just do this once we get a bounding sphere set
 }
 
-}
+} // namespace simgear
