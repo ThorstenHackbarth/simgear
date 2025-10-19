@@ -281,14 +281,14 @@ Compositor::update(const osg::Matrix &view_matrix,
             && (!pass->render_once || !pass->has_ever_rendered);
         if (should_render) {
             // Pass is enabled
-            camera->setGraphicsContext(_gc);
+            camera->setNodeMask(0xffffffff);
             if (pass->update_callback.valid()) {
                 pass->update_callback->updatePass(*pass.get(), view_matrix, proj_matrix);
             }
             pass->has_ever_rendered = true;
         } else {
             // Pass is disabled
-            camera->setGraphicsContext(nullptr);
+            camera->setNodeMask(0);
         }
 
     }
