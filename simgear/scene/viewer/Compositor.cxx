@@ -327,7 +327,7 @@ Compositor::update(const osg::Matrix &view_matrix,
     _uniforms[SG_UNIFORM_SUN_DIRECTION_WORLD]->get(sun_dir_world);
     osg::Vec4f sun_dir_view = osg::Vec4f(
         sun_dir_world.x(), sun_dir_world.y(), sun_dir_world.z(), 0.0f) * view_matrix;
-    
+
     osg::Vec3f moon_dir_world;
     _uniforms[SG_UNIFORM_MOON_DIRECTION_WORLD]->get(moon_dir_world);
     osg::Vec4f moon_dir_view = osg::Vec4f(
@@ -336,7 +336,7 @@ Compositor::update(const osg::Matrix &view_matrix,
     float aspect_ratio = proj_matrix(1,1) / proj_matrix(0,0);
     float tan_fov_y = 1.0f / proj_matrix(1,1);
     float tan_fov_x = tan_fov_y * aspect_ratio;
-    
+
     for (int i = 0; i < SG_TOTAL_BUILTIN_UNIFORMS; ++i) {
         osg::ref_ptr<osg::Uniform> u = _uniforms[i];
         switch (i) {
@@ -453,7 +453,7 @@ Compositor::resized()
             computeNode->getComputeGroups(groups[0], groups[1], groups[2]);
             for (int dim = 0; dim < 2; ++dim) {
                 if (pass->compute_global_scale[dim] != 0.0f) {
-                    // resize this dimention
+                    // resize this dimension
                     groups[dim] = (int)ceil(ceil(screenSize[dim] * pass->compute_global_scale[dim]) / pass->compute_wg_size[dim]);
                     if (groups[dim] < 1)
                         groups[dim] = 1;
