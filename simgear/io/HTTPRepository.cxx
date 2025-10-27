@@ -228,6 +228,7 @@ public:
         std::sort(children.begin(), children.end());
 
         _repository->updatedChildSuccessfully(_relativePath);
+        _repository->lastUpdatedDir = _relativePath;
     }
 
     void failedToUpdate(HTTPRepository::ResultCode status, const std::string& details)
@@ -364,6 +365,10 @@ public:
 
         const bool isNew = (p == fsChildren.end());
         const bool isCurrent = hashForChild(c) == c.hash;
+
+        if (!isCurrent) {
+            SG_LOG(SG_TERRASYNC, SG_DEBUG, "Hash mismatch for " << c.name << ": have " << hashForChild(c) << ", but need:" << c.hash);
+        }
 
         if (!isNew) {
           orphans.erase(std::remove(orphans.begin(), orphans.end(), *p),
@@ -1083,6 +1088,11 @@ std::string HTTPRepository::resultCodeAsString(ResultCode code)
 
 HTTPRepository::FailureVec HTTPRepository::failures() const {
   return _d->failures;
+}
+
+SGPath HTTPRepository::lastCheckedPath() const
+{
+    return _d->lastUpdatedDir;
 }
 
 void HTTPRepository::setFilter(SyncPredicate sp) { _d->syncPredicate = sp; }

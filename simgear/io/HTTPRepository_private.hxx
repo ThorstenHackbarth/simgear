@@ -66,6 +66,7 @@ public:
   size_t totalDownloaded = 0;
   size_t bytesToExtract = 0;
   size_t bytesExtracted = 0;
+  SGPath lastUpdatedDir;
   HTTPRepository::SyncPredicate syncPredicate;
   bool isRecheckTimeoutEnabled = true;
 

@@ -71,6 +71,17 @@ public:
    * This exists for unit-testing, where we want to make many checks rapidly
    */
   void setRecheckTimeoutEnabled(bool enabled);
+
+  /*
+   * @brief return the relative path of the last directory we updated.
+   *
+   * This is used to give a sense of progress to the user, since otherwise
+   * it can seem a sync is not doing anything (if most files are in-sync)
+   *
+   * @return SGPath
+   */
+  SGPath lastCheckedPath() const;
+
   /**
    * optionally provide the location of an installer copy of this
    * repository. When a file is missing it will be copied from this tree.
