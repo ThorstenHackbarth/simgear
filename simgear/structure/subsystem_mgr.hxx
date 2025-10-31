@@ -179,7 +179,7 @@ public:
    * Acquire the subsystem's property bindings.
    *
    * <p>This method should bind all properties that the subsystem
-   * publishes.  It will be invoked after init, but before any
+   * publishes.  It will be invoked before init, thus also before any
    * invocations of update.</p>
    */
   virtual void bind ();
@@ -271,21 +271,21 @@ public:
      * @brief the type (class)-specific part of the subsystem name.
      */
     std::string subsystemClassId() const;
-    
+
     /**
      * @brief the instance part of the subsystem name. Empty if this
      * subsystem is not instanced
      */
     std::string subsystemInstanceId() const;
-    
+
     virtual bool is_group() const
     { return false; }
-    
+
     virtual SGSubsystemMgr* get_manager() const;
 
     /// get the parent group of this subsystem
     SGSubsystemGroup* get_group() const;
-    
+
     // ordering here is exceptionally important, due to
     // liveness of ranges. If you're extending this consider
     // carefully where the new state lies and position it correctly.
@@ -303,7 +303,7 @@ public:
         UNBIND,
         REMOVE
     };
-    
+
     /**
      * debug helper, print a state as a string
      */
@@ -344,7 +344,7 @@ protected:
     /// is an instanced subsystem. (Since this member was originally defined as
     /// protected, not private, we can't rename it easily)
     std::string _name;
-    
+
     bool _suspended = false;
 
     eventTimeVec timingInfo;
@@ -397,9 +397,9 @@ public:
     virtual void set_subsystem (const std::string &name,
                                 SGSubsystem * subsystem,
                                 double min_step_sec = 0);
-    
+
     void set_subsystem (SGSubsystem * subsystem, double min_step_sec = 0);
-    
+
     virtual SGSubsystem * get_subsystem (const std::string &name);
     bool remove_subsystem (const std::string &name);
     virtual bool has_subsystem (const std::string &name) const;
@@ -418,7 +418,7 @@ public:
     void set_fixed_update_time(double fixed_dt);
 
     /**
-     * retrive list of member subsystem names
+     * retrieve list of member subsystem names
      */
     string_list member_names() const;
 
@@ -430,7 +430,7 @@ public:
 
     bool is_group() const override
     { return true; }
-    
+
     SGSubsystemMgr* get_manager() const override;
 
 private:
@@ -446,10 +446,10 @@ private:
     friend class SGSubsystemMgr;
 
     void set_manager(SGSubsystemMgr* manager);
-    
+
     class Member;
     Member* get_member (const std::string &name, bool create = false);
-    
+
     using MemberVec = std::vector<Member*>;
     MemberVec _members;
 
@@ -461,7 +461,7 @@ private:
 
   /// index of the member we are currently init-ing
     int _initPosition;
-    
+
     /// back-pointer to the manager, for the root groups. (sub-groups
     /// will have this as null, and chain via their parent)
     SGSubsystemMgr* _manager = nullptr;
@@ -576,12 +576,12 @@ public:
      * to base their own properties trees off of.
      */
     void set_root_node(SGPropertyNode_ptr node);
-    
+
     /**
      * @brief retrieve the root property node for this subsystem manager
      */
     SGPropertyNode_ptr root_node() const;
-    
+
     template<class T>
     T* get_subsystem() const
     {
@@ -623,9 +623,9 @@ public:
     using SubsystemFactoryFunctor = std::function<SGSubsystemRef()>;
 
     /**
-     * @brief register a subsytem with the manager
+     * @brief register a subsystem with the manager
      *
-     */ 
+     */
     static void registerSubsystem(const std::string& name,
                                   SubsystemFactoryFunctor f,
                                   GroupType group,
@@ -634,7 +634,7 @@ public:
                                   std::initializer_list<Dependency> deps = {});
 
     template<class T>
-    class Registrant 
+    class Registrant
     {
     public:
         Registrant(GroupType group = GENERAL,
@@ -650,7 +650,7 @@ public:
 
         // could implement a dtor to unregister but not needed at the moment
     };
-    
+
     template<class T>
     class InstancedRegistrant
     {
@@ -665,10 +665,10 @@ public:
                                               true, updateInterval,
                                               deps);
         }
-        
+
         // could implement a dtor to unregister but not needed at the moment
     };
-    
+
     /**
      * @brief templated add function, subsystem is deduced automatically
      *
@@ -677,8 +677,8 @@ public:
     SGSharedPtr<T> add(GroupType customGroup = INVALID, double customInterval = 0.0)
     {
         auto ref = create(T::staticSubsystemClassId());
-        
-        
+
+
         const GroupType group = (customGroup == INVALID) ?
             defaultGroupFor(T::staticSubsystemClassId()) : customGroup;
         const double interval = (customInterval == 0.0) ?
@@ -686,10 +686,10 @@ public:
         add(ref->subsystemId().c_str(), ref.ptr(), group, interval);
         return dynamic_cast<T*>(ref.ptr());
     }
-    
+
     /**
      * @brief templated creation function, only makes the instance but
-     * doesn't add to the manager or group heirarchy
+     * doesn't add to the manager or group hierarchy
      */
     template <class T>
     SGSharedPtr<T> create()
@@ -697,24 +697,24 @@ public:
         auto ref = create(T::staticSubsystemClassId());
         return dynamic_cast<T*>(ref.ptr());
     }
-    
+
     SGSubsystemRef create(const std::string& name);
-    
+
     template <class T>
     SGSharedPtr<T> createInstance(const std::string& subsystemInstanceId)
     {
         auto ref = createInstance(T::staticSubsystemClassId(), subsystemInstanceId);
         return dynamic_cast<T*>(ref.ptr());
     }
-    
+
     SGSubsystemRef createInstance(const std::string& name, const std::string& subsystemInstanceId);
 
     static GroupType defaultGroupFor(const char* name);
     static double defaultUpdateIntervalFor(const char* name);
     static const DependencyVec& dependsFor(const char* name);
-    
+
     /**
-     * @brief delegate to recieve notifications when the subsystem
+     * @brief delegate to receive notifications when the subsystem
      * configuration changes. For any event/state change, a before (will)
      * and after (did) change notifications are sent.
      */
@@ -724,28 +724,28 @@ public:
         virtual void willChange(SGSubsystem* sub, SGSubsystem::State newState);
         virtual void didChange(SGSubsystem* sub, SGSubsystem::State currentState);
     };
-    
+
     void addDelegate(Delegate * d);
     void removeDelegate(Delegate * d);
-    
+
     /**
      * @brief return a particular subsystem manager by name. Passing an
-     * empty string retrived the default/global subsystem manager, assuming it
+     * empty string retrieved the default/global subsystem manager, assuming it
      * has been created.
      */
     static SGSubsystemMgr* getManager(const std::string& id);
 private:
     friend class SGSubsystem;
     friend class SGSubsystemGroup;
-    
+
     void notifyDelegatesWillChange(SGSubsystem* sub, State newState);
     void notifyDelegatesDidChange(SGSubsystem* sub, State statee);
-    
+
     std::vector<SGSubsystemGroupRef> _groups;
     unsigned int _initPosition = 0;
     bool _destructorActive = false;
     SGPropertyNode_ptr _rootNode;
-    
+
     // non-owning reference, this is to accelerate lookup
     // by name which otherwise needs a full walk of the entire tree
     using SubsystemDict = std::map<std::string, SGSubsystem*>;
