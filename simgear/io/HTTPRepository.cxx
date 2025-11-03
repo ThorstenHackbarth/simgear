@@ -957,7 +957,13 @@ HTTPRepository::~HTTPRepository() = default;
 
 void HTTPRepository::setBaseUrl(const std::string &url)
 {
-  _d->baseUrl = url;
+    auto u = url;
+    // ensure no trailing slash, since we add one
+    // in our GET requests
+    if (u.ends_with('/')) {
+        u.pop_back();
+    }
+    _d->baseUrl = u;
 }
 
 std::string HTTPRepository::baseUrl() const
