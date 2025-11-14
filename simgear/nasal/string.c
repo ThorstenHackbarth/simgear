@@ -16,6 +16,7 @@ static int fromnum(double val, unsigned char* s);
 
 #define LEN(s) ((s)->emblen != -1 ? (s)->emblen : (s)->data.ref.len)
 #define DATA(s) ((s)->emblen != -1 ? (s)->data.buf : (s)->data.ref.ptr)
+#define HAS_ALLOCATED_MEMORY(s) ((s)->emblen == -1 && (s)->data.ref.ptr)
 
 int naStr_len(naRef s)
 {
@@ -29,7 +30,7 @@ char* naStr_data(naRef s)
 
 static void setlen(struct naStr* s, int sz)
 {
-    if(s->emblen == -1 && DATA(s)) naFree(s->data.ref.ptr);
+    if(HAS_ALLOCATED_MEMORY(s)) naFree(s->data.ref.ptr);
     if(sz > MAX_STR_EMBLEN) {
         s->emblen = -1;
         s->data.ref.len = sz;
@@ -125,7 +126,7 @@ void naStr_gcclean(struct naStr* str)
 ////////////////////////////////////////////////////////////////////////
 // Below is a custom double<->string conversion library.  Why not
 // simply use sprintf and atof?  Because they aren't acceptably
-// platform independant, sadly.  I've seen some very strange results.
+// platform independent, sadly.  I've seen some very strange results.
 // This works the same way everywhere, although it is tied to an
 // assumption of standard IEEE 64 bit floating point doubles.
 //
@@ -240,7 +241,7 @@ static int tonum(unsigned char* s, int len, double* result)
         i = readsigned(s, len, i+1, &exp);
         if(i == i0) return 0; // Must have a number after the "e"
     }
-    
+
     // compute the result
     *result = sgn * (val + frac * decpow(-fraclen)) * decpow(exp);
 
