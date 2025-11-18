@@ -32,9 +32,12 @@ static std::string gzErrorMessage(gzFile fd)
 
     if (errNum == Z_ERRNO) {
         return simgear::strutils::error_string(errno);
-    } else {
+    } else if (gzMsg) {
+        // null check above is important since we see occasional crashes here
         return {gzMsg};
     }
+
+    return {};
 }
 
 void sgReadChar ( gzFile fd, char *var )
@@ -331,7 +334,7 @@ void sgReadBytes(gzFile fd, const unsigned int n, void* var)
 }
 
 
-void sgWriteBytes ( gzFile fd, const unsigned int n, const void *var ) 
+void sgWriteBytes(gzFile fd, const unsigned int n, const void* var)
 {
     if ( n == 0) return;
     if ( gzwrite ( fd, (void *)var, n ) != (int)n ) {
@@ -511,9 +514,9 @@ void sgReadString ( gzFile fd, char **var )
 void sgWriteString ( gzFile fd, const char *var )
 {
     if ( var != NULL ) {
-	if ( gzwrite ( fd, (void *)var, strlen(var) + 1 ) == 
-	     (int)(strlen(var) + 1) )
-	    return ;
+        if (gzwrite(fd, (void*)var, strlen(var) + 1) ==
+            (int)(strlen(var) + 1))
+            return;
     } else {
 	gzputc( fd, 0 );
     }
