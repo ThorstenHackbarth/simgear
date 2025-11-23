@@ -164,10 +164,9 @@ static int defArg(struct Parser* p, struct Token* t)
             naParseError(p, "default arguments cannot be function calls", t->line);
         return defArg(p, RIGHT(t));
     }
-    
-    if(t->type == TOK_MINUS && RIGHT(t) && 
-       RIGHT(t)->type == TOK_LITERAL && !RIGHT(t)->str)
-    {
+
+    if (t->type == TOK_MINUS && RIGHT(t) &&
+        RIGHT(t)->type == TOK_LITERAL && !RIGHT(t)->str) {
         /* default arguments are constants, but "-1" parses as two
          * tokens, so we have to subset the expression generator for that
          * case */
@@ -259,6 +258,13 @@ static void genHashElem(struct Parser* p, struct Token* t)
 {
     if(!t || t->type == TOK_EMPTY)
         return;
+
+    if (t->type == TOK_ASSIGN) {
+        // specific warning for common case of writing an assignment in a hash definition
+        // https://gitlab.com/flightgear/flightgear/-/issues/3222
+        naParseError(p, "saw assignment inside hash/object initializer", t->line);
+    }
+
     if(t->type != TOK_COLON || !LEFT(t))
         naParseError(p, "bad hash/object initializer", t->line);
     if(LEFT(t)->type == TOK_SYMBOL) genScalarConstant(p, LEFT(t));
@@ -436,7 +442,7 @@ static void genLoop(struct Parser* p, struct Token* body,
                     int loopTop, int jumpEnd)
 {
     int cont, jumpOverContinue;
-    
+
     p->cg->loops[p->cg->loopTop-1].breakIP = jumpEnd-1;
 
     jumpOverContinue = emitJump(p, OP_JMP);
@@ -548,7 +554,7 @@ static void genBreakContinue(struct Parser* p, struct Token* t)
     // Make sure we are inside of a loop
     if(p->cg->loopTop <= 0)
         naParseError(p, "break/continue outside of a valid loop", t->line);
-    
+
     if(RIGHT(t)) {
         if(RIGHT(t)->type != TOK_SYMBOL)
             naParseError(p, "bad break/continue label", t->line);
@@ -828,11 +834,11 @@ naRef naCodeGen(struct Parser* p, struct Token* block, struct Token* arglist)
 
     genExprList(p, block);
     emit(p, OP_RETURN);
-    
+
     // Now make a code object
     codeObj = naNewCode(p->context);
     code = PTR(codeObj).code;
-    
+
     // Parse the argument list, if any
     p->cg->restArgSym = globals->argRef;
     code->nArgs = code->nOptArgs = 0;

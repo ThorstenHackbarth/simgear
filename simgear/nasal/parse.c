@@ -68,7 +68,7 @@ void* naParseAlloc(struct Parser* p, int bytes)
 {
     char* result;
     bytes = (bytes+7) & (~7); // Round up to 8 byte chunks for alignment
-    
+
     if(p->leftInChunk < bytes) {
         void* newChunk;
         void** newChunks;
@@ -177,8 +177,11 @@ static void parseBlock(struct Parser* p, struct Token *top,
         t = parseToken(p, list);
         if(t->type == end) return; /* drop end token on the floor */
         addChild(top, t);
-        if(needsSemi(t, *list))
-            addChild(top, newToken(p, TOK_SEMI));
+        if (needsSemi(t, *list)) {
+            struct Token* semi = newToken(p, TOK_SEMI);
+            semi->line = t->line;
+            addChild(top, semi);
+        }
     }
     /* Context dependency: end of block is a parse error UNLESS we're
      * looking for a statement terminator (a braceless block) or a -1
@@ -321,7 +324,7 @@ static struct Token* parsePrecedence(struct Parser* p,
     }
 
     // Another one: the "." and (postfix) "[]/()" operators should
-    // really be the same precendence level, but the existing
+    // really be the same precedence level, but the existing
     // implementation doesn't allow for it.  Bump us up a level if we
     // are parsing for DOT but find a LPAR/LBRA at the end of the
     // list.
