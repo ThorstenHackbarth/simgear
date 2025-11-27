@@ -482,7 +482,7 @@ include(AddSimGearTest) # helper to setup a test
 
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
 
-find_package(c-ares 1.27 REQUIRED)
+find_package(c-ares 1.17 REQUIRED)
 set(SIMGEAR_USING_CARES_DNS 1)
 
 add_subdirectory(3rdparty)

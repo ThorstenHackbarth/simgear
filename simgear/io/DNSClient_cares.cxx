@@ -12,9 +12,21 @@
 #include <simgear/debug/logstream.hxx>
 #include <string.h>
 
-    namespace simgear {
+#if ARES_VERSION < 0x11A00
+#include <sys/select.h>
+#endif
+
+namespace simgear {
 
 namespace DNS {
+
+#if ARES_VERSION < 0x11B00
+#define ARES_CLASS_IN 1
+
+#define ARES_REC_TYPE_NAPTR 35
+#define ARES_REC_TYPE_SRV 33
+#define ARES_REC_TYPE_TXT 16
+#endif
 
 class Client::ClientPrivate {
 public:
@@ -23,16 +35,23 @@ public:
         if( instanceCounter++ == 0 ) {
             /* Initialize library */
             ares_library_init(ARES_LIB_INIT_ALL);
+// Ares 1.23 introduces ares_threadsafety
+#if ARES_VERSION >= 0x011700
             if (!ares_threadsafety()) {
                 throw std::runtime_error("c-ares not compiled with thread support");
             }
+#endif
         }
         struct ares_options options;
         int optmask = 0;
 
         memset(&options, 0, sizeof(options));
+        // Ares 1.26 adds the event thread, but 1.27 adds ares_process
+        // so 1.27 is our minimum to use the direct event thread
+#if ARES_VERSION >= 0x11B00
         optmask |= ARES_OPT_EVENT_THREAD;
         options.evsys = ARES_EVSYS_DEFAULT;
+#endif
 
         /* Initialize channel to run queries, a single channel can accept unlimited queries */
         if (ares_init_options(&channel, &options, optmask) != ARES_SUCCESS) {
@@ -40,10 +59,13 @@ public:
         }
     }
 
-    ~ClientPrivate() {
+    ~ClientPrivate()
+    {
+// Ares 1.27 adds this function
+#if ARES_VERSION >= 0x11B00
         /* Wait until no more requests are left to be processed */
         ares_queue_wait_empty(channel, -1);
-
+#endif
         /* Cleanup */
         ares_destroy(channel);
 
@@ -179,7 +201,7 @@ public:
         ares_free_data(txt_out);
     }
 
-    ares_channel_t* channel = NULL;
+    ares_channel channel = NULL;
 
     static size_t instanceCounter;
 };
@@ -290,7 +312,23 @@ void Client::makeRequest(const Request_ptr& r)
 
 void Client::update(int waitTimeout)
 {
-    //not needed for c-ares
+#if ARES_VERSION < 0x011B00
+    // no event thread, manual updating
+    fd_set read_fds, write_fds;
+
+    FD_ZERO(&read_fds);
+    FD_ZERO(&write_fds);
+    int nfds = ares_fds(d->channel, &read_fds, &write_fds);
+    if (nfds == 0) {
+        // still need to ensure that timeouts fire
+        ares_process(d->channel, nullptr, nullptr);
+        return;
+    }
+
+    struct timeval tv{0, 0};
+    select(nfds, &read_fds, &write_fds, NULL, &tv);
+    ares_process(d->channel, &read_fds, &write_fds);
+#endif
 }
 
 } // of namespace DNS
