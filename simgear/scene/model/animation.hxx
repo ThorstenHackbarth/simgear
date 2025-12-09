@@ -1,15 +1,7 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2002 David Megginson <david@megginson.com>
 
-// animation.hxx - classes to manage model animation.
-// Written by David Megginson, started 2002.
-//
-// This file is in the Public Domain, and comes with no warranty.
-
-#ifndef _SG_ANIMATION_HXX
-#define _SG_ANIMATION_HXX 1
-
-#ifndef __cplusplus
-# error This library requires C++
-#endif
+#pragma once
 
 #include <osg/ref_ptr>
 #include <osg/Group>
@@ -60,7 +52,7 @@ protected:
   virtual void install(osg::Node& node);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 
-  virtual void apply(simgear::SGTransientModelData &modelData);
+  void apply(simgear::SGTransientModelData& modelData);
 
   /**
    * Read a 3d vector from the configuration property node.
@@ -128,7 +120,7 @@ private:
   std::string _name;
   SGSharedPtr<SGPropertyNode const> _configNode;
   SGPropertyNode* _modelRoot;
-  
+
   std::list<osg::ref_ptr<osg::Node> > _installedAnimations;
   bool _enableHOT;
 };
@@ -327,5 +319,3 @@ public:
 private:
   osg::ref_ptr<osg::Node> _light;
 };
-
-#endif // _SG_ANIMATION_HXX

@@ -1,11 +1,8 @@
 // animation.cxx - classes to manage model animation.
-// Written by David Megginson, started 2002.
-//
-// This file is in the Public Domain, and comes with no warranty.
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2002 David Megginson <david@megginson.com>
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include <string.h>             // for strcmp()
 #include <math.h>
@@ -134,7 +131,7 @@ public:
             return v2[0] < v1[0];
         else if (abs(v2[1] - v1[1]) > 0.00001)
             return v2[1] < v1[1];
-        else 
+        else
             return v2[2] < v1[2];
     }
     void addLine(const osg::Vec3& v1, const osg::Vec3& v2)
@@ -144,7 +141,7 @@ public:
 
         if (_orderXYZ)
         {
-            // Get the ends in the right order based on their 
+            // Get the ends in the right order based on their
             // lowest coordinates in x,y,z
             // This gives us a definitive vertex order in all cases
             // whereas previously when X was equal the order would
@@ -164,7 +161,7 @@ public:
                 addLineSegment(tv2, tv1);
         }
     }
-    
+
     // add a line segment handling axis swapping.
     void addLineSegment(SGVec3f v1, SGVec3f v2)
     {
@@ -325,14 +322,14 @@ read_value(const SGPropertyNode* configNode, SGPropertyNode* modelRoot,
     std::string offset = unit_string("offset", unit);
     std::string min = unit_string("min", unit);
     std::string max = unit_string("max", unit);
-    
+
     if (configNode->getBoolValue("use-personality", false)) {
       value = new SGPersonalityScaleOffsetExpression(value, configNode,
                                                      "factor", offset);
     } else {
       value = read_factor_offset(configNode, value, "factor", offset);
     }
-    
+
     double minClip = configNode->getDoubleValue(min, defMin);
     double maxClip = configNode->getDoubleValue(max, defMax);
     if (minClip > SGMiscd::min(SGLimitsd::min(), -SGLimitsd::max()) ||
@@ -570,8 +567,8 @@ SGAnimation::animate(simgear::SGTransientModelData &modelData)
 
   return true;
 }
-  
-  
+
+
 void
 SGAnimation::apply(osg::Node* node)
 {
@@ -610,7 +607,7 @@ SGAnimation::apply(osg::Group& group)
 {
     // the trick is to first traverse the children and then
     // possibly splice in a new group node if required.
-    // Else we end up in a recursive loop where we infinitly insert new
+    // Else we end up in a recursive loop where we infinitely insert new
     // groups in between
     traverse(group);
 
@@ -646,7 +643,7 @@ SGAnimation::installInGroup(const std::string& name, osg::Group& group,
     if (name.empty() || child->getName() == name) {
       // fire the installation of the animation
       install(*child);
-      
+
       // create a group node on demand
       if (!animationGroup.valid()) {
         animationGroup = createAnimationGroup(group);
@@ -705,7 +702,7 @@ const SGLineSegment<double>* SGAnimation::setCenterAndAxisFromObject(osg::Node* 
 
     if (!axisNode) {
         axis_object_name = _configNode->getStringValue("object-name") + std::string("-" + axisName);
-        // for compatibility we will not warn if no axis object can be found when there was nothing 
+        // for compatibility we will not warn if no axis object can be found when there was nothing
         // specified - as the axis could just be the default at the origin
         // so if there is a [objectname]-axis use it, otherwise fallback to the previous behaviour
         can_warn = false;
@@ -736,7 +733,7 @@ const SGLineSegment<double>* SGAnimation::setCenterAndAxisFromObject(osg::Node* 
                  * - specified in the axis node
                  * - or when not specified use the <defaults> value in the options.
                  */
-                bool orderXYZ = false; 
+                bool orderXYZ = false;
 
                 // check to see if this node specifies the vertex sorting rule
                 if (axisNode != nullptr && axisNode->hasChild("order-by-xyz"))
@@ -751,7 +748,7 @@ const SGLineSegment<double>* SGAnimation::setCenterAndAxisFromObject(osg::Node* 
                 }
 
                 /*
-                 * Check to see if we need to swap the axis direction (i.e. the 
+                 * Check to see if we need to swap the axis direction (i.e. the
                  * collected line segment vertices).
                  * This helps to avoid having to negate the rotations to get the
                  * required direction.
@@ -1180,7 +1177,7 @@ void SpinAnimCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
 SGVec3d readTranslateAxis(const SGPropertyNode* configNode)
 {
     SGVec3d axis;
-    
+
     if (configNode->hasValue("axis/x1-m")) {
         SGVec3d v1, v2;
         v1[0] = configNode->getDoubleValue("axis/x1-m", 0);
@@ -1219,7 +1216,7 @@ SGRotateAnimation::SGRotateAnimation(simgear::SGTransientModelData &modelData) :
     _initialValue = _animationValue->getValue();
   else
     _initialValue = 0;
-  
+
   readRotationCenterAndAxis(modelData.getNode(), _center, _axis, modelData);
 }
 
@@ -1320,7 +1317,7 @@ SGScaleAnimation::SGScaleAnimation(simgear::SGTransientModelData &modelData) :
     double maxClip = modelData.getConfigNode()->getDoubleValue("x-max", SGLimitsd::max());
     value = new SGClipExpression<double>(value, minClip, maxClip);
     _animationValue[0] = value->simplify();
-    
+
     value = new SGPersonalityScaleOffsetExpression(inPropExpr, modelData.getConfigNode(),
                                                    "y-factor", "y-offset",
                                                    factor, offset);
@@ -1328,7 +1325,7 @@ SGScaleAnimation::SGScaleAnimation(simgear::SGTransientModelData &modelData) :
     maxClip = modelData.getConfigNode()->getDoubleValue("y-max", SGLimitsd::max());
     value = new SGClipExpression<double>(value, minClip, maxClip);
     _animationValue[1] = value->simplify();
-    
+
     value = new SGPersonalityScaleOffsetExpression(inPropExpr, modelData.getConfigNode(),
                                                    "z-factor", "z-offset",
                                                    factor, offset);
@@ -1412,7 +1409,7 @@ public:
     _center[2] = configNode->getFloatValue("center/z-m", 0);
   }
   virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
-                                         osg::NodeVisitor* nv) const 
+                                         osg::NodeVisitor* nv) const
   {
     osg::Matrix transform;
     double scale_factor = computeScaleFactor(nv);
@@ -1425,7 +1422,7 @@ public:
     matrix.preMult(transform);
     return true;
   }
-  
+
   virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
                                          osg::NodeVisitor* nv) const
   {
@@ -1536,21 +1533,21 @@ public:
     _axis[1] = configNode->getFloatValue("axis/y", 0);
     _axis[2] = configNode->getFloatValue("axis/z", 1);
     _axis.normalize();
-    
+
     _center[0] = configNode->getFloatValue("center/x-m", 0);
     _center[1] = configNode->getFloatValue("center/y-m", 0);
     _center[2] = configNode->getFloatValue("center/z-m", 0);
-    
+
     _offset = configNode->getFloatValue("offset", 0);
     _factor = configNode->getFloatValue("factor", 1);
     _power = configNode->getFloatValue("power", 1);
     _two_sides = configNode->getBoolValue("two-sides", false);
-    
+
     _min_v = configNode->getFloatValue("min", SGLimitsf::epsilon());
     _max_v = configNode->getFloatValue("max", 1);
   }
   virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
-                                         osg::NodeVisitor* nv) const 
+                                         osg::NodeVisitor* nv) const
   {
     osg::Matrix transform;
     double scale_factor = computeScaleFactor(nv);
@@ -1563,7 +1560,7 @@ public:
     matrix.preMult(transform);
     return true;
   }
-  
+
   virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
                                          osg::NodeVisitor* nv) const
   {
@@ -1612,7 +1609,7 @@ private:
       scale_factor = _factor * pow( -cos_angle, _power ) + _offset;
     else if ( cos_angle > 0 )
       scale_factor = _factor * pow( cos_angle, _power ) + _offset;
-    
+
     if ( scale_factor < _min_v )
       scale_factor = _min_v;
     if ( scale_factor > _max_v )
@@ -1680,7 +1677,7 @@ public:
     setName(configNode->getStringValue("name", "billboard animation"));
   }
   virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
-                                         osg::NodeVisitor* nv) const 
+                                         osg::NodeVisitor* nv) const
   {
     // More or less taken from plibs ssgCutout
     if (_spherical) {
@@ -1691,18 +1688,18 @@ public:
       osg::Vec3 zAxis(matrix(2, 0), matrix(2, 1), matrix(2, 2));
       osg::Vec3 xAxis = osg::Vec3(0, 0, -1)^zAxis;
       osg::Vec3 yAxis = zAxis^xAxis;
-      
+
       xAxis.normalize();
       yAxis.normalize();
       zAxis.normalize();
-      
+
       matrix(0,0) = xAxis[0]; matrix(0,1) = xAxis[1]; matrix(0,2) = xAxis[2];
       matrix(1,0) = yAxis[0]; matrix(1,1) = yAxis[1]; matrix(1,2) = yAxis[2];
       matrix(2,0) = zAxis[0]; matrix(2,1) = zAxis[1]; matrix(2,2) = zAxis[2];
     }
     return true;
   }
-  
+
   virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
                                          osg::NodeVisitor* nv) const
   {
@@ -2347,4 +2344,3 @@ SGSharedPtr<SGExpressiond const> TransformExpression(osg::Transform* transform)
     }
     return ret;
 }
-
