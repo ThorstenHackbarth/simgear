@@ -103,6 +103,9 @@ linux-qt5-build:
       job: linux-build
       ref: $OSG_REF
       artifacts: true
+  artifacts:
+    paths:
+      - $PREFIX_DIR
   cache:
     key: "linux-qt5-$CI_COMMIT_REF_SLUG"
     paths:
