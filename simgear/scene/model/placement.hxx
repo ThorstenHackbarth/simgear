@@ -45,6 +45,7 @@ public:
   virtual double getRollDeg () const { return _roll_deg; }
   virtual double getPitchDeg () const { return _pitch_deg; }
   virtual double getHeadingDeg () const { return _heading_deg; }
+  SGQuatd getGlobalOrientation() const;
 
   virtual void setRollDeg (double roll_deg);
   virtual void setPitchDeg (double pitch_deg);
