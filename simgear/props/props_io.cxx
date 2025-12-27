@@ -14,12 +14,13 @@
 
 #include <stdlib.h>     // atof() atoi()
 
-#include <simgear/sg_inlines.h>
 #include <simgear/debug/logstream.hxx>
-#include <simgear/misc/sg_path.hxx>
-#include <simgear/xml/easyxml.hxx>
-#include <simgear/misc/ResourceManager.hxx>
 #include <simgear/io/iostreams/sgstream.hxx>
+#include <simgear/misc/ResourceManager.hxx>
+#include <simgear/misc/sg_path.hxx>
+#include <simgear/misc/strutils.hxx>
+#include <simgear/sg_inlines.h>
+#include <simgear/xml/easyxml.hxx>
 
 #include "props.hxx"
 #include "props_io.hxx"
@@ -31,6 +32,7 @@
 #include <map>
 #include <regex>
 #include <string>
+#include <utility>
 #include <vector>
 
 using std::istream;
@@ -42,6 +44,8 @@ using std::vector;
 using std::map;
 
 using std::endl;
+
+namespace strutils = simgear::strutils;
 
 #define DEFAULT_MODE (SGPropertyNode::READ|SGPropertyNode::WRITE)
 
@@ -117,7 +121,8 @@ private:
   }
 
   void warnForIncorrectBooleanValuesInDeveloperMode(
-      const std::string& propertyPath, const sg_location& location) const;
+      const std::string& propertyPath, const sg_location& location,
+      std::string strippedElementBody) const;
 
   int _default_mode;
   string _data;
@@ -318,14 +323,18 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 }
 
 void PropsVisitor::warnForIncorrectBooleanValuesInDeveloperMode(
-    const std::string& propertyPath, const sg_location& location) const
+    const std::string& propertyPath, const sg_location& location,
+    std::string strippedElementBody) const
 {
     if (sglog().inDeveloperMode()) {
         static const std::regex regexp(R"(^true|false|[0-9]+$)");
 
         if (!std::regex_match(_data, regexp)) {
             SG_LOG(SG_INPUT, SG_WARN,
-                   "readProperties: invalid value '" << _data << "' for boolean property " << propertyPath << " at " << location.getPath() << ":" << location.getLine() << " (use 'true', 'false' or a decimal integer)");
+                   "readProperties: invalid value '" << strippedElementBody <<
+                   "' for boolean property " << propertyPath << " at " <<
+                   location.getPath() << ":" << location.getLine() <<
+                   " (use 'true', 'false' or a decimal integer)");
         }
     }
 }
@@ -342,8 +351,12 @@ PropsVisitor::endElement (const char * name)
   if( !st.hasChildren() && !st.node->isAlias() )
   {
     if (st.type == "bool") {
+        // Keep the original case for the warning
+        const std::string strippedData = strutils::strip(_data);
+        _data = strutils::lowercase(strippedData);
         warnForIncorrectBooleanValuesInDeveloperMode(st.node->getPath(),
-                                                     location);
+                                                     location,
+                                                     std::move(strippedData));
         // Historic, lax parsing
         if (_data == "true" || atoi(_data.c_str()) != 0)
             ret = st.node->setBoolValue(true);
