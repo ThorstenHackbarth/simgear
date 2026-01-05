@@ -96,7 +96,7 @@ struct pair {
 
 struct GlyphGeometry
 {
-  osg::DrawArrays* quads;
+  osg::DrawArrays* triangles;
   osg::Vec2Array* uvs;
   osg::Vec3Array* vertices;
   osg::Vec3Array* normals;
@@ -107,6 +107,9 @@ struct GlyphGeometry
     vertices->push_back(xform.preMult(osg::Vec3(thick, x, y)));
     vertices->push_back(xform.preMult(osg::Vec3(thick, x + width, y)));
     vertices->push_back(xform.preMult(osg::Vec3(thick, x + width, y + height)));
+
+    vertices->push_back(xform.preMult(osg::Vec3(thick, x, y)));
+    vertices->push_back(xform.preMult(osg::Vec3(thick, x + width, y + height)));
     vertices->push_back(xform.preMult(osg::Vec3(thick, x, y + height)));
 
     // texture coordinates
@@ -116,13 +119,16 @@ struct GlyphGeometry
     uvs->push_back(osg::Vec2(xoffset,         0));
     uvs->push_back(osg::Vec2(xoffset + texWidth, 0));
     uvs->push_back(osg::Vec2(xoffset + texWidth, 1));
+
+    uvs->push_back(osg::Vec2(xoffset,         0));
+    uvs->push_back(osg::Vec2(xoffset + texWidth, 1));
     uvs->push_back(osg::Vec2(xoffset,         1));
 
     // normals
-    for (int i=0; i<4; ++i)
+    for (int i=0; i<6; ++i)
       normals->push_back(xform.preMult(osg::Vec3(0, -1, 0)));
 
-    quads->setCount(vertices->size());
+    triangles->setCount(vertices->size());
   }
 
   void addSignCase(double caseWidth, double caseHeight, const osg::Matrix& xform)
@@ -134,42 +140,60 @@ struct GlyphGeometry
     vertices->push_back(osg::Vec3(-thick, -caseWidth,  grounddist));
     vertices->push_back(osg::Vec3(thick, -caseWidth,  grounddist));
     vertices->push_back(osg::Vec3(thick, -caseWidth,  grounddist + caseHeight));
+
+    vertices->push_back(osg::Vec3(-thick, -caseWidth,  grounddist));
+    vertices->push_back(osg::Vec3(thick, -caseWidth,  grounddist + caseHeight));
     vertices->push_back(osg::Vec3(-thick, -caseWidth,  grounddist + caseHeight));
 
     uvs->push_back(osg::Vec2(1,    1));
     uvs->push_back(osg::Vec2(0.75, 1));
     uvs->push_back(osg::Vec2(0.75, 0));
+
+    uvs->push_back(osg::Vec2(1,    1));
+    uvs->push_back(osg::Vec2(0.75, 0));
     uvs->push_back(osg::Vec2(1,    0));
 
-    for (int i=0; i<4; ++i)
+    for (int i=0; i<6; ++i)
       normals->push_back(osg::Vec3(-1, 0.0, 0));
 
     //top
     vertices->push_back(osg::Vec3(-thick, -caseWidth,  grounddist + caseHeight));
     vertices->push_back(osg::Vec3(thick,  -caseWidth,  grounddist + caseHeight));
     vertices->push_back(osg::Vec3(thick,  caseWidth, grounddist + caseHeight));
+
+    vertices->push_back(osg::Vec3(-thick, -caseWidth,  grounddist + caseHeight));
+    vertices->push_back(osg::Vec3(thick,  caseWidth, grounddist + caseHeight));
     vertices->push_back(osg::Vec3(-thick, caseWidth, grounddist + caseHeight));
 
     uvs->push_back(osg::Vec2(1,    texsize));
     uvs->push_back(osg::Vec2(0.75, texsize));
     uvs->push_back(osg::Vec2(0.75, 0));
+
+    uvs->push_back(osg::Vec2(1,    texsize));
+    uvs->push_back(osg::Vec2(0.75, 0));
     uvs->push_back(osg::Vec2(1,    0));
 
-    for (int i=0; i<4; ++i)
+    for (int i=0; i<6; ++i)
       normals->push_back(osg::Vec3(0, 0, 1));
 
     //right
     vertices->push_back(osg::Vec3(-thick, caseWidth, grounddist + caseHeight));
     vertices->push_back(osg::Vec3(thick,  caseWidth, grounddist + caseHeight));
     vertices->push_back(osg::Vec3(thick,  caseWidth, grounddist));
+
+    vertices->push_back(osg::Vec3(-thick, caseWidth, grounddist + caseHeight));
+    vertices->push_back(osg::Vec3(thick,  caseWidth, grounddist));
     vertices->push_back(osg::Vec3(-thick, caseWidth, grounddist));
 
     uvs->push_back(osg::Vec2(1,    1));
     uvs->push_back(osg::Vec2(0.75, 1));
     uvs->push_back(osg::Vec2(0.75, 0));
+
+    uvs->push_back(osg::Vec2(1,    1));
+    uvs->push_back(osg::Vec2(0.75, 0));
     uvs->push_back(osg::Vec2(1,    0));
 
-    for (int i=0; i<4; ++i)
+    for (int i=0; i<6; ++i)
       normals->push_back(osg::Vec3(1, 0.0, 0));
 
 
@@ -179,7 +203,7 @@ struct GlyphGeometry
       (*normals)[i] = xform.preMult((*normals)[i]);
     }
 
-    quads->setCount(vertices->size());
+    triangles->setCount(vertices->size());
   }
 };
 
@@ -207,8 +231,8 @@ GlyphGeometry* makeGeometry(Effect* eff, osg::Group* group)
   geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
   geometry->setTexCoordArray(0, gg->uvs);
 
-  gg->quads = new osg::DrawArrays(GL_QUADS, 0, gg->vertices->size());
-  geometry->addPrimitiveSet(gg->quads);
+  gg->triangles = new osg::DrawArrays(GL_TRIANGLES, 0, gg->vertices->size());
+  geometry->addPrimitiveSet(gg->triangles);
   geode->addDrawable(geometry);
   group->addChild(geode);
 
