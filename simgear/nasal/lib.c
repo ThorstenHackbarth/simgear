@@ -793,6 +793,21 @@ static naRef f_range(naContext c, naRef me, int argc, naRef* args)
     return out;
 }
 
+static naRef f_member(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef hash = argc > 0 ? args[0] : naNil();
+    naRef key  = argc > 1 ? args[1] : naNil();
+    if (naIsNil(hash) || naIsNil(key)) ARGERR();
+
+    naRef out;
+
+    if (naMember_cget(c, hash, naStr_data(key), &out)) {
+        return out;
+    }
+
+    return naNil(); // member not found
+}
+
 static naCFuncItem funcs[] = {
     {"size", f_size},
     {"keys", f_keys},
@@ -837,6 +852,7 @@ static naCFuncItem funcs[] = {
     {"ishash", f_ishash},
     {"isfunc", f_isfunc},
     {"range", f_range},
+    {"member", f_member},
     {0}};
 
 naRef naInit_std(naContext c)
