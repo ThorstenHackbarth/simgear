@@ -21,6 +21,10 @@
 
 #include "commands.hxx"
 
+template<typename T> class SGExpression;
+using SGExpressiond = SGExpression<double>;
+
+
 class SGAbstractBinding : public SGConditional
 {
 public:
@@ -57,7 +61,7 @@ public:
 
     /**
    * Fire a binding with a number of additional parameters
-   * 
+   *
    * The children of params will be merged with the fixed arguments.
    */
     void fire(SGPropertyNode* params) const;
@@ -114,7 +118,7 @@ public:
    */
   virtual ~SGBinding () = default;
 
-  
+
   /**
    * Clear internal state of the binding back to empty.
    *
@@ -146,8 +150,14 @@ public:
   // just to be safe.
   SGBinding (const SGBinding &binding);
 
+  bool _debug = false;
   std::string _command_name;
+  // property root
   mutable SGPropertyNode_ptr _root;
+  // Expression to transform input value (instead of using command)
+  SGSharedPtr<SGExpressiond> _expression;
+  // target property for expression result
+  SGPropertyNode_ptr _target_property;
 };
 
 typedef SGSharedPtr<SGBinding> SGBinding_ptr;
@@ -157,7 +167,7 @@ typedef std::map<unsigned,SGBindingList> SGBindingMap;
 
 /**
  * fire every binding in a list, in sequence
- 
+
  */
 void fireBindingList(const SGBindingList& aBindings, SGPropertyNode* params = NULL);
 
@@ -166,7 +176,7 @@ void fireBindingList(const std::vector<SGBinding_ptr>& aBindings, SGPropertyNode
 
 /**
  * fire every binding in a list with a setting value
- 
+
  */
 void fireBindingListWithOffset(const SGBindingList& aBindings, double offset, double max);
 

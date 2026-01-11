@@ -116,8 +116,10 @@ template<typename T>
 static SGExpression<T>*
 SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
 {
-    if (!expression)
-        return 0;
+    if (!expression) {
+        SG_LOG(SG_IO, SG_ALERT, "No expression given");
+        return nullptr;
+    }
 
     std::string name = expression->getNameString();
 
@@ -295,26 +297,43 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
     }
 
     if (name == "table") {
+        // SGInterpTable considers only child nodes named 'entry'
         SGInterpTable* tab = new SGInterpTable(expression);
         if (!tab) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression: malformed table");
             return 0;
         }
-        
-        // find input expression - i.e a child not named 'entry'
+
+        // mode = interpolation or nearest match
+        simgear::expression::TableMode mode = simgear::expression::TableMode::INTERPOLATE;
+
+        // find input expression - i.e. a child not named 'entry' or 'mode'
         const SGPropertyNode* inputNode = NULL;
-        for (int i=0; (i<expression->nChildren()) && !inputNode; ++i) {
-            if (expression->getChild(i)->getNameString() == "entry") {
+        for (int i=0; (i<expression->nChildren()); ++i) {
+            const auto child = expression->getChild(i);
+            const auto name = child->getNameString();
+            if (name == "entry") {
                 continue;
             }
-            
+            // what eval() should do: find nearest or inderpolate (default)
+            if (name == "mode") {
+                const auto m = child->getStringValue();
+                if (m == "nearest")
+                    mode = simgear::expression::TableMode::NEAREST;
+                else // default
+                    mode = simgear::expression::TableMode::INTERPOLATE;
+                continue;
+            }
+
             inputNode = expression->getChild(i);
         }
-        
+
         if (!inputNode) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression: no input found");
             return 0;
         }
+        else
+            SG_LOG(SG_IO, SG_DEV_WARN, "Table input node " << inputNode->getPath() << " = '" << inputNode->getStringValue()  << "'  Root: " << inputRoot->getPath());
 
         SGSharedPtr<SGExpression<T> > inputExpression;
         inputExpression = SGReadExpression<T>(inputRoot, inputNode);
@@ -322,10 +341,10 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
         }
-        
-        return new SGInterpTableExpression<T>(inputExpression, tab);
+
+        return new SGInterpTableExpression<T>(inputExpression, tab, mode);
     }
-    
+
     if (name == "acos") {
         if (expression->nChildren() != 1) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
@@ -563,7 +582,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
         }
         return new SGTanhExpression<T>(inputExpression);
     }
-    
+
 // if (name == "step") {
 // }
 // if (name == "condition") {
@@ -646,9 +665,9 @@ Expression* valueParser(const SGPropertyNode* exp, Parser* parser)
 {
     switch (exp->getType()) {
     case props::BOOL:
-        return new SGConstExpression<bool>(getValue<bool>(exp));        
+        return new SGConstExpression<bool>(getValue<bool>(exp));
     case props::INT:
-        return new SGConstExpression<int>(getValue<int>(exp));        
+        return new SGConstExpression<int>(getValue<int>(exp));
     case props::FLOAT:
         return new SGConstExpression<float>(getValue<float>(exp));
     case props::DOUBLE:

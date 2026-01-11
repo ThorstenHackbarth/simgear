@@ -29,6 +29,10 @@ namespace simgear
       FLOAT,
       DOUBLE
     };
+    enum TableMode {
+      INTERPOLATE = 0,
+      NEAREST
+    };
     template<typename T> struct TypeTraits;
     template<> struct TypeTraits<bool> {
       static const Type typeTag = BOOL;
@@ -169,9 +173,9 @@ public:
     _expression = _expression->simplify();
     return SGExpression<T>::simplify();
   }
-  
+
   virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const
-    { _expression->collectDependentProperties(props); }  
+    { _expression->collectDependentProperties(props); }
 protected:
   SGUnaryExpression(SGExpression<T>* expression = 0)
   { setOperand(expression); }
@@ -208,13 +212,13 @@ public:
   virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const
   {
     _expressions[0]->collectDependentProperties(props);
-    _expressions[1]->collectDependentProperties(props); 
-  } 
-  
+    _expressions[1]->collectDependentProperties(props);
+  }
+
 protected:
   SGBinaryExpression(SGExpression<T>* expr0, SGExpression<T>* expr1)
   { setOperand(0, expr0); setOperand(1, expr1); }
-  
+
 private:
   SGSharedPtr<SGExpression<T> > _expressions[2];
 };
@@ -263,13 +267,13 @@ public:
   {
     for (size_t i = 0; i < _expressions.size(); ++i)
       _expressions[i]->collectDependentProperties(props);
-  } 
+  }
 protected:
   SGNaryExpression()
   { }
   SGNaryExpression(SGExpression<T>* expr0, SGExpression<T>* expr1)
   { addOperand(expr0); addOperand(expr1); }
-  
+
 private:
   std::vector<SGSharedPtr<SGExpression<T> > > _expressions;
 };
@@ -286,7 +290,7 @@ public:
   { _prop = prop; }
   virtual void eval(T& value, const simgear::expression::Binding*) const
   { doEval(value); }
-  
+
   virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const
     { props.insert(_prop.get()); }
 private:
@@ -581,20 +585,29 @@ template<typename T>
 class SGInterpTableExpression : public SGUnaryExpression<T> {
 public:
   SGInterpTableExpression(SGExpression<T>* expr,
-                          const SGInterpTable* interpTable) :
+                          const SGInterpTable* interpTable,
+                          const simgear::expression::TableMode mode = simgear::expression::TableMode::INTERPOLATE) :
     SGUnaryExpression<T>(expr),
-    _interpTable(interpTable)
+    _interpTable(interpTable),
+    _mode(mode)
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
   {
-    if (_interpTable)
-      value = _interpTable->interpolate(getOperand()->getValue(b));
+    if (_interpTable) {
+      if (_mode == simgear::expression::TableMode::INTERPOLATE)
+        value = _interpTable->interpolate(getOperand()->getValue(b));
+      else if (_mode == simgear::expression::TableMode::NEAREST)
+        value = _interpTable->nearest(getOperand()->getValue(b));
+      else
+        SG_LOG(SG_IO, SG_ALERT, "SGInterpTableExpression unknown mode " << _mode);
+    }
   }
 
   using SGUnaryExpression<T>::getOperand;
 private:
   SGSharedPtr<SGInterpTable const> _interpTable;
+  const simgear::expression::TableMode _mode;
 };
 
 template<typename T>
@@ -714,7 +727,7 @@ public:
       return getOperand()->simplify();
     return SGUnaryExpression<T>::simplify();
   }
-  
+
   virtual void collectDependentProperties(std::set<const SGPropertyNode*>& props) const
   {
     SGUnaryExpression<T>::collectDependentProperties(props);
@@ -848,7 +861,7 @@ public:
     size_t sz = SGNaryExpression<T>::getNumOperands();
     if (sz < 1)
       return;
-    
+
     value = getOperand(0)->getValue(b);
     for (size_t i = 1; i < sz; ++i)
       value = SGMisc<T>::min(value, getOperand(i)->getValue(b));
@@ -869,7 +882,7 @@ public:
     size_t sz = SGNaryExpression<T>::getNumOperands();
     if (sz < 1)
       return;
-    
+
     value = getOperand(0)->getValue(b);
     for (size_t i = 1; i < sz; ++i)
       value = SGMisc<T>::max(value, getOperand(i)->getValue(b));
@@ -934,7 +947,7 @@ namespace simgear
       ParseError(const std::string& message = std::string())
           : sg_exception(message) {}
   };
-    
+
   // Support for binding variables around an expression.
   class Binding
   {
@@ -1101,7 +1114,7 @@ namespace simgear
       _expressions.push_back(expression);
       return _expressions.size() - 1;
     }
-    
+
     template<typename Iter>
     void addOperands(Iter begin, Iter end)
     {
@@ -1110,7 +1123,7 @@ namespace simgear
           addOperand(static_cast< ::SGExpression<OpType>*>(*iter));
         }
     }
-    
+
     virtual bool isConst() const
     {
       for (size_t i = 0; i < _expressions.size(); ++i)
@@ -1129,7 +1142,7 @@ namespace simgear
     {
       return simgear::expression::TypeTraits<OpType>::typeTag;
     }
-    
+
   protected:
     GeneralNaryExpression()
     { }
@@ -1167,13 +1180,13 @@ namespace simgear
     Pred<OpType> _pred;
   };
 
-  template<template<typename OT> class Pred, typename OpType>
+  template<template<typename T> class Pred, typename OpType>
   PredicateExpression<OpType, Pred>*
   makePredicate(SGExpression<OpType>* op1, SGExpression<OpType>* op2)
   {
     return new PredicateExpression<OpType, Pred>(op1, op2);
   }
-  
+
   template<typename OpType>
   class EqualToExpression : public PredicateExpression<OpType, std::equal_to>
   {

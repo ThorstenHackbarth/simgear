@@ -67,6 +67,7 @@ private:
  * The top-level is always an implicit 'and' group, whatever the
  * node's name (it should usually be "condition").
  *
+ * @param prop_root Property tree root.
  * @param node The top-level condition node (usually named "condition").
  * @return A pointer to a newly-allocated condition; it is the
  *         responsibility of the caller to delete the condition when
@@ -77,4 +78,3 @@ SGCondition *sgReadCondition( SGPropertyNode *prop_root,
 
 
 #endif // __SG_CONDITION_HXX
-

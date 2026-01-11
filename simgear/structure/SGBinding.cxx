@@ -12,6 +12,7 @@
 
 #include <simgear/compiler.h>
 #include "SGBinding.hxx"
+#include "SGExpression.hxx"
 
 #include <simgear/props/props_io.hxx>
 #include <simgear/structure/exception.hxx>
@@ -87,38 +88,79 @@ SGBinding::clear()
   _setting.clear();
 }
 
+/**
+ * @brief Create a binding object from node
+ * node: binding configuration
+ * root: property tree root
+ */
 void SGBinding::read(const SGPropertyNode* node, SGPropertyNode* root)
 {
     const SGPropertyNode* conditionNode = node->getChild("condition");
+    const SGPropertyNode* expressionNode = node->getChild("expression");
+    const SGPropertyNode* target = node->getChild("property");
+    _debug = node->getBoolValue("debug", false);
+
     if (conditionNode != 0)
         setCondition(sgReadCondition(root, conditionNode));
 
+
     _command_name = node->getStringValue("command", "");
-    if (_command_name.empty()) {
-        SG_LOG(SG_INPUT, SG_DEV_ALERT, "No command supplied for binding { " << node->getPath() << " }.");
+    if (_command_name.empty() && expressionNode == nullptr) {
+        SG_LOG(SG_INPUT, SG_WARN, "Neither command nor expression supplied for binding { " << node->getPath() << " }.");
     }
 
     _arg = const_cast<SGPropertyNode*>(node);
     _root = const_cast<SGPropertyNode*>(root);
     _setting.clear();
+
+    // if we have no command, look for expression and target property
+    if (expressionNode && expressionNode->nChildren() && target) {
+        _target_property = _root->getNode(target->getStringValue(), true);
+        // input value is stored in 'setting'
+        _setting = _arg->getChild("setting", 0, true);
+
+        if (_debug) {
+            SG_LOG(SG_INPUT, SG_MANDATORY_INFO, "Reading expression for binding " << node->getPath());
+            SG_LOG(SG_INPUT, SG_MANDATORY_INFO, "Input from " << _setting->getPath());
+            SG_LOG(SG_INPUT, SG_MANDATORY_INFO, "Output to " << _target_property->getPath());
+        }
+        /*
+        Pass the setting node as property tree root to expression.
+        Absolute property paths in <expression> XML will work as usual
+        An empty path or '.' will refer to the 'setting' node, i.e. the binding input.
+        */
+        _expression = SGReadDoubleExpression(_setting, expressionNode->getChild(0));
+        if (!_expression && _debug)
+            SG_LOG(SG_INPUT, SG_MANDATORY_INFO, "FAILED");
+    }
+
 }
 
 void
 SGBinding::innerFire () const
 {
     auto cmd = SGCommandMgr::instance()->getCommand(_command_name);
-    if (!cmd) {
-        SG_LOG(SG_INPUT, SG_WARN, "No command found for binding:" << _command_name);
-        return;
-    }
-
-    try {
-        if (!(*cmd)(_arg, _root)) {
-            SG_LOG(SG_INPUT, SG_ALERT, "Failed to execute command " << _command_name);
+    // first try command
+    if (cmd) {
+        try {
+            if (!(*cmd)(_arg, _root)) {
+                SG_LOG(SG_INPUT, SG_ALERT, "Failed to execute command " << _command_name);
+            }
+        } catch (sg_exception& e) {
+            SG_LOG(SG_GENERAL, SG_ALERT, "command '" << _command_name << "' failed with exception\n"
+                                                    << "\tmessage:" << e.getMessage() << " (from " << e.getOrigin() << ")");
         }
-    } catch (sg_exception& e) {
-        SG_LOG(SG_GENERAL, SG_ALERT, "command '" << _command_name << "' failed with exception\n"
-                                                 << "\tmessage:" << e.getMessage() << " (from " << e.getOrigin() << ")");
+    }
+    // otherwise try expression
+    else {
+        if (_expression) {
+            double result = _expression->getDoubleValue();
+            if (_debug) {
+                SG_LOG(SG_INPUT, SG_MANDATORY_INFO, "Expression result {" << _arg->getPath() << "}:" << result);
+            }
+            if (_target_property)
+                _target_property->setDoubleValue(result);
+        }
     }
 }
 

@@ -19,15 +19,16 @@
 #include <simgear/structure/SGReferenced.hxx>
 
 #include <map>
+#include <optional>
 #include <string>
 
 class SGPropertyNode;
 class SGPath;
 
 /**
- * A class that provids a simple linear 2d interpolation lookup table.
+ * A class that provides a simple linear 2d interpolation lookup table.
  * The actual table is expected to be loaded from a file.  The
- * independant variable must be strictly ascending.  The dependent
+ * independent variable must be strictly ascending.  The dependent
  * variable can be anything.
  */
 class SGInterpTable : public SGReferenced {
@@ -56,7 +57,7 @@ public:
      * @param file name of interpolation file
      */
     SGInterpTable( const SGPath& path );
-    
+
     /**
      * Add an entry to the table, extending the table's length.
      *
@@ -64,7 +65,7 @@ public:
      * @param dep The dependent variable.
      */
     void addEntry (double ind, double dep);
-    
+
 
     /**
      * Given an x value, linearly interpolate the y value from the table.
@@ -73,15 +74,25 @@ public:
      */
     double interpolate(double x) const;
 
+    /**
+     * Given an x value, find nearest y value from the table.
+     * @param x independent variable
+     * @return nearest table value
+     */
+    double nearest(double x) const;
+
     /** Destructor */
     virtual ~SGInterpTable();
 
 private:
     typedef std::map<double, double> Table;
     Table _table;
+    struct Bounds {
+        Table::const_iterator lower;
+        Table::const_iterator upper;
+    };
+    std::optional<Bounds> findBounds(double x) const;
 };
 
 
 #endif // _INTERPOLATER_H
-
-
