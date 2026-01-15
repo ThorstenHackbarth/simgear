@@ -797,11 +797,11 @@ static naRef f_member(naContext c, naRef me, int argc, naRef* args)
 {
     naRef hash = argc > 0 ? args[0] : naNil();
     naRef key  = argc > 1 ? args[1] : naNil();
-    if (naIsNil(hash) || naIsNil(key)) ARGERR();
+    if (!naIsHash(hash) || !naIsString(key)) ARGERR();
 
     naRef out;
 
-    if (naMember_cget(c, hash, naStr_data(key), &out)) {
+    if (naMember_get(c, hash, key, &out)) {
         return out;
     }
 
