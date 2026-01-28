@@ -134,6 +134,11 @@ if(APPLE)
   add_compile_definitions(GL_SILENCE_DEPRECATION)
 endif()
 
+if(CYGWIN)
+  # Required for using GNU extensions
+  add_compile_definitions(_GNU_SOURCE)
+endif()
+
 find_package(Threads REQUIRED)
 
 find_package(Boost REQUIRED)
