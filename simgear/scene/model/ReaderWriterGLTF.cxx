@@ -1,7 +1,6 @@
-/*
- * SPDX-FileCopyrightText: Copyright (C) 2021 - 2024 Fernando García Liñán
- * SPDX-License-Identifier: LGPL-2.0-or-later
- */
+
+// SPDX-License-Identifier: LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2021-2024 Fernando García Liñán
 
 #ifdef HAVE_CONFIG_H
 #  include <simgear_config.h>
@@ -330,7 +329,7 @@ struct GLTFBuilder {
         makeChild(texNode, "type")->setValue("2d");
         makeChild(texNode, "image")->setStringValue(absFileName);
 
-        if (texture.sampler >= 0 && texture.sampler < model.samplers.size()) {
+        if ((texture.sampler >= 0) && (static_cast<size_t>(texture.sampler) < model.samplers.size())) {
             const tinygltf::Sampler& sampler = model.samplers[texture.sampler];
 
             // Build a single sampler property

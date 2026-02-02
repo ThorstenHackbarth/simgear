@@ -49,7 +49,7 @@ static naRef print(naContext c, naRef me, int argc, naRef* args)
 #define NASTR(s) naStr_fromdata(naNewString(ctx), (s), strlen((s)))
 int main(int argc, char** argv)
 {
-    naRef code, namespace, result, *args;
+    naRef code, namespace, *args;
     char path[MAX_PATH_LEN];
     struct Context *ctx;
     char *buf, *script;
@@ -139,7 +139,7 @@ int main(int argc, char** argv)
         args[i] = NASTR(argv[i+2]);
 
     // Run it.
-    result = naCall(ctx, code, argc-2, args, naNil(), naNil());
+    naCall(ctx, code, argc - 2, args, naNil(), naNil());
     free(args);
 
 #if 0

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2014 Thomas Geymayer
+
 
 /**
  * @brief Unit tests for reference counting and smart pointer classes
@@ -134,7 +136,10 @@ void test_SGSharedPtr()
     RefPtr ptrA(new ReferenceCounted());
     RefPtr ptrB(ptrA);
 
+    SUPPRESS_WARNINGS_START
     ptrA = std::move(ptrA);
+    SUPPRESS_WARNINGS_END
+
     SG_CHECK_EQUAL( ptrA.getNumRefs(), 2 );
     SG_CHECK_EQUAL( ptrB.getNumRefs(), 2 );
     SG_CHECK_IS_NOT_NULL( ptrA.get() );

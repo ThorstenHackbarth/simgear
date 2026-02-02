@@ -94,6 +94,28 @@ inline void SG_NORMALIZE_RANGE( T &val, const T min, const T max ) {
     Class(const Class &); \
     Class &operator=(const Class &);
 
+    // Define macros for portable warning suppression
+    #if defined(__GNUC__) || defined(__clang__)
+        #define SUPPRESS_WARNINGS_START                           \
+            _Pragma("GCC diagnostic push")                        \
+                _Pragma("GCC diagnostic ignored \"-Wself-move\"") \
+                    _Pragma("GCC diagnostic ignored \"-Wpragmas\"") // To suppress potential warning about unused pragmas
+        #define SUPPRESS_WARNINGS_END \
+            _Pragma("GCC diagnostic pop")
+    #elif defined(_MSC_VER)
+        // MSVC warning number for self-move might be specific (e.g., C26409, C26439 from Code Analysis)
+        // The following uses a generic push/pop; For self-move, use C26800
+        #define SUPPRESS_WARNINGS_START \
+            __pragma(warning(push))     \
+                __pragma(warning(C26800))
+        #define SUPPRESS_WARNINGS_END \
+            __pragma(warning(pop))
+    #else
+        #define SUPPRESS_WARNINGS_START
+        #define SUPPRESS_WARNINGS_END
+    #endif
+
+
 namespace simgear {
 
 // A swap() that is guaranteed to be 'noexcept' as long as compilation
