@@ -6,8 +6,7 @@
  * @brief Pointer proxy doing reference counting.
  */
 
-#ifndef SGSharedPtr_HXX
-#define SGSharedPtr_HXX
+#pragma once
 
 #include <simgear/sg_inlines.h>
 
@@ -19,7 +18,7 @@ class SGWeakPtr;
 /// This class is a pointer proxy doing reference counting on the object
 /// it is pointing to.
 /// The SGSharedPtr class handles reference counting and possible
-/// destruction if no nore references are in use automatically.
+/// destruction if no more references are in use automatically.
 /// Classes derived from SGReferenced can be handled with SGSharedPtr.
 /// Once you have a SGSharedPtr available you can use it just like
 /// a usual pointer with the exception that you don't need to delete it.
@@ -103,7 +102,7 @@ public:
       reset(p.get());
       return *this;
     }
-    
+
     template<typename U>
     SGSharedPtr& operator=(U* p)
     {
@@ -115,27 +114,27 @@ public:
     {
         return _ptr;
     }
-    
+
     T& operator*(void) const
     {
         return *_ptr;
     }
-    
+
     operator T*(void) const
     {
         return _ptr;
     }
-    
+
     T* ptr(void) const
     {
         return _ptr;
     }
-    
+
     T* get(void) const
     {
         return _ptr;
     }
-    
+
     T* release()
     {
         T* tmp = _ptr;
@@ -143,13 +142,13 @@ public:
         T::put(tmp);
         return tmp;
     }
-    
+
     void reset() noexcept
     {
         if (!T::put(_ptr)) delete _ptr;
         _ptr = 0;
     }
-    
+
     void reset(T* p)
     {
         SGSharedPtr(p).swap(*this);
@@ -159,7 +158,7 @@ public:
     {
         return T::shared(_ptr);
     }
-    
+
     unsigned getNumRefs(void) const
     {
         return T::count(_ptr);
@@ -174,14 +173,14 @@ public:
     {
         reset();
     }
-    
+
     void swap(SGSharedPtr& other) noexcept
     {
         simgear::noexceptSwap(_ptr, other._ptr);
     }
 
 private:
-    
+
     void assignNonRef(T* p)
     {
         reset();
@@ -267,4 +266,3 @@ bool operator<(const SGSharedPtr<T>& lhs, const SGSharedPtr<U>& rhs)
 {
   return lhs.get() < rhs.get();
 }
-#endif

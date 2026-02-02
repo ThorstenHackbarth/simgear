@@ -6,11 +6,10 @@
  * @brief Various inline template definitions.
  */
 
+#pragma once
+
 #include <type_traits>
 #include <utility>
-
-#ifndef _SG_INLINES_H
-#define _SG_INLINES_H
 
 // return the sign of a value
 template <class T>
@@ -94,26 +93,27 @@ inline void SG_NORMALIZE_RANGE( T &val, const T min, const T max ) {
     Class(const Class &); \
     Class &operator=(const Class &);
 
-    // Define macros for portable warning suppression
-    #if defined(__GNUC__) || defined(__clang__)
-        #define SUPPRESS_WARNINGS_START                           \
-            _Pragma("GCC diagnostic push")                        \
-                _Pragma("GCC diagnostic ignored \"-Wself-move\"") \
-                    _Pragma("GCC diagnostic ignored \"-Wpragmas\"") // To suppress potential warning about unused pragmas
-        #define SUPPRESS_WARNINGS_END \
-            _Pragma("GCC diagnostic pop")
-    #elif defined(_MSC_VER)
-        // MSVC warning number for self-move might be specific (e.g., C26409, C26439 from Code Analysis)
-        // The following uses a generic push/pop; For self-move, use C26800
-        #define SUPPRESS_WARNINGS_START \
-            __pragma(warning(push))     \
-                __pragma(warning(C26800))
-        #define SUPPRESS_WARNINGS_END \
-            __pragma(warning(pop))
-    #else
-        #define SUPPRESS_WARNINGS_START
-        #define SUPPRESS_WARNINGS_END
-    #endif
+// Define macros for portable warning suppression
+#if defined(__GNUC__) || defined(__clang__)
+    #define SUPPRESS_WARNINGS_START                           \
+        _Pragma("GCC diagnostic push")                        \
+            _Pragma("GCC diagnostic ignored \"-Wself-move\"") \
+                _Pragma("GCC diagnostic ignored \"-Wpragmas\"") // suppress potential warning about unused pragmas
+    #define SUPPRESS_WARNINGS_END \
+        _Pragma("GCC diagnostic pop")
+#elif defined(_MSC_VER)
+    // MSVC warning number for self-move might be specific (e.g., C26409,
+    // C26439 from Code Analysis). The following uses a generic push/pop; for
+    // self-move, use C26800.
+    #define SUPPRESS_WARNINGS_START \
+        __pragma(warning(push))     \
+            __pragma(warning(C26800))
+    #define SUPPRESS_WARNINGS_END \
+        __pragma(warning(pop))
+#else
+    #define SUPPRESS_WARNINGS_START
+    #define SUPPRESS_WARNINGS_END
+#endif
 
 
 namespace simgear {
@@ -140,6 +140,4 @@ constexpr typename std::underlying_type<T>::type enumValue(T e) {
     return static_cast<typename std::underlying_type<T>::type>(e);
 }
 
-} // of namespace simgear
-
-#endif // _SG_INLINES_H
+} // namespace simgear

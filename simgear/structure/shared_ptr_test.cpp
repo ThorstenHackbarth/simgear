@@ -12,6 +12,7 @@
 #include <cstdlib>              // EXIT_SUCCESS
 
 #include <simgear/misc/test_macros.hxx>
+#include <simgear/sg_inlines.h>
 
 #include "SGSharedPtr.hxx"
 #include "SGWeakPtr.hxx"
@@ -130,8 +131,7 @@ void test_SGSharedPtr()
   }
 
   // Test SGSharedPtr's move assignment operator: self-move, supposedly
-  // undefined behavior but certainly safer as a no-op---which the
-  // copy-and-swap idiom offers for free.
+  // undefined behavior but certainly safer as a no-op.
   {
     RefPtr ptrA(new ReferenceCounted());
     RefPtr ptrB(ptrA);
