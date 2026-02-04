@@ -1,3 +1,6 @@
+// Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
+// SPDX-License-Identifier: LGPL-2.0-or-later
+
 #include <simgear_config.h>
 #include <simgear/compiler.h>
 
@@ -11,7 +14,7 @@
 
 #define VERIFY_COLOR(str, r, g, b, a) \
   SG_VERIFY(simgear::parseColor(str, color)) \
-  SG_CHECK_EQUAL_NOSTREAM(color, osg::Vec4(r, g, b, a))
+  SG_CHECK_EQUAL_NOSTREAM(color, osg::Vec4(r, g, b, a)) \
 
 #define VERIFY_NODE_STR(node, str) \
   SG_CHECK_EQUAL(node.getStringValue(), std::string(str))
@@ -22,8 +25,15 @@ int main (int ac, char ** av)
   VERIFY_COLOR("#ff0000", 1,0,0,1);
   VERIFY_COLOR("#00ff00", 0,1,0,1);
   VERIFY_COLOR("#0000ff", 0,0,1,1);
+  VERIFY_COLOR("#f0f", 1, 0, 1, 1);
+  VERIFY_COLOR("#000f", 0, 0, 0, 1);
+  VERIFY_COLOR("#0000", 0, 0, 0, 0);
+  VERIFY_COLOR("#ff00ff00", 1, 0, 1, 0);
+  VERIFY_COLOR("#800080ff", 0.501960814, 0, 0.501960814, 1);
+  VERIFY_COLOR("#880f", 0.533333361, 0.533333361, 0, 1);
   VERIFY_COLOR("rgb( 255,\t127.5,0)", 1, 0.5, 0, 1);
   VERIFY_COLOR("rgba(255,  127.5,0, 0.5)", 1, 0.5, 0, 0.5);
+  VERIFY_COLOR("rgba(242, 241, 240, 1)", 0.949019611, 0.945098042, 0.941176474, 1);
 
   SGPropertyNode color_node, color_arg;
   color_arg.setStringValue("#000000");
