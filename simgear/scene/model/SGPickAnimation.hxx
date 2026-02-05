@@ -123,3 +123,29 @@ protected:
 
 private:
 };
+
+class SGGUIAnimation : public SGPickAnimation
+{
+public:
+    SGGUIAnimation(simgear::SGTransientModelData& modelData);
+
+    static void setPickCallback(SGPickCallback* cb)
+    {
+        _cb = cb;
+    }
+
+    static SGPickCallback* getPickCallback()
+    {
+        return _cb;
+    }
+
+protected:
+    osg::Group* createMainGroup(osg::Group* pr) override;
+
+    void setupCallbacks(SGSceneUserData* ud, osg::Group* parent) override;
+
+    inline static SGSharedPtr<SGPickCallback> _cb;
+
+private:
+    class UpdateCallback;
+};

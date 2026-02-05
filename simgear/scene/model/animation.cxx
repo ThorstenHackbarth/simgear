@@ -510,6 +510,9 @@ SGAnimation::animate(simgear::SGTransientModelData &modelData)
     } else if (type == "flash") {
         SGFlashAnimation anim(modelData);
         anim.apply(modelData);
+    } else if (type == "gui") {
+        SGGUIAnimation anim(modelData);
+        anim.apply(modelData.getNode());
     } else if (type == "interaction") {
         SGInteractionAnimation anim(modelData);
         anim.apply(modelData);

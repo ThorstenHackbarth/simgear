@@ -1065,3 +1065,51 @@ void SGTouchAnimation::setupCallbacks(SGSceneUserData* ud, osg::Group*)
     }
 //    ud->setPickCallback(new TouchPickCallback(getConfig(), getModelRoot()));
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+class SGGUIAnimation::UpdateCallback : public osg::NodeCallback
+{
+public:
+    UpdateCallback()
+    {
+        setName("SGGUIAnimation::UpdateCallback");
+    }
+
+    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+    {
+        traverse(node, nv);
+
+        auto* cb = SGGUIAnimation::getPickCallback();
+        if (cb) {
+            // The GUI's pick callback is now set, add it to the scene user data
+            SGSceneUserData::getOrCreateSceneUserData(node)->addPickCallback(cb);
+
+            // We can delete this update callback entirely now
+            node->setUpdateCallback(nullptr);
+        }
+    }
+};
+
+SGGUIAnimation::SGGUIAnimation(simgear::SGTransientModelData& modelData)
+    : SGPickAnimation(modelData)
+{
+}
+
+osg::Group* SGGUIAnimation::createMainGroup(osg::Group* pr)
+{
+    SGRotateTransform* transform = new SGRotateTransform();
+    pr->addChild(transform);
+
+    return transform;
+}
+
+void SGGUIAnimation::setupCallbacks(SGSceneUserData* ud, osg::Group* transform)
+{
+    // Either set the GUI pick callback, or set an update callback (which will
+    // set the GUI pick callback later)
+    if (_cb)
+        ud->addPickCallback(_cb);
+    else
+        transform->setUpdateCallback(new UpdateCallback());
+}
