@@ -16,6 +16,7 @@
 #include <simgear/props/vectorPropTemplates.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
+#include <simgear/scene/util/StateAttributeFactory.hxx>
 
 #include "Compositor.hxx"
 #include "CompositorUtil.hxx"
@@ -100,6 +101,13 @@ PropStringMap<osg::Texture::ShadowCompareFunc> shadow_compare_func_map = {
     {"gequal", osg::Texture::GEQUAL},
     {"always", osg::Texture::ALWAYS}
 };
+
+Buffer::~Buffer()
+{
+    if (!export_name.empty()) {
+        StateAttributeFactory::instance()->removeBufferTexture(export_name);
+    }
+}
 
 Buffer *
 buildBuffer(Compositor *compositor, const SGPropertyNode *node,
@@ -265,6 +273,15 @@ buildBuffer(Compositor *compositor, const SGPropertyNode *node,
         findPropString(node, "shadow-compare-func",
                        shadow_compare_func, shadow_compare_func_map);
         texture->setShadowCompareFunc(shadow_compare_func);
+    }
+
+    bool export_buffer = node->getBoolValue("export", false);
+    if (export_buffer) {
+        buffer->export_name = node->getStringValue("name");
+        if (!buffer->export_name.empty()) {
+            StateAttributeFactory::instance()->addBufferTexture(buffer->export_name,
+                                                                texture);
+        }
     }
 
     return buffer.release();

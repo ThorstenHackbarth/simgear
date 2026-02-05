@@ -55,6 +55,10 @@ public:
     osg::Depth* getStandardDepthWritesDisabled() { return _standardDepthWritesDisabled.get(); }
     osg::Texture3D* getNoiseTexture(int size);
     osg::Texture3D* getCloudNoiseTexture(int size);
+    osg::Texture* getBufferTexture(const std::string& name);
+
+    void addBufferTexture(const std::string& name, osg::Texture* texture);
+    void removeBufferTexture(const std::string& name);
 
     StateAttributeFactory();
 
@@ -75,8 +79,12 @@ protected:
     typedef std::map<int, osg::ref_ptr<osg::Texture3D>> NoiseMap;
     NoiseMap _noises;
     osg::ref_ptr<osg::Texture3D> _cloudnoise;
+    using BufferMap = std::map<std::string, osg::ref_ptr<osg::Texture>>;
+    BufferMap _buffers;
+
     inline static std::mutex _noise_mutex;      // Protects the NoiseMap _noises for mult-threaded access
     inline static std::mutex _cloudnoise_mutex; // Protects the NoiseMap _cloudnoises for mult-threaded access
+    inline static std::mutex _buffer_mutex;     // Protects the BufferMap _buffers for mult-threaded access
 
     void copySubImage(const osg::Image* srcImage, int src_s, int src_t, int width, int height, osg::Image* destImage, int dest_s, int dest_t);
 };

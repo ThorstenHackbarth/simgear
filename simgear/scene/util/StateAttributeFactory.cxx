@@ -304,6 +304,28 @@ void StateAttributeFactory::setCloudVoxelImages(osg::ref_ptr<osg::Image> detaile
     _cloudVoxelShadeTexture->dirtyTextureObject();
 }
 
+osg::Texture* StateAttributeFactory::getBufferTexture(const std::string& name)
+{
+    std::lock_guard<std::mutex> lock(StateAttributeFactory::_buffer_mutex); // Lock the _buffers for this scope
+    BufferMap::iterator itr = _buffers.find(name);
+    if (itr != _buffers.end())
+        return itr->second.get();
+    return nullptr;
+}
+
+void StateAttributeFactory::addBufferTexture(const std::string& name,
+                                             osg::Texture* texture)
+{
+    std::lock_guard<std::mutex> lock(StateAttributeFactory::_buffer_mutex); // Lock the _buffers for this scope
+    _buffers[name] = texture;
+}
+
+void StateAttributeFactory::removeBufferTexture(const std::string& name)
+{
+    std::lock_guard<std::mutex> lock(StateAttributeFactory::_buffer_mutex); // Lock the _buffers for this scope
+    _buffers.erase(name);
+}
+
 // anchor the destructor into this file, to avoid ref_ptr warnings
 StateAttributeFactory::~StateAttributeFactory()
 {

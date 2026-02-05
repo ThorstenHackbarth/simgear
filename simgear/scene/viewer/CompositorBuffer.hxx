@@ -18,6 +18,8 @@ class Compositor;
 struct Buffer : public osg::Referenced {
     osg::ref_ptr<osg::Texture> texture;
 
+    virtual ~Buffer();
+
     /**
      * The amount to multiply the size of the default framebuffer.
      * A factor of 0.0 means that the buffer has a fixed size.
@@ -27,6 +29,9 @@ struct Buffer : public osg::Referenced {
 
     /// Whether this is an MVR buffer.
     bool mvr = false;
+
+    /// Name this buffer is exported as for use by TextureBuilder
+    std::string export_name;
 };
 
 Buffer *buildBuffer(Compositor *compositor, const SGPropertyNode *node,

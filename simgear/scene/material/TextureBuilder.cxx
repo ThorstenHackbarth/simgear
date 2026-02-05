@@ -280,6 +280,30 @@ TextureBuilder::Registrar install2D("2d", new TexBuilder<Texture2D>("2d"));
 //TextureBuilder::Registrar install3D("3d", new TexBuilder<Texture3D>("3d"));
 } // namespace
 
+class BufferTextureBuilder : public TextureBuilder
+{
+public:
+    Texture* build(Effect* effect, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
+};
+
+Texture* BufferTextureBuilder::build(Effect* effect, const SGPropertyNode* node,
+                                     const SGReaderWriterOptions* options)
+{
+    const SGPropertyNode* buffer_name = getEffectPropertyNode(effect, node->getChild("buffer"));
+    if (!buffer_name)
+        return nullptr;
+
+    if (buffer_name->getStringValue().empty())
+        return nullptr;
+
+    return StateAttributeFactory::instance()->getBufferTexture(buffer_name->getStringValue());
+}
+
+namespace {
+TextureBuilder::Registrar installBuffer("buffer", new BufferTextureBuilder);
+}
+
 class WhiteTextureBuilder : public TextureBuilder
 {
 public:
