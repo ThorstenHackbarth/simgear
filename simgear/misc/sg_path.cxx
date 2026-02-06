@@ -50,6 +50,7 @@ string_list SGPath::write_allowed_paths;
 
 static const char sgDirPathSep = '/';
 static const char sgDirPathSepBad = '\\';
+static const char sgDrivePathSeparator = ':';
 
 #if defined(SG_WINDOWS)
 const char SGPath::pathListSep[] = ";"; // this is null-terminated
@@ -553,6 +554,11 @@ void SGPath::updateCachedAttributes() const
   std::wstring statPath(wstr());
   if ((path.length() > 1) && (path.back() == '/')) {
 	  statPath.pop_back();
+  }
+
+  // _wstat does work on drive paths, but needs the trailing '/'
+  if (isWindowsDrive()) {
+    statPath.push_back(L'/');
   }
 
   if (_wstat(statPath.c_str(), &buf ) < 0) {
@@ -1233,4 +1239,22 @@ bool SGPath::makeLink(const std::string& destination)
     }
     return true;
     #endif
+}
+
+// ASCII only version of isAlpha(), so we don't do weird stuff on
+// different system locales
+static bool isAlphaASCII(char c)
+{
+    return ((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z'));
+}
+// Note: this works with for instance SGPath("C:/") because fix() strips
+// the trailing '/' unless nothing else would remain.
+bool SGPath::isWindowsDrive() const
+{
+    const auto sz = path.size();
+    if (sz != 2) {
+        return false;
+    }
+
+    return isAlphaASCII(path[0]) && (path[1] == sgDrivePathSeparator);
 }

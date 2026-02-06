@@ -394,6 +394,16 @@ int main(int argc, char* argv[])
     SG_CHECK_EQUAL(pj.extension(), std::string("gz"));
     SG_CHECK_EQUAL(pj.complete_lower_extension(), std::string("tar.gz"));
 
+// windows drive paths
+    SG_VERIFY(!SGPath().isWindowsDrive());
+    SG_VERIFY(!SGPath("/"s).isWindowsDrive());
+    SG_VERIFY(SGPath("C:/"s).isWindowsDrive());
+    SG_VERIFY(SGPath("z:"s).isWindowsDrive());
+
+    SGPath windowsPath("D:/foobar.txt"s);
+    SG_VERIFY(!windowsPath.isWindowsDrive());
+    SG_VERIFY(windowsPath.dirPath().isWindowsDrive());
+
 // path fixing
     SGPath rd("where\\to\\begin.txt"s);
     SG_CHECK_EQUAL(rd.utf8Str(), std::string("where/to/begin.txt"));

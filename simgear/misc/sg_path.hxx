@@ -391,6 +391,12 @@ public:
     static std::vector<SGPath> pathsFromLocal8Bit(const std::string& paths);
 
     static std::string join(const std::vector<SGPath>& paths, const std::string& joinWith);
+
+    /**
+     * @brief return true if this path is a top-level Windows drive path, eg 'C:' or 'F:'
+     */
+    bool isWindowsDrive() const;
+
 private:
 
     void fix();

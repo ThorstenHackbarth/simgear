@@ -722,39 +722,44 @@ ArchiveExtractor::~ArchiveExtractor() = default;
 
 void ArchiveExtractor::extractBytes(const uint8_t* bytes, size_t count)
 {
-	if (!d) {
-		_prebuffer.append((char*) bytes, count);
-		auto r = determineType((uint8_t*) _prebuffer.data(), _prebuffer.size());
-		if (r == InsufficientData) {
-			return;
-		}
+    try {
+        if (!d) {
+            _prebuffer.append((char*) bytes, count);
+            auto r = determineType((uint8_t*) _prebuffer.data(), _prebuffer.size());
+            if (r == InsufficientData) {
+                return;
+            }
 
-		if (r == TarData) {
-			d.reset(new TarExtractorPrivate(this));
-        } else if (r == GZData) {
-            d.reset(new GZTarExtractor(this));
-        } else if (r == XZData) {
-            d.reset(new XZTarExtractor(this));
-        } else if (r == ZipData) {
-            d.reset(new ZipExtractorPrivate(this));
-        } else {
-            SG_LOG(SG_IO, SG_WARN, "Invalid archive type");
-			_invalidDataType = true;
-			return;
+            if (r == TarData) {
+                d.reset(new TarExtractorPrivate(this));
+            } else if (r == GZData) {
+                d.reset(new GZTarExtractor(this));
+            } else if (r == XZData) {
+                d.reset(new XZTarExtractor(this));
+            } else if (r == ZipData) {
+                d.reset(new ZipExtractorPrivate(this));
+            } else {
+                SG_LOG(SG_IO, SG_WARN, "Invalid archive type");
+                _invalidDataType = true;
+                return;
+            }
+
+            // if hit here, we created the extractor. Feed the prefbuffer
+            // bytes through it
+            d->extractBytes((uint8_t*) _prebuffer.data(), _prebuffer.size());
+            _prebuffer.clear();
+            return;
         }
 
-        // if hit here, we created the extractor. Feed the prefbuffer
-		// bytes through it
-		d->extractBytes((uint8_t*) _prebuffer.data(), _prebuffer.size());
-		_prebuffer.clear();
-		return;
-	}
+        if (d->state >= ArchiveExtractorPrivate::ERROR_STATE) {
+            return;
+        }
 
-    if (d->state >= ArchiveExtractorPrivate::ERROR_STATE) {
-        return;
+        d->extractBytes(bytes, count);
+    } catch (sg_exception& e) {
+        d->state = ArchiveExtractorPrivate::BAD_DATA;
+        SG_LOG(SG_IO, SG_WARN, "Archive extraction failed with: " + e.getFormattedMessage());
     }
-
-	d->extractBytes(bytes, count);
 }
 
 void ArchiveExtractor::flush()
