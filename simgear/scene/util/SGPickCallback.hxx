@@ -93,6 +93,22 @@ public:
   virtual bool needsUV() const
   { return false; }
 
+  /**
+   * Test whether a UV coordinate is solid.
+   * This is called if needsUV() returns true with the calculated UV coordinate,
+   * and allows the pick to be discarded, allowing 3D cursor picks to fall
+   * through to the next object behind.
+   * @param info Pick information, including UV.
+   * @returns true if the UV coordinate should be treated as solid and handled,
+   *          otherwise the UV coordinate is fully transparent and picks should
+   *          fall straight through to objects behind.
+   */
+  virtual bool hitTest(const Info& info) const
+  {
+      return true;
+  }
+
+
 private:
   Priority _priority;
 };
