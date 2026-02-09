@@ -49,6 +49,7 @@ PFNGLGENBUFFERSPROC glGenBuffers;
 PFNGLDELETEBUFFERSPROC glDeleteBuffers;
 PFNGLBINDBUFFERPROC glBindBuffer;
 PFNGLBUFFERDATAPROC glBufferData;
+PFNGLBLENDFUNCSEPARATEPROC glBlendFuncSeparate;
 
 /*
  * Query a function pointer on Windows.
@@ -118,5 +119,7 @@ void shLoadExtensions()
     glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)shGetProcAddress("glDeleteBuffers");
     glBindBuffer = (PFNGLBINDBUFFERPROC)shGetProcAddress("glBindBuffer");
     glBufferData = (PFNGLBUFFERDATAPROC)shGetProcAddress("glBufferData");
+
+    glBlendFuncSeparate = (PFNGLBLENDFUNCSEPARATEPROC)shGetProcAddress("glBlendFuncSeparate");
 #endif
 }

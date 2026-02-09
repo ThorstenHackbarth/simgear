@@ -70,6 +70,7 @@ extern PFNGLGENBUFFERSPROC glGenBuffers;
 extern PFNGLDELETEBUFFERSPROC glDeleteBuffers;
 extern PFNGLBINDBUFFERPROC glBindBuffer;
 extern PFNGLBUFFERDATAPROC glBufferData;
+extern PFNGLBLENDFUNCSEPARATEPROC glBlendFuncSeparate;
 #endif
 
 void shLoadExtensions(void);

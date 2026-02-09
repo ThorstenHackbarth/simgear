@@ -75,7 +75,8 @@ void updateBlendingStateGL(VGContext* c, int alphaIsOne)
 
     case VG_BLEND_SRC_OVER:
     default:
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+                            GL_ONE_MINUS_DST_ALPHA, GL_ONE);
         if (alphaIsOne) {
             glDisable(GL_BLEND);
         } else {
