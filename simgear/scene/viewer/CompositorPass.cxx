@@ -1110,6 +1110,57 @@ RegisterPassBuilder<ScenePassBuilder> registerScenePass("scene");
 
 //------------------------------------------------------------------------------
 
+struct GUIUpdateCallback : public Pass::PassUpdateCallback {
+    virtual void updatePass(Pass& pass,
+                            const osg::Matrix& view_matrix,
+                            const osg::Matrix& proj_matrix)
+    {
+        // Just set both the view matrix and the projection matrix
+        pass.camera->setViewMatrix(view_matrix);
+        pass.camera->setProjectionMatrix(proj_matrix);
+    }
+};
+
+struct GUIPassBuilder : public PassBuilder {
+public:
+    virtual Pass* build(Compositor* compositor, const SGPropertyNode* root,
+                        const SGReaderWriterOptions* options)
+    {
+        osg::ref_ptr<Pass> pass = PassBuilder::build(compositor, root, options);
+        pass->useMastersSceneData = false;
+        pass->inherit_cull_mask = true;
+        pass->update_callback = new GUIUpdateCallback;
+
+        osg::Camera* camera = pass->camera;
+        camera->setAllowEventFocus(false);
+        camera->setCullingMode(osg::CullSettings::NO_CULLING);
+
+        // Disable statistics for the GUI camera
+        camera->setStats(0);
+#if 0
+        // FIXME This is from CameraGroup::buildGUICamera()
+        // but we get a blue background if this is used...
+        camera->setInheritanceMask(CullSettings::ALL_VARIABLES
+                                   & ~(CullSettings::COMPUTE_NEAR_FAR_MODE
+                                       | CullSettings::CULLING_MODE
+                                       | cullsettings::clear_mask
+                                      ));
+#endif
+
+        // Draw all nodes in the order they are added to the GUI camera
+        camera->getOrCreateStateSet()
+            ->setRenderBinDetails(0, "PreOrderBin",
+                                  osg::StateSet::OVERRIDE_RENDERBIN_DETAILS);
+
+
+        return pass.release();
+    }
+};
+
+RegisterPassBuilder<GUIPassBuilder> registerGUIPass("gui");
+
+//------------------------------------------------------------------------------
+
 Pass *
 buildPass(Compositor *compositor, const SGPropertyNode *root,
           const SGReaderWriterOptions *options)
