@@ -1,29 +1,10 @@
-/* -*-c++-*-
- *
- * Copyright (C) 2006-2007 Mathias Froehlich 
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
- *
- */
+// SPDX-FileCopyrightText: 2006-2007 Mathias Froehlich
+// SPDX-License-Identifier: GPL-2.0-or-later
 
-#ifndef SG_SCENE_PICKCALLBACK_HXX
-#define SG_SCENE_PICKCALLBACK_HXX
+#pragma once
 
 #include <osg/Vec2d>
-   
+
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/SGMath.hxx>
@@ -58,7 +39,7 @@ public:
                               const osgGA::GUIEventAdapter& ea,
                               const Info& info )
   { return false; }
-  
+
   virtual void update(double dt, int keyModState)
   { }
 
@@ -91,7 +72,7 @@ public:
 
   virtual Priority getPriority() const
   { return _priority; }
-  
+
   /**
    * retrieve the name of the cursor to user when hovering this pickable
    * object. Mapping is undefined, since SimGear doesn't know about cursors.
@@ -120,5 +101,3 @@ struct SGSceneryPick {
   SGPickCallback::Info info;
   SGSharedPtr<SGPickCallback> callback;
 };
-
-#endif

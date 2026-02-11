@@ -1,25 +1,7 @@
-/* -*-c++-*-
- *
- * Copyright (C) 2013 James Turner
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
- *
- */
-     
- #include <simgear_config.h>
+// SPDX-FileCopyrightText: 2013 James Turner
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#include <simgear_config.h>
 
 #include <simgear/scene/model/SGPickAnimation.hxx>
 
@@ -51,7 +33,6 @@ static void readOptionalBindingList(const SGPropertyNode* aNode, SGPropertyNode*
     const SGPropertyNode* n = aNode->getChild(aName);
     if (n)
         aBindings = readBindingList(n->getChildren("binding"), modelRoot);
-    
 }
 
 
@@ -67,7 +48,7 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter& ea)
          * (double)traits->height);
     if (ea.getMouseYOrientation() == osgGA::GUIEventAdapter::Y_INCREASING_DOWNWARDS)
         y = (double)traits->height - y;
-    
+
     return osg::Vec2d(x, y);
 }
 
@@ -90,13 +71,13 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter& ea)
 
      _bindingsDown = readBindingList(configNode->getChildren("binding"), modelRoot);
      readOptionalBindingList(configNode, modelRoot, "mod-up", _bindingsUp);
-     
-     
+
+
      if (configNode->hasChild("cursor")) {
        _cursorName = configNode->getStringValue("cursor");
      }
    }
-     
+
      void addHoverBindings(const SGPropertyNode* hoverNode,
                              SGPropertyNode* modelRoot)
      {
@@ -104,7 +85,7 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter& ea)
              _hover = readBindingList(hoverNode->getChildren("binding"), modelRoot);
          }
      }
-     
+
    virtual bool buttonPressed( int button,
                                const osgGA::GUIEventAdapter&,
                                const Info& )
@@ -133,7 +114,7 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter& ea)
            fireBindingList(_bindingsUp);
        }
    }
-     
+
    virtual void update(double dt, int keyModState)
    {
        SG_UNUSED(keyModState);
@@ -156,7 +137,7 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter& ea)
            }
        }
    }
-   
+
    virtual bool hover( const osg::Vec2d& windowPos,
                        const Info& )
    {
@@ -173,7 +154,7 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter& ea)
        }
        return false;
    }
-   
+
    std::string getCursor() const
    { return _cursorName; }
  private:
@@ -367,7 +348,7 @@ SGPickAnimation::apply(osg::Group& group)
     if (child->getName().empty()) {
         continue;
     }
-      
+
     std::list<std::string>::iterator it = std::find(_objectNames.begin(), _objectNames.end(), child->getName());
     if (it != _objectNames.end()) {
       // Erasing child name from _objectNames should never have been commented
@@ -437,12 +418,12 @@ SGPickAnimation::apply(osg::Group& group)
       }
 
       install(*child);
-      
-      osg::ref_ptr<osg::Group> renderGroup, pickGroup;      
+
+      osg::ref_ptr<osg::Group> renderGroup, pickGroup;
       osg::Group* mainGroup = createMainGroup(&group);
       mainGroup->setName(child->getName());
       child->setName(""); // don't apply other animations twice
-      
+
       if (getConfig()->getBoolValue("visible", true)) {
           renderGroup = new osg::Group;
           renderGroup->setName("pick render group");
@@ -450,30 +431,30 @@ SGPickAnimation::apply(osg::Group& group)
           renderGroup->addChild(child);
           mainGroup->addChild(renderGroup);
       }
-      
+
       pickGroup = new osg::Group;
       pickGroup->setName("pick highlight group");
       SGSceneUserData::getOrCreateSceneUserData(pickGroup)->setLocation(getConfig()->getLocation());
       pickGroup->setNodeMask(simgear::PICK_BIT);
       mainGroup->addChild(pickGroup);
-      
+
       setupCallbacks(SGSceneUserData::getOrCreateSceneUserData(mainGroup), mainGroup);
 
       pickGroup->addChild(child);
       group.removeChild(child);
       continue;
     }
-    
+
     string_list::iterator j = std::find(_proxyNames.begin(), _proxyNames.end(), child->getName());
     if (j == _proxyNames.end()) {
       continue;
     }
-    
+
     _proxyNames.erase(j);
     osg::ref_ptr<osg::Group> proxyGroup = new osg::Group;
     group.addChild(proxyGroup);
     proxyGroup->setNodeMask(simgear::PICK_BIT);
-      
+
     setupCallbacks(SGSceneUserData::getOrCreateSceneUserData(proxyGroup), proxyGroup);
     proxyGroup->addChild(child);
     group.removeChild(child);
@@ -492,7 +473,7 @@ void
 SGPickAnimation::setupCallbacks(SGSceneUserData* ud, osg::Group* parent)
 {
   PickCallback* pickCb = NULL;
-  
+
   // add actions that become macro and command invocations
   std::vector<SGPropertyNode_ptr> actions;
   actions = getConfig()->getChildren("action");
@@ -500,7 +481,7 @@ SGPickAnimation::setupCallbacks(SGSceneUserData* ud, osg::Group* parent)
     pickCb = new PickCallback(actions[i], getModelRoot(), _condition);
     ud->addPickCallback(pickCb);
   }
-  
+
   if (getConfig()->hasChild("hovered")) {
     if (!pickCb) {
       // make a trivial PickCallback to hang the hovered off of
@@ -508,10 +489,10 @@ SGPickAnimation::setupCallbacks(SGSceneUserData* ud, osg::Group* parent)
       pickCb = new PickCallback(dummyNode.ptr(), getModelRoot(), _condition);
       ud->addPickCallback(pickCb);
     }
-    
+
     pickCb->addHoverBindings(getConfig()->getNode("hovered"), getModelRoot());
   }
-  
+
   // Look for the VNC sessions that want raw mouse input
   actions = getConfig()->getChildren("vncaction");
   for (unsigned int i = 0; i < actions.size(); ++i) {
@@ -550,7 +531,7 @@ public:
         DIRECTION_INCREASE,
         DIRECTION_DECREASE
     };
-    
+
     enum DragDirection
     {
         DRAG_DEFAULT = 0,
@@ -558,7 +539,7 @@ public:
         DRAG_HORIZONTAL
     };
 
-    
+
     KnobSliderPickCallback(const SGPropertyNode* configNode,
                  SGPropertyNode* modelRoot,
         SGSharedPtr<SGCondition const> condition) :
@@ -571,10 +552,10 @@ public:
         readOptionalBindingList(configNode, modelRoot, "action", _action);
         readOptionalBindingList(configNode, modelRoot, "increase", _bindingsIncrease);
         readOptionalBindingList(configNode, modelRoot, "decrease", _bindingsDecrease);
-        
+
         readOptionalBindingList(configNode, modelRoot, "release", _releaseAction);
         readOptionalBindingList(configNode, modelRoot, "hovered", _hover);
-        
+
         if (configNode->hasChild("shift-action") || configNode->hasChild("shift-increase") ||
             configNode->hasChild("shift-decrease"))
         {
@@ -589,7 +570,7 @@ public:
             repeatBindings(_bindingsIncrease, _shiftedIncrease, shiftRepeat);
             repeatBindings(_bindingsDecrease, _shiftedDecrease, shiftRepeat);
         } // of default shifted behaviour
-        
+
         _dragScale = configNode->getDoubleValue("drag-scale-px", 10.0);
         std::string dragDir = configNode->getStringValue("drag-direction");
         if (dragDir == "vertical") {
@@ -597,7 +578,7 @@ public:
         } else if (dragDir == "horizontal") {
             _dragDirection = DRAG_HORIZONTAL;
         }
-      
+
         if (configNode->hasChild("cursor")) {
             _cursorName = configNode->getStringValue("cursor");
         } else {
@@ -641,7 +622,7 @@ public:
         }
         return false;
     }
-    
+
     void buttonReleased( int keyModState, const osgGA::GUIEventAdapter&,
                                 const Info* ) override
     {
@@ -655,7 +636,7 @@ public:
             fireBindingList(_releaseAction);
         }
     }
-  
+
     DragDirection effectiveDragDirection() const
     {
       if (_dragDirection == DRAG_DEFAULT) {
@@ -663,10 +644,10 @@ public:
         // setting of the default drag direction.
         return static_knobDragAlternateAxis ? DRAG_VERTICAL : DRAG_HORIZONTAL;
       }
-      
+
       return _dragDirection;
   }
-  
+
     void mouseMoved( const osgGA::GUIEventAdapter& ea, const Info* ) override
     {
         if (!_condition || _condition->test()) {
@@ -699,7 +680,7 @@ public:
             }
         }
     }
-    
+
     void update(double dt, int keyModState) override
     {
         if (_hasDragged) {
@@ -735,15 +716,15 @@ public:
         }
         return false;
     }
-  
+
     void setCursor(const std::string& aName)
     {
       _cursorName = aName;
     }
-  
+
     std::string getCursor() const override
     { return _cursorName; }
-  
+
 private:
     void fire(bool isShifted, Direction dir)
     {
@@ -766,18 +747,18 @@ private:
             }
         }
     }
-    
+
     SGBindingList _action, _shiftedAction;
     SGBindingList _releaseAction;
     SGBindingList _bindingsIncrease, _shiftedIncrease,
         _bindingsDecrease, _shiftedDecrease;
     SGBindingList _hover;
-    
-        
+
+
     Direction _direction;
     double _repeatInterval;
     double _repeatTime;
-    
+
     DragDirection _dragDirection;
     SGSharedPtr<SGCondition const> _condition;
 
@@ -785,7 +766,7 @@ private:
     osg::Vec2d _mousePos, ///< current window coords location of the mouse
         _lastFirePos; ///< mouse location where we last fired the bindings
     double _dragScale;
-  
+
     std::string _cursorName;
 };
 
@@ -807,7 +788,7 @@ public:
             traverse(node, nv);
         }
     }
-    
+
 private:
     SGSharedPtr<SGCondition const> _condition;
     SGSharedPtr<SGExpressiond const> _animationValue;
@@ -821,23 +802,23 @@ SGKnobAnimation::SGKnobAnimation(simgear::SGTransientModelData &modelData) :
     SGSharedPtr<SGExpressiond> value = read_value(modelData.getConfigNode(), modelData.getModelRoot(), "-deg",
                                                   -SGLimitsd::max(), SGLimitsd::max());
     _animationValue = value->simplify();
-    
-    
+
+
     readRotationCenterAndAxis(modelData.getNode(), _center, _axis, modelData);
 }
 
 osg::Group*
 SGKnobAnimation::createMainGroup(osg::Group* pr)
-{  
-  SGRotateTransform* transform = new SGRotateTransform();
-  
-  UpdateCallback* uc = new UpdateCallback(_animationValue, _condition);
-  transform->setUpdateCallback(uc);
-  transform->setCenter(_center);
-  transform->setAxis(_axis);
-  
-  pr->addChild(transform);
-  return transform;
+{
+    SGRotateTransform* transform = new SGRotateTransform();
+
+    UpdateCallback* uc = new UpdateCallback(_animationValue, _condition);
+    transform->setUpdateCallback(uc);
+    transform->setCenter(_center);
+    transform->setAxis(_axis);
+
+    pr->addChild(transform);
+    return transform;
 }
 
 void
@@ -885,7 +866,7 @@ public:
 
         traverse(node, nv);
     }
-    
+
 private:
     SGSharedPtr<SGExpressiond const> _animationValue;
 };
@@ -903,15 +884,15 @@ SGSliderAnimation::SGSliderAnimation(simgear::SGTransientModelData &modelData) :
 
 osg::Group*
 SGSliderAnimation::createMainGroup(osg::Group* pr)
-{  
-  SGTranslateTransform* transform = new SGTranslateTransform();
-  
-  UpdateCallback* uc = new UpdateCallback(_animationValue);
-  transform->setUpdateCallback(uc);
-  transform->setAxis(_axis);
-  
-  pr->addChild(transform);
-  return transform;
+{
+    SGTranslateTransform* transform = new SGTranslateTransform();
+
+    UpdateCallback* uc = new UpdateCallback(_animationValue);
+    transform->setUpdateCallback(uc);
+    transform->setAxis(_axis);
+
+    pr->addChild(transform);
+    return transform;
 }
 
 void
@@ -929,8 +910,8 @@ bool SGSliderAnimation::isRepeatable() const
 }
 
 /*
- * touch screen is a 2d surface that will pass parameters to the callbacks indicating the 
- * normalized coordinates of hover or touch. Touch is defined as a button click. 
+ * touch screen is a 2d surface that will pass parameters to the callbacks indicating the
+ * normalized coordinates of hover or touch. Touch is defined as a button click.
  * For compatibility with touchscreen operations this class does not differentiate between
  * which buttons are touched, simply because this isn't how touchscreens work.
  * Some touchscreens (e.g. SAW) can have a Z-axis indicating the pressure. This is not
@@ -981,7 +962,7 @@ class TouchPickCallback : public SGPickCallback {
             if (!anyBindingEnabled(_bindingsTouched)) {
                 return false;
             }
-            SGPropertyNode_ptr params(new SGPropertyNode); 
+            SGPropertyNode_ptr params(new SGPropertyNode);
             params->setDoubleValue("x", info.uv[0]);
             params->setDoubleValue("y", info.uv[1]);
 
@@ -989,7 +970,7 @@ class TouchPickCallback : public SGPickCallback {
             fireBindingList(_bindingsTouched, params.ptr());
             return true;
         }
-        
+
         void buttonReleased(int keyModState,
             const osgGA::GUIEventAdapter&,
             const Info* info) override
@@ -1034,7 +1015,7 @@ class TouchPickCallback : public SGPickCallback {
         {
             return _cursorName;
         }
-        
+
         bool needsUV() const override { return true; }
 
     private:
