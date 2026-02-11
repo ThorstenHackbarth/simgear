@@ -500,72 +500,72 @@ SGAnimation::~SGAnimation()
 bool
 SGAnimation::animate(simgear::SGTransientModelData &modelData)
 {
-  std::string type = modelData.getConfigNode()->getStringValue("type", "none");
-  if (type == "billboard") {
-    SGBillboardAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "dist-scale") {
-    SGDistScaleAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "flash") {
-    SGFlashAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "interaction") {
-    SGInteractionAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "pbr") {
-    SGPBRAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "noshadow") {
-    SGShadowAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "pick") {
-    SGPickAnimation anim(modelData);
-    anim.apply(modelData.getNode());
-  } else if (type == "knob") {
-    SGKnobAnimation anim(modelData);
-    anim.apply(modelData.getNode());
-  } else if (type == "slider") {
-    SGSliderAnimation anim(modelData);
-    anim.apply(modelData.getNode());
-  } else if (type == "touch") {
-      SGTouchAnimation anim(modelData);
-      anim.apply(modelData.getNode());
-  } else if (type == "range") {
-    SGRangeAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "rotate" || type == "spin") {
-    SGRotateAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "scale") {
-    SGScaleAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "select") {
-    SGSelectAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "textranslate" || type == "texrotate" ||
-             type == "textrapezoid" || type == "texmultiple") {
-    SGTexTransformAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "timed") {
-    SGTimedAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "locked-track") {
-    SGTrackToAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "translate") {
-    SGTranslateAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "light") {
-    SGLightAnimation anim(modelData);
-    anim.apply(modelData);
-  } else if (type == "null" || type == "none" || type.empty()) {
-    SGGroupAnimation anim(modelData);
-    anim.apply(modelData);
-  } else
-    return false;
+    std::string type = modelData.getConfigNode()->getStringValue("type", "none");
+    if (type == "billboard") {
+        SGBillboardAnimation anim(modelData);
+        anim.apply(modelData);
+    } else if (type == "dist-scale") {
+        SGDistScaleAnimation anim(modelData);
+        anim.apply(modelData);
+    } else if (type == "flash") {
+        SGFlashAnimation anim(modelData);
+        anim.apply(modelData);
+    } else if (type == "interaction") {
+        SGInteractionAnimation anim(modelData);
+        anim.apply(modelData);
+    } else if (type == "pbr") {
+        SGPBRAnimation anim(modelData);
+        anim.apply(modelData);
+    } else if (type == "noshadow") {
+        SGShadowAnimation anim(modelData);
+        anim.apply(modelData);
+    } else if (type == "pick") {
+        SGPickAnimation anim(modelData);
+        anim.apply(modelData.getNode());
+    } else if (type == "knob") {
+        SGKnobAnimation anim(modelData);
+        anim.apply(modelData.getNode());
+    } else if (type == "slider") {
+        SGSliderAnimation anim(modelData);
+        anim.apply(modelData.getNode());
+    } else if (type == "touch") {
+        SGTouchAnimation anim(modelData);
+        anim.apply(modelData.getNode());
+    } else if (type == "range") {
+        SGRangeAnimation anim(modelData);
+        anim.apply(modelData);
+    } else if (type == "rotate" || type == "spin") {
+        SGRotateAnimation anim(modelData);
+        anim.apply(modelData);
+    } else if (type == "scale") {
+        SGScaleAnimation anim(modelData);
+        anim.apply(modelData);
+    } else if (type == "select") {
+        SGSelectAnimation anim(modelData);
+        anim.apply(modelData);
+    } else if (type == "textranslate" || type == "texrotate" ||
+               type == "textrapezoid" || type == "texmultiple") {
+        SGTexTransformAnimation anim(modelData);
+        anim.apply(modelData);
+    } else if (type == "timed") {
+        SGTimedAnimation anim(modelData);
+        anim.apply(modelData);
+    } else if (type == "locked-track") {
+        SGTrackToAnimation anim(modelData);
+        anim.apply(modelData);
+    } else if (type == "translate") {
+        SGTranslateAnimation anim(modelData);
+        anim.apply(modelData);
+    } else if (type == "light") {
+        SGLightAnimation anim(modelData);
+        anim.apply(modelData);
+    } else if (type == "null" || type == "none" || type.empty()) {
+        SGGroupAnimation anim(modelData);
+        anim.apply(modelData);
+    } else
+        return false;
 
-  return true;
+    return true;
 }
 
 
