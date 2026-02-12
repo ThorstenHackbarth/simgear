@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# SPDX-FileCopyrightText: 2024 James Turner <james@flightgear.org>
+
 # Find OSG libraries
 # and create imported targets corresponding to each lib
 
@@ -14,7 +17,7 @@ function(find_osg_library retval basename)
     )
 
     if (${lib})
-        set(retval ${lib} PARENT_SCOPE) 
+        set(retval ${lib} PARENT_SCOPE)
     else()
         return()
     endif()
@@ -31,7 +34,7 @@ function(find_osg_library retval basename)
         )
 
         if (${dll})
-            set(${retval}_dll ${dll} PARENT_SCOPE) 
+            set(${retval}_dll ${dll} PARENT_SCOPE)
         endif()
     endif()
 
@@ -57,7 +60,7 @@ function(setup_imported_lib target basename debugLibs releaseLibs noconfigLibs)
     list(LENGTH libsList numConfigs)
     if (numConfigs EQUAL 1)
         message(DEBUG "${basename}: single library configuraation found")
-        
+
         set(libsList ${releaseLibs} ${debugLibs} ${reldbgLibs})
 
         set_property(TARGET ${target} PROPERTY IMPORTED_IMPLIB ${releaseLibs})
@@ -71,6 +74,8 @@ function(setup_imported_lib target basename debugLibs releaseLibs noconfigLibs)
             if (MSVC)
                 set_property(TARGET ${target} PROPERTY IMPORTED_IMPLIB_RELEASE ${releaseLibs})
                 set_property(TARGET ${target} PROPERTY IMPORTED_LOCATION_RELEASE ${releaseLibs_dll})
+            elseif (CYGWIN)
+                set_property(TARGET ${target} PROPERTY IMPORTED_IMPLIB_RELEASE ${releaseLibs})
             else()
                 set_property(TARGET ${target} PROPERTY IMPORTED_LOCATION_RELEASE ${releaseLibs})
             endif()
@@ -155,4 +160,3 @@ foreach (comp ${Simgear_OSG_Components})
     setup_imported_lib(${tgt} ${comp} ${debug_libs} ${release_libs} ${${_osg_module_UC}_LIBRARY})
     target_link_libraries(${tgt} INTERFACE OSG::OSG)
 endforeach()
-
