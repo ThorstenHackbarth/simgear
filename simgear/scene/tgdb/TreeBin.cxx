@@ -1,27 +1,7 @@
-/* -*-c++-*-
- *
- * Copyright (C) 2008 Stuart Buchanan
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
- *
- */
+// SPDX-FileCopyrightText: 2008 Stuart Buchanan
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include <algorithm>
 #include <vector>
@@ -127,7 +107,7 @@ EffectGeode* createTreeGeode(TreeBin* forest)
         // The texture coordinate range is not the entire coordinate
         // space, as the texture has a number of different trees on
         // it. We let the shader choose the variety.
-        // Y-value chosen so that we definitely won't get artifacts from the tree trunk on the 
+        // Y-value chosen so that we definitely won't get artifacts from the tree trunk on the
         // subtexture above in the tree atlas
         const osg::Vec2 t0(0.0f, 0.0f);
         const osg::Vec2 t1(1.0f, 0.0f);
@@ -245,8 +225,7 @@ TreeBin::TreeBin(const SGMaterial *mat)
 };
 
 
-TreeBin::TreeBin(const SGPath& absoluteFileName, const SGMaterial *mat) : 
-TreeBin(mat)
+TreeBin::TreeBin(const SGPath& absoluteFileName, const SGMaterial* mat) : TreeBin(mat)
 {
     sg_gzifstream stream(absoluteFileName);
     if (!stream.is_open()) {
@@ -265,6 +244,11 @@ TreeBin(mat)
         if (hash_pos != std::string::npos)
             line.resize(hash_pos);
 
+        // some files have trailing blank lines
+        if (line.empty()) {
+            continue; // skip blank lines
+        }
+
         // and process further
         std::stringstream in(line);
 
@@ -276,7 +260,7 @@ TreeBin(mat)
         in >> x >> y >> z;
 
         if (in.bad() || in.fail()) {
-            SG_LOG(SG_TERRAIN, SG_WARN, "Error parsing tree entry in: " << absoluteFileName << " line: \"" << line << "\"");
+            SG_LOG(SG_TERRAIN, SG_DEV_WARN, "Error parsing tree entry in: " << absoluteFileName << " line: \"" << line << "\"");
             continue;
         }
 
@@ -291,4 +275,4 @@ TreeBin(mat)
 };
 
 
-}
+} // namespace simgear
