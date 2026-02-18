@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // SPDX-FileCopyrightText: 2006-2007 Mathias Froehlich
 
+#include "simgear/debug/debug_types.h"
 #ifdef HAVE_CONFIG_H
 #  include <simgear_config.h>
 #endif
@@ -73,18 +74,19 @@ SGReadValueFromContent(const SGPropertyNode *node, T& value)
     return SGReadValueFromString(node->getStringValue(), value);
 }
 
-template<typename T>
+template <typename T>
 static SGExpression<T>*
-SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression);
+SGReadExpression(SGPropertyNode* inputRoot, const SGPropertyNode* expression, simgear::expression::Parser* parser);
 
-template<typename T>
+template <typename T>
 static bool
 SGReadNaryOperands(SGNaryExpression<T>* nary,
-                   SGPropertyNode *inputRoot, const SGPropertyNode *expression)
+                   SGPropertyNode* inputRoot, const SGPropertyNode* expression,
+                   simgear::expression::Parser* parser)
 {
     for (int i = 0; i < expression->nChildren(); ++i) {
         SGExpression<T>* inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(i));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(i), parser);
         if (!inputExpression)
             return false;
         nary->addOperand(inputExpression);
@@ -112,9 +114,9 @@ SGReadNaryOperands(SGNaryExpression<T>* nary,
 //   return 0;
 // }
 
-template<typename T>
+template <typename T>
 static SGExpression<T>*
-SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
+SGReadExpression(SGPropertyNode* inputRoot, const SGPropertyNode* expression, simgear::expression::Parser* parser)
 {
     if (!expression) {
         SG_LOG(SG_IO, SG_ALERT, "No expression given");
@@ -150,7 +152,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -164,7 +166,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -189,7 +191,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
 
         SGSharedPtr<SGExpression<T> > inputExpression;
         for (int i = 0; !inputExpression && i < expression->nChildren(); ++i)
-            inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(i));
+            inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(i), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -202,10 +204,9 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
         }
-        SGSharedPtr<SGExpression<T> > inputExpressions[2] = {
-            SGReadExpression<T>(inputRoot, expression->getChild(0)),
-            SGReadExpression<T>(inputRoot, expression->getChild(1))
-        };
+        SGSharedPtr<SGExpression<T>> inputExpressions[2] = {
+            SGReadExpression<T>(inputRoot, expression->getChild(0), parser),
+            SGReadExpression<T>(inputRoot, expression->getChild(1), parser)};
         if (!inputExpressions[0] || !inputExpressions[1]) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -217,10 +218,9 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
         }
-        SGSharedPtr<SGExpression<T> > inputExpressions[2] = {
-            SGReadExpression<T>(inputRoot, expression->getChild(0)),
-            SGReadExpression<T>(inputRoot, expression->getChild(1))
-        };
+        SGSharedPtr<SGExpression<T>> inputExpressions[2] = {
+            SGReadExpression<T>(inputRoot, expression->getChild(0), parser),
+            SGReadExpression<T>(inputRoot, expression->getChild(1), parser)};
         if (!inputExpressions[0] || !inputExpressions[1]) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -234,7 +234,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSumExpression<T>* output = new SGSumExpression<T>;
-        if (!SGReadNaryOperands(output, inputRoot, expression)) {
+        if (!SGReadNaryOperands(output, inputRoot, expression, parser)) {
             delete output;
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -248,7 +248,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGDifferenceExpression<T>* output = new SGDifferenceExpression<T>;
-        if (!SGReadNaryOperands(output, inputRoot, expression)) {
+        if (!SGReadNaryOperands(output, inputRoot, expression, parser)) {
             delete output;
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -262,7 +262,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGProductExpression<T>* output = new SGProductExpression<T>;
-        if (!SGReadNaryOperands(output, inputRoot, expression)) {
+        if (!SGReadNaryOperands(output, inputRoot, expression, parser)) {
             delete output;
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -275,7 +275,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGMinExpression<T>* output = new SGMinExpression<T>;
-        if (!SGReadNaryOperands(output, inputRoot, expression)) {
+        if (!SGReadNaryOperands(output, inputRoot, expression, parser)) {
             delete output;
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -288,7 +288,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGMaxExpression<T>* output = new SGMaxExpression<T>;
-        if (!SGReadNaryOperands(output, inputRoot, expression)) {
+        if (!SGReadNaryOperands(output, inputRoot, expression, parser)) {
             delete output;
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -336,7 +336,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             SG_LOG(SG_IO, SG_DEV_WARN, "Table input node " << inputNode->getPath() << " = '" << inputNode->getStringValue()  << "'  Root: " << inputRoot->getPath());
 
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, inputNode);
+        inputExpression = SGReadExpression<T>(inputRoot, inputNode, parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -351,7 +351,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -365,7 +365,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -379,7 +379,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -393,7 +393,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -407,7 +407,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -421,7 +421,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -435,7 +435,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -449,7 +449,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -463,7 +463,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -477,7 +477,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -491,7 +491,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -505,7 +505,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -519,7 +519,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -533,7 +533,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -547,7 +547,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -561,7 +561,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -575,7 +575,7 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             return 0;
         }
         SGSharedPtr<SGExpression<T> > inputExpression;
-        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0));
+        inputExpression = SGReadExpression<T>(inputRoot, expression->getChild(0), parser);
         if (!inputExpression) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -593,10 +593,9 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
         }
-        SGSharedPtr<SGExpression<T> > inputExpressions[2] = {
-            SGReadExpression<T>(inputRoot, expression->getChild(0)),
-            SGReadExpression<T>(inputRoot, expression->getChild(1))
-        };
+        SGSharedPtr<SGExpression<T>> inputExpressions[2] = {
+            SGReadExpression<T>(inputRoot, expression->getChild(0), parser),
+            SGReadExpression<T>(inputRoot, expression->getChild(1), parser)};
         if (!inputExpressions[0] || !inputExpressions[1]) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -608,10 +607,9 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
         }
-        SGSharedPtr<SGExpression<T> > inputExpressions[2] = {
-            SGReadExpression<T>(inputRoot, expression->getChild(0)),
-            SGReadExpression<T>(inputRoot, expression->getChild(1))
-        };
+        SGSharedPtr<SGExpression<T>> inputExpressions[2] = {
+            SGReadExpression<T>(inputRoot, expression->getChild(0), parser),
+            SGReadExpression<T>(inputRoot, expression->getChild(1), parser)};
         if (!inputExpressions[0] || !inputExpressions[1]) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
             return 0;
@@ -619,23 +617,58 @@ SGReadExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
         return new SGPowExpression<T>(inputExpressions[0], inputExpressions[1]);
     }
 
+    if (parser) {
+        // this code hybrizies the 'if-tree' expression parser above, with the parser based on
+        // expression::Parser and ExpParserRegistrar.
+
+        const auto& pm = parser->getParserMap();
+        if (pm.find(name) != pm.end()) {
+            // parser has an entry, let's use it
+            auto e = parser->read(expression);
+            if (!e) {
+                SG_LOG(SG_IO, SG_ALERT, "Cannot parse \"" << name << "\" expression.");
+                return nullptr;
+            }
+
+            auto typedExp = dynamic_cast<SGExpression<T>*>(e);
+            if (!typedExp) {
+                // @TODO: this should auto promote / convert the value type of 'e' to
+                // the type we require here (T), automatically. For now, require
+                // that the type matches exactly
+                SG_LOG(SG_IO, SG_ALERT, "Cannot convert \"" << name << "\" expression to required return type");
+                return nullptr;
+            }
+
+            return typedExp;
+        }
+    }
+
     return 0;
 }
 
 SGExpression<int>*
-SGReadIntExpression(SGPropertyNode *inputRoot,
-                    const SGPropertyNode *configNode)
-{ return SGReadExpression<int>(inputRoot, configNode); }
+SGReadIntExpression(SGPropertyNode* inputRoot,
+                    const SGPropertyNode* configNode,
+                    simgear::expression::Parser* parser)
+{
+    return SGReadExpression<int>(inputRoot, configNode, parser);
+}
 
 SGExpression<float>*
-SGReadFloatExpression(SGPropertyNode *inputRoot,
-                      const SGPropertyNode *configNode)
-{ return SGReadExpression<float>(inputRoot, configNode); }
+SGReadFloatExpression(SGPropertyNode* inputRoot,
+                      const SGPropertyNode* configNode,
+                      simgear::expression::Parser* parser)
+{
+    return SGReadExpression<float>(inputRoot, configNode, parser);
+}
 
 SGExpression<double>*
-SGReadDoubleExpression(SGPropertyNode *inputRoot,
-                       const SGPropertyNode *configNode)
-{ return SGReadExpression<double>(inputRoot, configNode); }
+SGReadDoubleExpression(SGPropertyNode* inputRoot,
+                       const SGPropertyNode* configNode,
+                       simgear::expression::Parser* parser)
+{
+    return SGReadExpression<double>(inputRoot, configNode, parser);
+}
 
 // SGExpression<bool>*
 // SGReadBoolExpression(SGPropertyNode *inputRoot,

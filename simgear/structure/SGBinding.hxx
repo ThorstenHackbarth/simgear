@@ -6,9 +6,7 @@
  * @brief Interface definition for encapsulated commands
  */
 
-#ifndef __SGBINDING_HXX
-#define __SGBINDING_HXX
-
+#pragma once
 
 #include <simgear/compiler.h>
 
@@ -21,14 +19,20 @@
 
 #include "commands.hxx"
 
-template<typename T> class SGExpression;
-using SGExpressiond = SGExpression<double>;
-
-
 class SGAbstractBinding : public SGConditional
 {
 public:
     virtual ~SGAbstractBinding() = default;
+
+    /**
+     * @brief Create an implementation of binding from a configuration property node
+     *
+     * throws an exception if the binding is invalid.
+     *
+     * @param config
+     * @param root
+     */
+    static SGSharedPtr<SGAbstractBinding> createFromProps(SGPropertyNode_ptr config, SGPropertyNode* root = nullptr);
 
     virtual void clear();
 
@@ -69,10 +73,21 @@ public:
 protected:
     SGAbstractBinding();
 
+    /**
+    * Read a binding from a property node.
+    *
+    * @param node The property node containing the binding.
+    * @param root The property root node used while building the binding from
+    *             \a node.
+    */
+    virtual void read(const SGPropertyNode* node, SGPropertyNode* root);
+
     virtual void innerFire() const = 0;
 
     mutable SGPropertyNode_ptr _arg;
     mutable SGPropertyNode_ptr _setting;
+
+    bool _debug = false;
 };
 
 
@@ -103,61 +118,39 @@ public:
      */
     SGBinding(const std::string& commandName);
 
-  /**
-   * Convenience constructor.
-   *
-   * @param node The binding will be built from this node.
-   * @param root Property root used while building binding.
-   */
-  SGBinding( const SGPropertyNode *node,
-             SGPropertyNode *root );
 
-
-  /**
+    /**
    * Destructor.
    */
-  virtual ~SGBinding () = default;
+    virtual ~SGBinding() = default;
 
 
-  /**
+    /**
    * Clear internal state of the binding back to empty.
    *
    * This was particularly useful when SGBinding's destructor had its 'remove
    * on delete' behaviour, however this is not the case anymore.
    */
-  void clear() override;
+    void clear() override;
 
 
-  /**
+    /**
    * Get the command name.
    *
    * @return The string name of the command for this binding.
    */
-  const std::string &getCommandName () const { return _command_name; }
+    const std::string& getCommandName() const { return _command_name; }
 
 
-  /**
-   * Read a binding from a property node.
-   *
-   * @param node The property node containing the binding.
-   * @param root The property root node used while building the binding from
-   *             \a node.
-   */
-  void read(const SGPropertyNode* node, SGPropertyNode* root);
+    void read(const SGPropertyNode* node, SGPropertyNode* root) override;
 
-  private:
-  void innerFire() const override;
-  // just to be safe.
-  SGBinding (const SGBinding &binding);
+private:
+    void innerFire() const override;
+    // just to be safe.
+    SGBinding(const SGBinding& binding);
 
-  bool _debug = false;
-  std::string _command_name;
-  // property root
-  mutable SGPropertyNode_ptr _root;
-  // Expression to transform input value (instead of using command)
-  SGSharedPtr<SGExpressiond> _expression;
-  // target property for expression result
-  SGPropertyNode_ptr _target_property;
+    std::string _command_name;
+    SGPropertyNode_ptr _root;
 };
 
 typedef SGSharedPtr<SGBinding> SGBinding_ptr;
@@ -195,5 +188,3 @@ void clearBindingList(const SGBindingList& aBindings);
  * list is empty, or all bindings are conditinally disabled.
  */
 bool anyBindingEnabled(const SGBindingList& bindings);
-
-#endif

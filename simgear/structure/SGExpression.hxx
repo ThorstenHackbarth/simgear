@@ -23,18 +23,17 @@ namespace simgear
   /// Expression tree implementation.
   namespace expression
   {
-    enum Type {
+  enum Type {
       BOOL = 0,
       INT,
       FLOAT,
-      DOUBLE
-    };
-    enum TableMode {
-      INTERPOLATE = 0,
-      NEAREST
-    };
-    template<typename T> struct TypeTraits;
-    template<> struct TypeTraits<bool> {
+      DOUBLE,
+  };
+
+  template <typename T>
+  struct TypeTraits;
+  template <>
+  struct TypeTraits<bool> {
       static const Type typeTag = BOOL;
     };
     template<> struct TypeTraits<int> {
@@ -85,6 +84,12 @@ namespace simgear
     };
 
     class Binding;
+    class Parser;
+
+    enum TableMode {
+        INTERPOLATE = 0,
+        NEAREST
+    };
   }
 
   class Expression : public SGReferenced
@@ -923,20 +928,24 @@ SGMisc<T>::clip(abs(deg2rad*sim/model/whatever-rad + sim/model/someother-deg - 9
 
  */
 SGExpression<int>*
-SGReadIntExpression(SGPropertyNode *inputRoot,
-                    const SGPropertyNode *configNode);
+SGReadIntExpression(SGPropertyNode* inputRoot,
+                    const SGPropertyNode* configNode,
+                    simgear::expression::Parser* parser = nullptr);
 
 SGExpression<float>*
-SGReadFloatExpression(SGPropertyNode *inputRoot,
-                      const SGPropertyNode *configNode);
+SGReadFloatExpression(SGPropertyNode* inputRoot,
+                      const SGPropertyNode* configNode,
+                      simgear::expression::Parser* parser = nullptr);
 
 SGExpression<double>*
-SGReadDoubleExpression(SGPropertyNode *inputRoot,
-                       const SGPropertyNode *configNode);
+SGReadDoubleExpression(SGPropertyNode* inputRoot,
+                       const SGPropertyNode* configNode,
+                       simgear::expression::Parser* parser = nullptr);
 
 SGExpression<bool>*
-SGReadBoolExpression(SGPropertyNode *inputRoot,
-                     const SGPropertyNode *configNode);
+SGReadBoolExpression(SGPropertyNode* inputRoot,
+                     const SGPropertyNode* configNode,
+                     simgear::expression::Parser* parser = nullptr);
 
 namespace simgear
 {

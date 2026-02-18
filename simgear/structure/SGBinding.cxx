@@ -6,15 +6,16 @@
  * @brief Interface definition for encapsulated commands
  */
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include <simgear/compiler.h>
 #include "SGBinding.hxx"
-#include "SGExpression.hxx"
+
+#include "simgear/debug/debug_types.h"
+#include "simgear/props/props.hxx"
 
 #include <simgear/props/props_io.hxx>
+#include <simgear/structure/ExpressionBinding.hxx>
 #include <simgear/structure/exception.hxx>
 
 SGAbstractBinding::SGAbstractBinding()
@@ -66,6 +67,42 @@ void SGAbstractBinding::fire(double setting) const
     }
 }
 
+void SGAbstractBinding::read(const SGPropertyNode* config, SGPropertyNode* root)
+{
+    const SGPropertyNode* conditionNode = config->getChild("condition");
+    _debug = config->getBoolValue("debug", false);
+    _arg = const_cast<SGPropertyNode*>(config);
+
+    if (conditionNode)
+        setCondition(sgReadCondition(root, conditionNode));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+SGSharedPtr<SGAbstractBinding> SGAbstractBinding::createFromProps(SGPropertyNode_ptr config, SGPropertyNode* root)
+{
+    const auto cmdName = config->getStringValue("command");
+    SGAbstractBinding_ptr binding;
+
+    if (cmdName == "expression") {
+        binding = new simgear::ExpressionBinding();
+    } else {
+        // this code would give nicer error feedback, but requires us to handle
+        // delayed command registration, and reorder the fg_init.cxx code
+#if 0
+        auto cmd = SGCommandMgr::instance()->getCommand(cmdName);
+        if (!cmd) {
+            throw sg_exception("Binding references undefined command:" + cmdName, {}, sg_location{config->getLocation()});
+        }
+#endif
+        binding = new SGBinding{cmdName};
+    }
+
+    binding->read(config, root);
+    return binding;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 
 SGBinding::SGBinding() = default;
@@ -73,11 +110,6 @@ SGBinding::SGBinding() = default;
 SGBinding::SGBinding(const std::string& commandName)
 {
     _command_name = commandName;
-}
-
-SGBinding::SGBinding(const SGPropertyNode* node, SGPropertyNode* root)
-{
-  read(node, root);
 }
 
 void
@@ -95,45 +127,10 @@ SGBinding::clear()
  */
 void SGBinding::read(const SGPropertyNode* node, SGPropertyNode* root)
 {
-    const SGPropertyNode* conditionNode = node->getChild("condition");
-    const SGPropertyNode* expressionNode = node->getChild("expression");
-    const SGPropertyNode* target = node->getChild("property");
-    _debug = node->getBoolValue("debug", false);
-
-    if (conditionNode != 0)
-        setCondition(sgReadCondition(root, conditionNode));
-
-
+    SGAbstractBinding::read(node, root);
     _command_name = node->getStringValue("command", "");
-    if (_command_name.empty() && expressionNode == nullptr) {
-        SG_LOG(SG_INPUT, SG_WARN, "Neither command nor expression supplied for binding { " << node->getPath() << " }.");
-    }
-
-    _arg = const_cast<SGPropertyNode*>(node);
     _root = const_cast<SGPropertyNode*>(root);
     _setting.clear();
-
-    // if we have no command, look for expression and target property
-    if (expressionNode && expressionNode->nChildren() && target) {
-        _target_property = _root->getNode(target->getStringValue(), true);
-        // input value is stored in 'setting'
-        _setting = _arg->getChild("setting", 0, true);
-
-        if (_debug) {
-            SG_LOG(SG_INPUT, SG_MANDATORY_INFO, "Reading expression for binding " << node->getPath());
-            SG_LOG(SG_INPUT, SG_MANDATORY_INFO, "Input from " << _setting->getPath());
-            SG_LOG(SG_INPUT, SG_MANDATORY_INFO, "Output to " << _target_property->getPath());
-        }
-        /*
-        Pass the setting node as property tree root to expression.
-        Absolute property paths in <expression> XML will work as usual
-        An empty path or '.' will refer to the 'setting' node, i.e. the binding input.
-        */
-        _expression = SGReadDoubleExpression(_setting, expressionNode->getChild(0));
-        if (!_expression && _debug)
-            SG_LOG(SG_INPUT, SG_MANDATORY_INFO, "FAILED");
-    }
-
 }
 
 void
@@ -150,19 +147,13 @@ SGBinding::innerFire () const
             SG_LOG(SG_GENERAL, SG_ALERT, "command '" << _command_name << "' failed with exception\n"
                                                     << "\tmessage:" << e.getMessage() << " (from " << e.getOrigin() << ")");
         }
-    }
-    // otherwise try expression
-    else {
-        if (_expression) {
-            double result = _expression->getDoubleValue();
-            if (_debug) {
-                SG_LOG(SG_INPUT, SG_MANDATORY_INFO, "Expression result {" << _arg->getPath() << "}:" << result);
-            }
-            if (_target_property)
-                _target_property->setDoubleValue(result);
-        }
+    } else {
+        // command names are dynamic (Nasal / add-ons can change them), so we can only validate this now
+        SG_LOG(SG_GENERAL, SG_ALERT, "Binding: unknown command:" << _command_name << " from\n\t" << _arg->getLocation());
     }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -191,7 +182,7 @@ SGBindingList readBindingList(const simgear::PropertyList& aNodes, SGPropertyNod
 {
     SGBindingList result;
     for (auto node : aNodes) {
-        result.push_back(new SGBinding(node, aRoot));
+        result.push_back(SGAbstractBinding::createFromProps(node, aRoot));
     }
 
     return result;

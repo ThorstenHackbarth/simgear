@@ -4,6 +4,7 @@
 include (SimGearComponent)
 
 set(HEADERS
+    ExpressionBinding.hxx
     SGAtomic.hxx
     SGBinding.hxx
     SGExpression.hxx
@@ -30,6 +31,7 @@ set(HEADERS
     )
 
 set(SOURCES
+    ExpressionBinding.cxx
     SGAtomic.cxx
     SGBinding.cxx
     SGExpression.cxx
