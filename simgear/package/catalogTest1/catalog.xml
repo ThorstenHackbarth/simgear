@@ -1,10 +1,17 @@
 <?xml version="1.0"?>
-
+<!--
+  SPDX-FileCopyrightText: 2015 James Turner
+  SPDX-License-Identifier: GPL-2.0-or-later
+-->
 <PropertyList>
     <id>org.flightgear.test.catalog1</id>
     <description>First test catalog</description>
     <url>http://localhost:2000/catalogTest1/catalog.xml</url>
     <catalog-version>4</catalog-version>
+
+    <base-url>http://localhost:2000/catalogTest1</base-url>
+    <base-url>http://localhost:2000/foo/alt2/</base-url>
+    <base-url>http://localhost:2000/alt1</base-url>
 
     <version>8.1.*</version>
     <version>8.0.0</version>
@@ -18,6 +25,7 @@
 
         <md5>a469c4b837f0521db48616cfe65ac1ea</md5>
         <url>http://localhost:2000/catalogTest1/alpha.zip</url>
+
 
         <dir>alpha</dir>
 
@@ -62,7 +70,7 @@
         <preview>
           <type>exterior</type>
           <path>thumb-exterior.png</path>
-          <url>http://foo.bar.com/thumb-exterior.png</url>
+          <url>previews/c172/thumb-exterior.png</url>
         </preview>
 
         <preview>
@@ -99,7 +107,7 @@
               <url>http://foo.bar.com/thumb-panel.png</url>
             </preview>
 
-            <thumbnail>http://foo.bar.com/thumb-floats.png</thumbnail>
+            <thumbnail>thumbnails/c172_thumb-floats.png</thumbnail>
             <thumbnail-path>thumb-floats.png</thumbnail-path>
         </variant>
 
@@ -157,7 +165,7 @@
         </variant>
 
         <md5>ec0e2ffdf98d6a5c05c77445e5447ff5</md5>
-        <url>http://localhost:2000/catalogTest1/c172p.zip</url>
+        <url>c172p.zip</url>
 
         <thumbnail>http://foo.bar.com/thumb-exterior.png</thumbnail>
         <thumbnail-path>exterior.png</thumbnail-path>
@@ -208,7 +216,7 @@
         <tag>jet</tag>
         <tag>ifr</tag>
 
-  
+
 
         <rating>
           <FDM type="int">5</FDM>
@@ -241,8 +249,8 @@
         <name>movies files for test catalog aircraft</name>
         <revision>10</revision>
         <dir>movies</dir>
-        <!-- url has no file extension, instead we set arcive-type -->
-        <url>http://localhost:2000/catalogTest1/movies?wierd=foo;bar=thing</url>
+        <!-- url has no file extension, instead we set archive-type -->
+        <url>http://localhost:2000/catalogTest1/movies?weird=foo;bar=thing</url>
         <archive-type>zip</archive-type>
         <archive-path>movies_6789</archive-path>
         <file-size-bytes>232</file-size-bytes>

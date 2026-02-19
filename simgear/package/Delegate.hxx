@@ -2,8 +2,7 @@
 // SPDX-FileCopyrightText: Copyright (C) 2013  James Turner - james@flightgear.org
 
 
-#ifndef SG_PACKAGE_DELEGATE_HXX
-#define SG_PACKAGE_DELEGATE_HXX
+#pragma once
 
 #include <string>
 #include <simgear/misc/stdint.hxx>
@@ -75,12 +74,10 @@ public:
      */
     virtual void installStatusChanged(InstallRef aInstall, StatusCode aReason);
 
-	virtual void dataForThumbnail(const std::string& aThumbnailUrl,
-		size_t length, const uint8_t* bytes);
+    virtual void dataForThumbnail(const std::string& aPackageId,
+                                  size_t length, const uint8_t* bytes);
 };
 
 } // of namespace pkg
 
-} // of namespace simgear
-
-#endif // of SG_PACKAGE_DELEGATE_HXX
+} // namespace simgear

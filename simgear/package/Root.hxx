@@ -135,7 +135,7 @@ public:
     /**
      * request thumbnail data from the cache / network
      */
-    void requestThumbnailData(const std::string& aUrl);
+    void requestThumbnailData(const std::string& aPackageId);
 
     bool isInstallQueued(InstallRef aInstall) const;
 
@@ -167,6 +167,9 @@ public:
      * @return PackageList
      */
     PackageList packagesProviding(const std::string& path, bool onlyInstalled) const;
+
+
+    static bool isRelativeUrl(const std::string& url);
 
 private:
     friend class Install;

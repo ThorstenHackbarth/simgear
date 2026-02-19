@@ -391,6 +391,7 @@ string_list Package::thumbnailUrls() const
     if (!thumb.url.empty()) {
         urls.push_back(thumb.url);
     }
+
     return urls;
 }
 
@@ -404,6 +405,14 @@ string_list Package::downloadUrls() const
     for (auto dl : m_props->getChildren("url")) {
         r.push_back(dl->getStringValue());
     }
+
+    if (r.size() == 1) {
+        if (Root::isRelativeUrl(r.front())) {
+            // resolve relative to catalog base URL
+            r = m_catalog->resolveUrl(r.front());
+        }
+    }
+
     return r;
 }
 

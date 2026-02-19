@@ -67,6 +67,14 @@ public:
             return;
         }
 
+        if (path.find("alt1") == 0) {
+            path.replace(0, 4, "/catalogTest1");
+        }
+
+        if (path.find("alt2/foo") == 0) {
+            path.replace(0, 8, "/catalogTest1");
+        }
+
         if (path == "/catalogTest1/catalog.xml") {
             if (global_catalogVersion > 0) {
                 std::stringstream ss;
@@ -166,7 +174,10 @@ int parseTest()
     SG_CHECK_EQUAL(cat->url(), "http://localhost:2000/catalogTest1/catalog.xml");
     SG_CHECK_EQUAL(cat->description(), "First test catalog");
 
-// check the packages too
+    SG_CHECK_EQUAL(cat->baseUrls().size(), 3);
+    SG_CHECK_EQUAL(cat->baseUrls().at(2), "http://localhost:2000/alt1/");
+
+    // check the packages too
     SG_CHECK_EQUAL(cat->packages().size(), 4);
     SG_CHECK_EQUAL(cat->packages(simgear::pkg::LibraryPackage).size(), 2);
     SG_CHECK_EQUAL(cat->packages(simgear::pkg::AIModelPackage).size(), 1);
@@ -187,19 +198,17 @@ int parseTest()
     SG_CHECK_EQUAL(p2->qualifiedId(), "org.flightgear.test.catalog1.c172p");
     SG_CHECK_EQUAL(p2->description(), "German description of C172");
 
-    pkg::Package::PreviewVec thumbs = p2->previewsForVariant(0);
-    SG_CHECK_EQUAL(thumbs.size(), 3);
+    pkg::Package::PreviewVec previews = p2->previewsForVariant(0);
+    SG_CHECK_EQUAL(previews.size(), 3);
 
-    auto index = std::find_if(thumbs.begin(), thumbs.end(), [](const pkg::Package::Preview& t)
-                             { return (t.type == pkg::Package::Preview::Type::EXTERIOR); });
-    SG_VERIFY(index != thumbs.end());
+    auto index = std::find_if(previews.begin(), previews.end(), [](const pkg::Package::Preview& t) { return (t.type == pkg::Package::Preview::Type::EXTERIOR); });
+    SG_VERIFY(index != previews.end());
     SG_CHECK_EQUAL(index->path, "thumb-exterior.png");
-    SG_CHECK_EQUAL(index->url, "http://foo.bar.com/thumb-exterior.png");
+    SG_CHECK_EQUAL(index->url, "previews/c172/thumb-exterior.png");
     SG_VERIFY(index->type == pkg::Package::Preview::Type::EXTERIOR);
 
-    index = std::find_if(thumbs.begin(), thumbs.end(), [](const pkg::Package::Preview& t)
-                        { return (t.type == pkg::Package::Preview::Type::PANEL); });
-    SG_VERIFY(index != thumbs.end());
+    index = std::find_if(previews.begin(), previews.end(), [](const pkg::Package::Preview& t) { return (t.type == pkg::Package::Preview::Type::PANEL); });
+    SG_VERIFY(index != previews.end());
     SG_CHECK_EQUAL(index->path, "thumb-panel.png");
     SG_CHECK_EQUAL(index->url, "http://foo.bar.com/thumb-panel.png");
     SG_VERIFY(index->type == pkg::Package::Preview::Type::PANEL);
@@ -209,7 +218,14 @@ int parseTest()
     SG_CHECK_EQUAL(thumb.url, "http://foo.bar.com/thumb-exterior.png");
     SG_CHECK_EQUAL(thumb.path, "exterior.png");
 
-// test variants
+    // download urls
+    const auto dlUrls = p2->downloadUrls();
+    SG_CHECK_EQUAL(dlUrls.size(), 3);
+    SG_CHECK_EQUAL(dlUrls.at(0), "http://localhost:2000/catalogTest1/c172p.zip");
+    SG_CHECK_EQUAL(dlUrls.at(1), "http://localhost:2000/foo/alt2/c172p.zip");
+    SG_CHECK_EQUAL(dlUrls.at(2), "http://localhost:2000/alt1/c172p.zip");
+
+    // test variants
     SG_CHECK_EQUAL(p2->parentIdForVariant(0), std::string());
 
     try {
@@ -244,18 +260,21 @@ int parseTest()
     SG_CHECK_EQUAL(p2->getLocalisedProp("author", floatsVariant),
                    "Floats variant author");
 
-    pkg::Package::PreviewVec thumbs2 = p2->previewsForVariant(skisVariant);
-    SG_CHECK_EQUAL(thumbs2.size(), 2);
+    const pkg::Package::Thumbnail& thumbFloats = p2->thumbnailForVariant(floatsVariant);
+    SG_CHECK_EQUAL(thumbFloats.url, "thumbnails/c172_thumb-floats.png");
+    SG_CHECK_EQUAL(thumbFloats.path, "thumb-floats.png");
 
-    index = std::find_if(thumbs2.begin(), thumbs2.end(), [](const pkg::Package::Preview& t)
-                              { return (t.type == pkg::Package::Preview::Type::EXTERIOR); });
-    SG_VERIFY(index != thumbs2.end());
+    pkg::Package::PreviewVec previews2 = p2->previewsForVariant(skisVariant);
+    SG_CHECK_EQUAL(previews2.size(), 2);
+
+    index = std::find_if(previews2.begin(), previews2.end(), [](const pkg::Package::Preview& t) { return (t.type == pkg::Package::Preview::Type::EXTERIOR); });
+    SG_VERIFY(index != previews2.end());
     SG_CHECK_EQUAL(index->path, "thumb-exterior-skis.png");
     SG_CHECK_EQUAL(index->url, "http://foo.bar.com/thumb-exterior-skis.png");
     SG_VERIFY(index->type == pkg::Package::Preview::Type::EXTERIOR);
 
     const pkg::Package::Thumbnail& thumb2 = p2->thumbnailForVariant(floatsVariant);
-    SG_CHECK_EQUAL(thumb2.url, "http://foo.bar.com/thumb-floats.png");
+    SG_CHECK_EQUAL(thumb2.url, "thumbnails/c172_thumb-floats.png");
     SG_CHECK_EQUAL(thumb2.path, "thumb-floats.png");
 
 // test multiple primary

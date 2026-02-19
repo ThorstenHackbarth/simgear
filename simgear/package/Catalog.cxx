@@ -60,7 +60,33 @@ std::string redirectUrlForVersion(const std::string& aVersion, SGPropertyNode_pt
     return {};
 }
 
-//////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+class Catalog::CatalogPrivate
+{
+public:
+    Root* m_root = nullptr;
+    SGPropertyNode_ptr m_props;
+    SGPath m_installRoot;
+    std::string m_url;
+    string_list m_baseUrls; ///< alternate locations for this catalog, which relative URLs will be resolved against
+
+    Delegate::StatusCode m_status = Delegate::FAIL_UNKNOWN;
+    HTTP::Request_ptr m_refreshRequest;
+    bool m_userEnabled = true;
+
+    PackageList m_packages;
+    time_t m_retrievedTime = 0;
+
+    typedef std::map<std::string, Package*> PackageWeakMap;
+    PackageWeakMap m_variantDict;
+
+    function_list<Callback> m_statusCallbacks;
+
+    CatalogRef m_migratedFrom;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 
 class Catalog::Downloader : public HTTP::Request
 {
@@ -140,7 +166,7 @@ protected:
             return;
         }
 
-        time(&m_owner->m_retrievedTime);
+        time(&m_owner->d->m_retrievedTime);
         m_owner->writeTimestamp();
         m_owner->refreshComplete(Delegate::STATUS_REFRESHED);
     }
@@ -166,27 +192,24 @@ private:
 
 //////////////////////////////////////////////////////////////////////////////
 
-Catalog::Catalog(Root *aRoot) :
-    m_root(aRoot)
+Catalog::Catalog(Root* aRoot) : d(new CatalogPrivate)
 {
+    d->m_root = aRoot;
 }
 
-Catalog::~Catalog()
-{
-}
+Catalog::~Catalog() = default;
 
 CatalogRef Catalog::createFromUrl(Root* aRoot, const std::string& aUrl)
 {
     CatalogRef c = new Catalog(aRoot);
-    c->m_url = aUrl;
+    c->d->m_url = aUrl;
     c->refresh();
     return c;
 }
 
 CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
 {
-    SGPath xml = aPath;
-    xml.append("catalog.xml");
+    const SGPath xml = aPath / "catalog.xml";
     if (!xml.exists()) {
         return nullptr;
     }
@@ -212,10 +235,10 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
     const SGPath disableMarkerFile = aPath / "_disabled_";
 
     CatalogRef c = new Catalog(aRoot);
-    c->m_installRoot = aPath;
+    c->d->m_installRoot = aPath;
 
     if (disableMarkerFile.exists()) {
-        c->m_userEnabled = false;
+        c->d->m_userEnabled = false;
     }
 
     c->parseProps(props);
@@ -224,9 +247,9 @@ CatalogRef Catalog::createFromPath(Root* aRoot, const SGPath& aPath)
     if (!c->validatePackages()) {
         c->changeStatus(Delegate::FAIL_VALIDATION);
     } else if (!versionCheckOk) {
-         c->changeStatus(Delegate::FAIL_VERSION);
-    } else if (!c->m_userEnabled) {
-          c->changeStatus(Delegate::USER_DISABLED);
+        c->changeStatus(Delegate::FAIL_VERSION);
+    } else if (!c->isUserEnabled()) {
+        c->changeStatus(Delegate::USER_DISABLED);
     } else {
         // parsed XML ok, mark status as valid
         c->changeStatus(Delegate::STATUS_SUCCESS);
@@ -283,21 +306,21 @@ bool Catalog::uninstall()
 
 bool Catalog::removeDirectory()
 {
-    Dir d(m_installRoot);
-    if (!m_installRoot.exists())
+    Dir ourDir(d->m_installRoot);
+    if (!ourDir.exists())
         return true;
 
-    return d.remove(true /* recursive */);
+    return ourDir.remove(true /* recursive */);
 }
 
 PackageList
 Catalog::packages(Type ty) const
 {
     if (ty == AnyPackageType)
-        return m_packages;
+        return d->m_packages;
 
     PackageList r;
-    std::copy_if(m_packages.begin(), m_packages.end(),
+    std::copy_if(d->m_packages.begin(), d->m_packages.end(),
                  std::back_inserter(r),
                  [ty](const PackageRef& p) {
                      return p->type() == ty;
@@ -309,7 +332,7 @@ PackageList
 Catalog::packagesMatching(const SGPropertyNode* aFilter) const
 {
     PackageList r;
-    std::copy_if(m_packages.begin(), m_packages.end(),
+    std::copy_if(d->m_packages.begin(), d->m_packages.end(),
                  std::back_inserter(r),
                  [aFilter](const PackageRef& p) {
                      return p->matches(aFilter);
@@ -321,7 +344,7 @@ PackageList
 Catalog::packagesNeedingUpdate() const
 {
     PackageList r;
-    std::copy_if(m_packages.begin(), m_packages.end(),
+    std::copy_if(d->m_packages.begin(), d->m_packages.end(),
                  std::back_inserter(r),
                  [](const PackageRef& p) {
                      return p->isInstalled() && p->install()->hasUpdate();
@@ -333,7 +356,7 @@ PackageList
 Catalog::installedPackages(Type ty) const
 {
   PackageList r;
-  std::copy_if(m_packages.begin(), m_packages.end(),
+  std::copy_if(d->m_packages.begin(), d->m_packages.end(),
                std::back_inserter(r),
                [ty](const PackageRef& p) {
                    if (ty != AnyPackageType && (p->type() != ty))
@@ -345,54 +368,44 @@ Catalog::installedPackages(Type ty) const
 
 void Catalog::refresh()
 {
-    if (m_refreshRequest.valid()) {
+    if (d->m_refreshRequest.valid()) {
         // refresh in progress
         return;
     }
 
-    if (!m_root->isOnline()) {
+    if (!d->m_root->isOnline()) {
         SG_LOG(SG_NETWORK, SG_INFO, "Catalog refresh skipped in offline mode.");
         return;
     }
 
     Downloader* dl = new Downloader(this, url());
-    m_refreshRequest = dl;
+    d->m_refreshRequest = dl;
     // will update status to IN_PROGRESS
-    m_root->makeHTTPRequest(dl);
+    d->m_root->makeHTTPRequest(dl);
 }
-
-struct FindById
-{
-    FindById(const std::string &id) : m_id(id) {}
-
-    bool operator()(const PackageRef& ref) const
-    {
-        return ref->id() == m_id;
-    }
-
-    std::string m_id;
-};
 
 void Catalog::parseProps(const SGPropertyNode* aProps)
 {
     // copy everything except package children?
-    m_props = new SGPropertyNode;
+    d->m_props = new SGPropertyNode;
 
-    m_variantDict.clear(); // will rebuild during parse
+    d->m_variantDict.clear(); // will rebuild during parse
     std::set<PackageRef> orphans;
-    orphans.insert(m_packages.begin(), m_packages.end());
+    orphans.insert(d->m_packages.begin(), d->m_packages.end());
 
-    int nChildren = aProps->nChildren();
+    const int nChildren = aProps->nChildren();
     for (int i = 0; i < nChildren; i++) {
         const SGPropertyNode* pkgProps = aProps->getChild(i);
         if (pkgProps->getNameString() == "package") {
             // can't use getPackageById here because the variant dict isn't
             // built yet. Instead we need to look at m_packages directly.
 
-            PackageList::iterator pit = std::find_if(m_packages.begin(), m_packages.end(),
-                                                  FindById(pkgProps->getStringValue("id")));
+            auto pit = std::find_if(d->m_packages.begin(), d->m_packages.end(),
+                                    [id = pkgProps->getStringValue("id")](const PackageRef& ref) {
+                                        return ref->id() == id;
+                                    });
             PackageRef p;
-            if (pit != m_packages.end()) {
+            if (pit != d->m_packages.end()) {
                 p = *pit;
                 // existing package
                 p->updateFromProps(pkgProps);
@@ -400,48 +413,53 @@ void Catalog::parseProps(const SGPropertyNode* aProps)
             } else {
                 // new package
                 p = new Package(pkgProps, this);
-                m_packages.push_back(p);
+                d->m_packages.push_back(p);
             }
 
             string_list vars(p->variants());
-            for (string_list::iterator it = vars.begin(); it != vars.end(); ++it) {
-                m_variantDict[*it] = p.ptr();
+            for (const auto& v : p->variants()) {
+                d->m_variantDict[v] = p.ptr();
             }
         } else {
-            SGPropertyNode* c = m_props->getChild(pkgProps->getNameString().c_str(), pkgProps->getIndex(), true);
+            SGPropertyNode* c = d->m_props->getChild(pkgProps->getNameString(), pkgProps->getIndex(), true);
             copyProperties(pkgProps, c);
         }
     } // of children iteration
 
     if (!orphans.empty()) {
-        SG_LOG(SG_GENERAL, SG_WARN, "have orphan packages: will become inaccessible");
-        std::set<PackageRef>::iterator it;
-        for (it = orphans.begin(); it != orphans.end(); ++it) {
-            SG_LOG(SG_GENERAL, SG_WARN, "\torphan package:" << (*it)->qualifiedId());
-            PackageList::iterator pit = std::find(m_packages.begin(), m_packages.end(), *it);
-            assert(pit != m_packages.end());
-            m_packages.erase(pit);
+        for (auto orphan : orphans) {
+            SG_LOG(SG_GENERAL, SG_WARN, "\torphan package:" << orphan->qualifiedId());
+            auto pit = std::find(d->m_packages.begin(), d->m_packages.end(), orphan);
+            assert(pit != d->m_packages.end());
+            d->m_packages.erase(pit);
         }
     }
 
-    if (!m_url.empty()) {
-        if (m_url != m_props->getStringValue("url")) {
+    if (!d->m_url.empty()) {
+        if (d->m_url != d->m_props->getStringValue("url")) {
             // this effectively allows packages to migrate to new locations,
             // although if we're going to rely on that feature we should
             // maybe formalize it!
-            SG_LOG(SG_GENERAL, SG_WARN, "package downloaded from:" << m_url
-                   << " is now at: " << m_props->getStringValue("url"));
+            SG_LOG(SG_GENERAL, SG_WARN, "package downloaded from:" << d->m_url << " is now at: " << d->m_props->getStringValue("url"));
         }
     }
 
-    m_url = m_props->getStringValue("url");
+    d->m_url = d->m_props->getStringValue("url");
+    for (auto c : d->m_props->getChildren("base-url")) {
+        auto mu = c->getStringValue();
+        // normalize the URL to end with a slash
+        if (!strutils::ends_with(mu, "/")) {
+            mu += "/";
+        }
+        d->m_baseUrls.push_back(mu);
+    }
 
-    if (m_installRoot.isNull()) {
-        m_installRoot = m_root->path();
-        m_installRoot.append(id());
+    if (d->m_installRoot.isNull()) {
+        d->m_installRoot = d->m_root->path();
+        d->m_installRoot.append(id());
 
-        Dir d(m_installRoot);
-        d.create(0755);
+        Dir od(d->m_installRoot);
+        od.create(0755);
     }
 }
 
@@ -449,8 +467,8 @@ PackageRef Catalog::getPackageById(const std::string& aId) const
 {
     // search the variant dict here, so looking up aircraft variants
     // works as expected.
-    PackageWeakMap::const_iterator it = m_variantDict.find(aId);
-    if (it == m_variantDict.end())
+    auto it = d->m_variantDict.find(aId);
+    if (it == d->m_variantDict.end())
         return PackageRef();
 
     return it->second;
@@ -458,81 +476,113 @@ PackageRef Catalog::getPackageById(const std::string& aId) const
 
 PackageRef Catalog::getPackageByPath(const std::string& aPath) const
 {
-    PackageList::const_iterator it;
-    for (it = m_packages.begin(); it != m_packages.end(); ++it) {
-        if ((*it)->dirName() == aPath) {
-            return *it;
-        }
+    auto it = std::find_if(d->m_packages.begin(), d->m_packages.end(),
+                           [aPath](const PackageRef& ref) {
+                               return ref->dirName() == aPath;
+                           });
+    if (it != d->m_packages.end()) {
+        return *it;
     }
 
-    return PackageRef();
+    return {};
+}
+
+Root* Catalog::root() const
+{
+    return d->m_root;
+}
+
+SGPath Catalog::installRoot() const
+{
+    return d->m_installRoot;
 }
 
 std::string Catalog::id() const
 {
-    return m_props->getStringValue("id");
+    return d->m_props->getStringValue("id");
 }
 
 std::string Catalog::url() const
 {
-    return m_url;
+    return d->m_url;
 }
+
+string_list Catalog::baseUrls() const
+{
+    return d->m_baseUrls;
+}
+
+string_list Catalog::resolveUrl(const std::string& relativeUrl) const
+{
+    // take a copy to avoid double-slashes.
+    auto u = relativeUrl;
+    if (u.starts_with("/")) {
+        u.erase(0, 1);
+    }
+
+    string_list r;
+    for (const auto& base : d->m_baseUrls) {
+        r.push_back(base + u);
+    }
+    return r;
+}
+
 
 void Catalog::setUrl(const std::string &url)
 {
-    m_url = url;
-    if (m_status == Delegate::FAIL_NOT_FOUND) {
-        m_status = Delegate::FAIL_UNKNOWN;
+    d->m_url = url;
+    if (d->m_status == Delegate::FAIL_NOT_FOUND) {
+        d->m_status = Delegate::FAIL_UNKNOWN;
     }
 }
 
 std::string Catalog::name() const
 {
-    return getLocalisedString(m_props, "name");
+    return getLocalisedString(d->m_props, "name");
 }
 
 std::string Catalog::description() const
 {
-    return getLocalisedString(m_props, "description");
+    return getLocalisedString(d->m_props, "description");
 }
 
 SGPropertyNode* Catalog::properties() const
 {
-    return m_props.ptr();
+    return d->m_props.ptr();
 }
 
 void Catalog::parseTimestamp()
 {
-    SGPath timestampFile = m_installRoot;
+    SGPath timestampFile = d->m_installRoot;
     timestampFile.append(".timestamp");
     sg_ifstream f(timestampFile, std::ios::in);
-    f >> m_retrievedTime;
+    f >> d->m_retrievedTime;
 }
 
 void Catalog::writeTimestamp()
 {
-    SGPath timestampFile = m_installRoot;
+    SGPath timestampFile = d->m_installRoot;
     timestampFile.append(".timestamp");
     sg_ofstream f(timestampFile, std::ios::out | std::ios::trunc);
-    f << m_retrievedTime << std::endl;
+    f << d->m_retrievedTime << std::endl;
 }
 
 unsigned int Catalog::ageInSeconds() const
 {
     time_t now;
     time(&now);
-    int diff = ::difftime(now, m_retrievedTime);
+    int diff = ::difftime(now, d->m_retrievedTime);
     return (diff < 0) ? 0 : diff;
 }
 
 bool Catalog::needsRefresh() const
 {
     // always refresh in these cases
-    if ((m_status == Delegate::FAIL_VERSION) || (m_status == Delegate::FAIL_DOWNLOAD)) {
+    if ((d->m_status == Delegate::FAIL_VERSION) || (d->m_status == Delegate::FAIL_DOWNLOAD)) {
         return true;
     }
 
-    unsigned int maxAge = m_props->getIntValue("max-age-sec", m_root->maxAgeSeconds());
+    unsigned int maxAge = d->m_props->getIntValue("max-age-sec", d->m_root->maxAgeSeconds());
     return (ageInSeconds() > maxAge);
 }
 
@@ -542,8 +592,8 @@ std::string Catalog::getLocalisedString(const SGPropertyNode* aRoot, const char*
         return std::string();
     }
 
-    if (aRoot->hasChild(m_root->getLocale())) {
-        const SGPropertyNode* localeRoot = aRoot->getChild(m_root->getLocale().c_str());
+    if (aRoot->hasChild(d->m_root->getLocale())) {
+        const SGPropertyNode* localeRoot = aRoot->getChild(d->m_root->getLocale());
         if (localeRoot->hasChild(aName)) {
             return localeRoot->getStringValue(aName);
         }
@@ -554,37 +604,37 @@ std::string Catalog::getLocalisedString(const SGPropertyNode* aRoot, const char*
 
 void Catalog::refreshComplete(Delegate::StatusCode aReason)
 {
-    m_refreshRequest.reset();
+    d->m_refreshRequest.reset();
     changeStatus(aReason);
 }
 
 void Catalog::changeStatus(Delegate::StatusCode newStatus)
 {
-    if (m_status == newStatus) {
+    if (d->m_status == newStatus) {
         return;
     }
 
-    m_status = newStatus;
-    m_root->catalogRefreshStatus(this, newStatus);
-    m_statusCallbacks(this);
+    d->m_status = newStatus;
+    d->m_root->catalogRefreshStatus(this, newStatus);
+    d->m_statusCallbacks(this);
 }
 
 void Catalog::addStatusCallback(const Callback& cb)
 {
-    m_statusCallbacks.push_back(cb);
+    d->m_statusCallbacks.push_back(cb);
 }
 
 Delegate::StatusCode Catalog::status() const
 {
-    return m_status;
+    return d->m_status;
 }
 
 bool Catalog::isEnabled() const
 {
-    if (!m_userEnabled)
+    if (!d->m_userEnabled)
         return false;
 
-    switch (m_status) {
+    switch (d->m_status) {
     case Delegate::STATUS_SUCCESS:
     case Delegate::STATUS_REFRESHED:
     case Delegate::STATUS_IN_PROGRESS:
@@ -598,18 +648,18 @@ bool Catalog::isEnabled() const
 
 bool Catalog::isUserEnabled() const
 {
-    return m_userEnabled;
+    return d->m_userEnabled;
 }
 
 void Catalog::setUserEnabled(bool b)
 {
-    if (m_userEnabled == b)
+    if (d->m_userEnabled == b)
         return;
 
-    m_userEnabled = b;
+    d->m_userEnabled = b;
     SGPath disableMarkerFile = installRoot() / "_disabled_";
 
-    if (m_userEnabled == false) {
+    if (d->m_userEnabled == false) {
         sg_ofstream of(disableMarkerFile, std::ios::trunc | std::ios::out);
         of << "1" << std::flush; // touch the file
         of.close();
@@ -622,19 +672,18 @@ void Catalog::setUserEnabled(bool b)
         }
     }
 
-    Delegate::StatusCode effectiveStatus = m_status;
-    if ((m_status == Delegate::STATUS_SUCCESS) && !m_userEnabled) {
+    Delegate::StatusCode effectiveStatus = d->m_status;
+    if ((d->m_status == Delegate::STATUS_SUCCESS) && !d->m_userEnabled) {
         effectiveStatus = Delegate::USER_DISABLED;
     }
 
-    m_root->catalogRefreshStatus(this, effectiveStatus);
+    d->m_root->catalogRefreshStatus(this, effectiveStatus);
 }
 
 void Catalog::processAlternate(SGPropertyNode_ptr alt)
 {
-    m_refreshRequest.reset();
+    d->m_refreshRequest.reset();
     std::string altId = alt->getStringValue("id");
-
     std::string altUrl = alt->getStringValue("url");
 
     CatalogRef existing;
@@ -662,14 +711,14 @@ void Catalog::processAlternate(SGPropertyNode_ptr alt)
         return;
       }
 
-      SG_LOG(SG_GENERAL, SG_WARN,
+      SG_LOG(SG_GENERAL, SG_INFO,
              "Adding new catalog:" << altId << " as version alternate for "
                                    << id());
       // new catalog being added
       auto newCat = createFromUrl(root(), altUrl);
 
       bool didRun = false;
-      newCat->m_migratedFrom = this;
+      newCat->d->m_migratedFrom = this;
 
       auto migratePackagesCb = [didRun](Catalog *c) mutable {
         // removing callbacks is awkward, so use this
@@ -701,8 +750,8 @@ void Catalog::processAlternate(SGPropertyNode_ptr alt)
 
     SG_LOG(SG_GENERAL, SG_INFO, "Migrating catalog " << id() << " to new URL:" << altUrl);
     setUrl(altUrl);
-    m_refreshRequest = new Downloader(this, altUrl);
-    root()->makeHTTPRequest(m_refreshRequest);
+    d->m_refreshRequest = new Downloader(this, altUrl);
+    root()->makeHTTPRequest(d->m_refreshRequest);
 }
 
 int Catalog::markPackagesForInstallation(const string_list &packageIds) {
@@ -723,12 +772,15 @@ int Catalog::markPackagesForInstallation(const string_list &packageIds) {
   return result;
 }
 
-CatalogRef Catalog::migratedFrom() const { return m_migratedFrom; }
+CatalogRef Catalog::migratedFrom() const
+{
+    return d->m_migratedFrom;
+}
 
 PackageList Catalog::packagesProviding(const Type inferredType, const std::string& directory, const std::string& subpath) const
 {
     PackageList p;
-    copy_if(m_packages.begin(), m_packages.end(), std::back_inserter(p),
+    copy_if(d->m_packages.begin(), d->m_packages.end(), std::back_inserter(p),
             [inferredType, &directory, &subpath](const PackageRef& pkg) {
                 // if we detected a package type, it needs to match, so the resulting
                 // path matches as well

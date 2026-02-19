@@ -3,9 +3,10 @@
 
 #pragma once
 
-#include <vector>
 #include <ctime>
 #include <map>
+#include <memory>
+#include <vector>
 
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/strutils.hxx>
@@ -35,8 +36,7 @@ public:
 
     static CatalogRef createFromPath(Root* aRoot, const SGPath& aPath);
 
-    Root* root() const
-        { return m_root;};
+    Root* root() const;
 
     /**
      * uninstall this catalog entirely, including all installed packages
@@ -70,8 +70,7 @@ public:
      */
     PackageList packagesNeedingUpdate() const;
 
-    SGPath installRoot() const
-         { return m_installRoot; }
+    SGPath installRoot() const;
 
     std::string id() const;
 
@@ -105,7 +104,7 @@ public:
     SGPropertyNode* properties() const;
 
     Delegate::StatusCode status() const;
-    
+
     /**
      * is this Catalog usable? This may be false if the catalog is currently
      * failing a version check or cannot be updated
@@ -121,7 +120,7 @@ public:
     {
       return addStatusCallback(std::bind(mem_func, instance, std::placeholders::_1));
     }
-    
+
     bool isUserEnabled() const;
     void setUserEnabled(bool b);
 
@@ -149,13 +148,29 @@ public:
      */
     CatalogRef migratedFrom() const;
 
-  private:
+    /**
+     * @brief return the set of base URLs for this Catalog. This is the set of
+     * mirror/alternate locations that relative URLs (for downloads, previews, etc) will be resolved against.
+     *
+     * @return string_list
+     */
+    string_list baseUrls() const;
+
+    /**
+     * @brief expand a relative URL against all the base URLs for this Catalog
+     *
+     * @param relativeUrl
+     * @return string_list
+     */
+    string_list resolveUrl(const std::string& relativeUrl) const;
+
+private:
     Catalog(Root* aRoot);
 
     class Downloader;
     friend class Downloader;
     friend class Root;
-    
+
     void parseProps(const SGPropertyNode* aProps);
 
     void refreshComplete(Delegate::StatusCode aReason);
@@ -167,13 +182,13 @@ public:
      * @brief wipe the catalog directory from the disk
      */
     bool removeDirectory();
-    
+
     /**
      * @brief Helper to ensure all packages are at least somewhat valid, in terms
      * of an ID, name and directory.
      */
     bool validatePackages() const;
-    
+
     std::string getLocalisedString(const SGPropertyNode* aRoot, const char* aName) const;
 
     void changeStatus(Delegate::StatusCode newStatus);
@@ -182,23 +197,8 @@ public:
 
     PackageList packagesProviding(const Type inferredType, const std::string& path, const std::string& subpath) const;
 
-    Root* m_root;
-    SGPropertyNode_ptr m_props;
-    SGPath m_installRoot;
-    std::string m_url;
-    Delegate::StatusCode m_status = Delegate::FAIL_UNKNOWN;
-    HTTP::Request_ptr m_refreshRequest;
-    bool m_userEnabled = true;
-    
-    PackageList m_packages;
-    time_t m_retrievedTime = 0;
-
-    typedef std::map<std::string, Package*> PackageWeakMap;
-    PackageWeakMap m_variantDict;
-
-    function_list<Callback> m_statusCallbacks;
-
-    CatalogRef m_migratedFrom;
+    class CatalogPrivate;
+    std::unique_ptr<CatalogPrivate> d;
 };
 
 } // of namespace pkg
