@@ -162,6 +162,11 @@ static SGPath getXDGDir( const std::string& name,
 
   return def;
 }
+
+static SGPath getXDGDataDir()
+{
+    return SGPath::fromEnv("XDG_DATA_HOME", SGPath::home() / ".local/share");
+}
 #endif
 
 // For windows, replace "\" by "/".
@@ -982,6 +987,10 @@ SGPath SGPath::standardLocation(StandardLocation type, const SGPath& def)
 
         return pathForCSIDL(CSIDL_MYPICTURES, def);
 
+        // do not use APPDATA since it's roaming
+    case USER_APP_DATA:
+        return pathForCSIDL(CSIDL_LOCAL_APPDATA, def);
+
 #elif __APPLE__
       // since this is C++, we can't include NSPathUtilities.h to access the enum
       // values, so hard-coding them here (they are stable, don't worry)
@@ -993,6 +1002,9 @@ SGPath SGPath::standardLocation(StandardLocation type, const SGPath& def)
       return appleSpecialFolder(9, 1, def);
     case PICTURES:
       return appleSpecialFolder(19, 1, def);
+    case USER_APP_DATA:
+        // NSApplicationSupportDirectory
+        return appleSpecialFolder(14, 1, def);
 #else
     case DESKTOP:
       return getXDGDir("DESKTOP", def, "Desktop");
@@ -1002,6 +1014,8 @@ SGPath SGPath::standardLocation(StandardLocation type, const SGPath& def)
       return getXDGDir("DOCUMENTS", def, "Documents");
     case PICTURES:
       return getXDGDir("PICTURES", def, "Pictures");
+    case USER_APP_DATA:
+        return getXDGDataDir();
 #endif
     default:
       SG_LOG( SG_GENERAL,

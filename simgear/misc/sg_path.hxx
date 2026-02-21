@@ -344,13 +344,13 @@ public:
      */
     bool makeLink(const std::string& destination);
 
-    enum StandardLocation
-    {
-      HOME,
-      DESKTOP,
-      DOWNLOADS,
-      DOCUMENTS,
-      PICTURES
+    enum StandardLocation {
+        HOME,
+        DESKTOP,
+        DOWNLOADS,
+        DOCUMENTS,
+        PICTURES,
+        USER_APP_DATA, // eg AppData/Local on Windows, ~/.local/share on Linux
     };
 
     static SGPath standardLocation( StandardLocation type,
