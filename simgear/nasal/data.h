@@ -37,7 +37,7 @@
 #define IS_REF(r) ((_ULP(r) & ~REFMAGIC) == ~REFMAGIC)
 
 // Portability note: this cast from a pointer type to naPtr (a union)
-// is not defined in ISO C, it's a GCC extention that doesn't work on
+// is not defined in ISO C, it's a GCC extension that doesn't work on
 // (at least) either the SUNWspro or MSVC compilers.  Unfortunately,
 // fixing this would require abandoning the naPtr union for a set of
 // PTR_<type>() macros, which is a ton of work and a lot of extra
@@ -161,16 +161,18 @@ struct naFunc {
     naRef next; // parent closure
 };
 
+enum { CCODE_FPTR = 0, CCODE_FPTRU, CCODE_FPTRNAMED };
+
 struct naCCode {
     GC_HEADER;
+    unsigned int fptrType : 2; // one of the enums above
+    void* user_data;
+    void (*destroy)(void*);
+
     union {
-        naCFunction fptr; //!< pointer to simple callback function. Invalid if
-                          //   fptru is not NULL.
-        struct {
-            void* user_data;
-            void(*destroy)(void*);
-            naCFunctionU fptru;
-        };
+        naCFunction fptr;
+        naCFunctionU fptru;
+        naCFunctionNamedArgs fptrnamed;
     };
 };
 

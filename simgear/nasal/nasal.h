@@ -39,6 +39,9 @@ typedef naRef (*naCFunction)(naContext ctx, naRef me, int argc, naRef* args);
 typedef naRef (*naCFunctionU)
               (naContext ctx, naRef me, int argc, naRef* args, void* user_data);
 
+
+typedef naRef (*naCFunctionNamedArgs)(naContext ctx, naRef me, naRef namedArgs, void* user_data);
+
 // All Nasal code runs under the watch of a naContext:
 naContext naNewContext();
 void naFreeContext(naContext c);
@@ -231,6 +234,13 @@ naRef naNewCCode(naContext c, naCFunction fptr);
 naRef naNewCCodeU(naContext c, naCFunctionU fptr, void* user_data);
 naRef naNewCCodeUD(naContext c, naCFunctionU fptr, void* user_data,
                                                    void (*destroy)(void*));
+
+
+naRef naNewCCodeNamed(struct Context* c, naCFunctionNamedArgs fptr);
+naRef naNewCCodeNamedUD(struct Context* c,
+                        naCFunctionNamedArgs fptr,
+                        void* user_data,
+                        void (*destroy)(void*));
 
 // Some useful conversion/comparison routines
 int naEqual(naRef a, naRef b) GCC_PURE;

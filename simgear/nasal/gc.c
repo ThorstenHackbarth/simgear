@@ -143,7 +143,7 @@ static void naCode_gcclean(struct naCode* o)
 
 static void naCCode_gcclean(struct naCCode* c)
 {
-    if(c->fptru && c->user_data && c->destroy) c->destroy(c->user_data);
+    if (c->user_data && c->destroy) c->destroy(c->user_data);
     c->user_data = 0;
 }
 

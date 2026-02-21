@@ -107,7 +107,7 @@ naRef naNewCode(struct Context* c)
     naRef r = naNew(c, T_CODE);
     // naNew can return a previously used naCode. naCodeGen will init
     // all these members but a GC can occur inside naCodeGen, so we see
-    // partially initalized state here. To avoid this, clear out the values
+    // partially initialized state here. To avoid this, clear out the values
     // which mark() cares about.
     PTR(r).code->srcFile = naNil();
     PTR(r).code->nConstants = 0;
@@ -118,7 +118,9 @@ naRef naNewCCode(struct Context* c, naCFunction fptr)
 {
     naRef r = naNew(c, T_CCODE);
     PTR(r).ccode->fptr = fptr;
-    PTR(r).ccode->fptru = 0;
+    PTR(r).ccode->fptrType = 0;
+    PTR(r).ccode->destroy = 0;
+    PTR(r).ccode->user_data = 0;
     return r;
 }
 
@@ -134,6 +136,26 @@ naRef naNewCCodeUD( struct Context* c,
 {
     naRef r = naNew(c, T_CCODE);
     PTR(r).ccode->fptru = fptr;
+    PTR(r).ccode->fptrType = 1;
+    PTR(r).ccode->user_data = user_data;
+    PTR(r).ccode->destroy = destroy;
+    return r;
+}
+
+naRef naNewCCodeNamed(struct Context* c,
+                      naCFunctionNamedArgs fptr)
+{
+    return naNewCCodeNamedUD(c, fptr, 0, 0);
+}
+
+naRef naNewCCodeNamedUD(struct Context* c,
+                        naCFunctionNamedArgs fptr,
+                        void* user_data,
+                        void (*destroy)(void*))
+{
+    naRef r = naNew(c, T_CCODE);
+    PTR(r).ccode->fptrnamed = fptr;
+    PTR(r).ccode->fptrType = 2;
     PTR(r).ccode->user_data = user_data;
     PTR(r).ccode->destroy = destroy;
     return r;

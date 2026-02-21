@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2012 Thomas Geymayer <tomgey@gmail.com>
+
 #define BOOST_TEST_MODULE cppbind
 #include <BoostTestTargetConfig.h>
 
@@ -232,4 +235,36 @@ BOOST_AUTO_TEST_CASE( bind_methods )
   BOOST_CHECK_EQUAL(test->arg3, "s2");
   BOOST_CHECK_EQUAL(test->arg4, 1);
 }
+
+
+BOOST_AUTO_TEST_CASE(bind_named_args_methods)
+{
+    struct TestClass {
+        int arg1;
+        std::string arg2;
+        std::string arg3;
+        int arg4;
+
+        naRef foo(const nasal::CallContext& ctx)
+        {
+            arg1 = ctx.requireNamedArg<int>("a");
+            arg2 = ctx.getNamedArg("b", std::string("zzzz"));
+            arg3 = ctx.getNamedArg("c", std::string("ssss"));
+            return naNil();
+        }
+    };
+
+    using TestClassPtr = std::shared_ptr<TestClass>;
+    nasal::Ghost<TestClassPtr>::init("TestClass")
+        .namedArgsMethod("set", &TestClass::foo);
+
+    TestContext ctx;
+    auto test = std::make_shared<TestClass>();
+
+    ctx.exec("me.set(a: 1, b: \"s2\");", ctx.to_me(test));
+    BOOST_CHECK_EQUAL(test->arg1, 1);
+    BOOST_CHECK_EQUAL(test->arg2, "s2");
+    BOOST_CHECK_EQUAL(test->arg3, "ssss");
+}
+
 #endif

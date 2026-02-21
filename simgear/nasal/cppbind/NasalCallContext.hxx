@@ -7,6 +7,7 @@
 #define SG_NASAL_CALL_CONTEXT_HXX_
 
 #include "NasalContext.hxx"
+#include "simgear/nasal/nasal.h"
 
 namespace nasal
 {
@@ -91,6 +92,30 @@ namespace nasal
           runtimeError("Missing required arg #%d", index);
 
         return from_nasal<T>(args[index]);
+      }
+
+      template <class T>
+      typename from_nasal_ptr<T>::return_type
+      requireNamedArg(const std::string& key) const
+      {
+          naRef v = naHash_cget(args[0], const_cast<char*>(key.c_str()));
+          if (naIsNil(v)) {
+              runtimeError("Missing required named arg '%s'", key.c_str());
+          }
+
+          return from_nasal<T>(v);
+      }
+
+      template <class T>
+      typename from_nasal_ptr<T>::return_type
+      getNamedArg(const std::string& key, const T& def = T()) const
+      {
+          naRef v = naHash_cget(args[0], const_cast<char*>(key.c_str()));
+          if (naIsNil(v)) {
+              return def;
+          }
+
+          return from_nasal<T>(v);
       }
 
       naRef             me;

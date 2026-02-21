@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include "nasal.h"
+#include "simgear/nasal/data.h"
 #include "code.h"
 
 ////////////////////////////////////////////////////////////////////////
@@ -262,7 +263,7 @@ void naFreeContext(naContext c)
     // opStack.
     //
     // The underlying cause is likely some operation which leaves a value on
-    // the opstack accidently, but tracing that down requires more Nasal-fu
+    // the opstack accidentally, but tracing that down requires more Nasal-fu
     // than I have right now. So instead I'm clearing the stack tops here, so
     // a freed context looks the same as a new one returned by initContext.
 
@@ -300,7 +301,7 @@ static void setupArgs(naContext ctx, struct Frame* f, naRef* args, int nargs)
         naRef val = nargs > 0 ? args[i] : c->constants[OPTARGVALS(c)[i]];
         if(IS_CODE(val))
             val = bindFunction(ctx, &ctx->fStack[ctx->fTop-2], val);
-        naiHash_newsym(PTR(f->locals).hash, &c->constants[OPTARGSYMS(c)[i]], 
+        naiHash_newsym(PTR(f->locals).hash, &c->constants[OPTARGSYMS(c)[i]],
                       &val);
     }
     args += c->nOptArgs;
@@ -354,6 +355,29 @@ static char* NasalRefDescription(naRef val)
     else return dosprintf("?");
 }
 
+static struct Frame* setupNativeFuncall(naContext ctx, naRef code, int nargs, naRef* args, naRef obj, int named)
+{
+    struct naCCode* ccode = PTR(code).ccode;
+    if (named && ccode->fptrType != CCODE_FPTRNAMED) {
+        ERR(ctx, "native function does not support named arguments");
+        // ERR does longjmp
+    }
+
+    naRef result;
+    if (named) {
+        result = (*ccode->fptrnamed)(ctx, obj, args[0], ccode->user_data);
+    } else if (ccode->fptrType == CCODE_FPTRU) {
+        result = (*ccode->fptru)(ctx, obj, nargs, args, ccode->user_data);
+    } else {
+        // simple call
+        result = (*ccode->fptr)(ctx, obj, nargs, args);
+    }
+
+    ctx->opTop = ctx->opFrame;
+    PUSH(result);
+    return &(ctx->fStack[ctx->fTop - 1]);
+}
+
 static struct Frame* setupFuncall(naContext ctx, int nargs, int mcall, int named)
 {
     naRef *args, func, code, obj = naNil();
@@ -374,18 +398,11 @@ static struct Frame* setupFuncall(naContext ctx, int nargs, int mcall, int named
     ctx->opFrame = opf;
 
     if(IS_CCODE(code)) {
-        struct naCCode *ccode = PTR(code).ccode;
-        naRef result = ccode->fptru
-                     ? (*ccode->fptru)(ctx, obj, nargs, args, ccode->user_data)
-                     : (*ccode->fptr)(ctx, obj, nargs, args);
-        if(named) ERR(ctx, "native functions have no named arguments");
-        ctx->opTop = ctx->opFrame;
-        PUSH(result);
-        return &(ctx->fStack[ctx->fTop-1]);
+        return setupNativeFuncall(ctx, code, nargs, args, obj, named);
     }
-    
+
     if(ctx->fTop >= MAX_RECURSION) ERR(ctx, "call stack overflow");
-    
+
     f = &(ctx->fStack[ctx->fTop]);
     f->locals = named ? args[0] : naNewHash(ctx);
     f->func = func;
@@ -552,7 +569,7 @@ enum GetMemberResult getMember_r(naContext ctx, naRef obj, naRef field, naRef* o
 static void getMember(naContext ctx, naRef obj, naRef fld,
                       naRef* result, int count)
 {
-    // Don't directly pass 'result' to getMember_r to avoid overwritting it in case of failure.
+    // Don't directly pass 'result' to getMember_r to avoid overwriting it in case of failure.
     naRef out = naNil();
     enum GetMemberResult err = getMember_r(ctx, obj, fld, &out, count);
     if (err == SUCCESS) {
@@ -646,7 +663,7 @@ static void evalSlice(naContext ctx, naRef src, naRef dst, naRef idx)
     if(!IS_VEC(src)) ERR(ctx, "cannot slice non-vector");
     naVec_append(dst, naVec_get(src, checkVec(ctx, src, idx)));
 }
- 
+
 static void evalSlice2(naContext ctx, naRef src, naRef dst,
                        naRef start, naRef endr)
 {
@@ -998,9 +1015,17 @@ naRef naCall(naContext ctx, naRef func, int argc, naRef* args,
 
     if(IS_CCODE(PTR(func).func->code)) {
         struct naCCode *ccode = PTR(PTR(func).func->code).ccode;
-        result = ccode->fptru
-               ? (*ccode->fptru)(ctx, obj, argc, args, ccode->user_data)
-               : (*ccode->fptr) (ctx, obj, argc, args);
+        if (ccode->fptrType == CCODE_FPTRNAMED) {
+            if (argc != 1 || !IS_HASH(args[0])) {
+                ERR(ctx, "native function with named arguments requires exactly one hash argument");
+            }
+            result = (*ccode->fptrnamed)(ctx, obj, args[0], ccode->user_data);
+        } else {
+            // non-named call
+            result = ccode->fptrType == CCODE_FPTRU
+                         ? (*ccode->fptru)(ctx, obj, argc, args, ccode->user_data)
+                         : (*ccode->fptr)(ctx, obj, argc, args);
+        }
         if(!ctx->callParent) naModUnlock();
         return result;
     }

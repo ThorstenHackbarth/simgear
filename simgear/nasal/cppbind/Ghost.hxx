@@ -313,6 +313,76 @@ namespace nasal
           }
       };
 
+
+      class NamedArgsMethodHolder : public internal::MethodHolder
+      {
+      public:
+          explicit NamedArgsMethodHolder(const method_t& method) : _method(method)
+          {
+          }
+
+      protected:
+          using SharedPtr = SGSharedPtr<NamedArgsMethodHolder>;
+          using WeakPtr = SGWeakPtr<NamedArgsMethodHolder>;
+
+          method_t _method;
+
+          virtual naRef createNasalObject(naContext c)
+          {
+              return naNewFunc(
+                  c,
+                  naNewCCodeNamedUD(c,
+                                    &NamedArgsMethodHolder::call,
+                                    new WeakPtr(this),
+                                    &destroyHolder));
+          }
+
+          static void destroyHolder(void* user_data)
+          {
+              delete static_cast<WeakPtr*>(user_data);
+          }
+
+          static naRef call(naContext c,
+                            naRef me,
+                            naRef argsHash,
+                            void* user_data)
+          {
+              WeakPtr* holder_weak = static_cast<WeakPtr*>(user_data);
+              if (!holder_weak)
+                  naRuntimeError(c, "invalid method holder!");
+
+              try {
+                  SharedPtr holder = holder_weak->lock();
+                  if (!holder)
+                      throw std::runtime_error("holder has expired");
+
+                  // Keep reference for duration of call to prevent expiring
+                  // TODO not needed for strong referenced ghost
+                  strong_ref ref = fromNasal(c, me);
+                  if (!ref) {
+                      naGhostType* ghost_type = naGhost_type(me);
+                      naRuntimeError(
+                          c,
+                          "method called on object of wrong type: "
+                          "is '%s' expected '%s'",
+                          naIsNil(me) ? "nil"
+                                      : (ghost_type ? ghost_type->name : "unknown"),
+                          _ghost_type_strong.name);
+                  }
+
+                  return holder->_method(
+                      *get_pointer(ref),
+                      CallContext(c, me, 1, &argsHash));
+              } catch (const std::exception& ex) {
+                  naRuntimeError(c, "Fatal error in method call: %s", ex.what());
+              } catch (...) {
+                  naRuntimeError(c, "Unknown exception in method call.");
+              }
+
+              return naNil();
+          }
+      };
+
       /**
        * A ghost member. Can consist either of getter and/or setter functions
        * for exposing a data variable or a single callable function.
@@ -344,7 +414,7 @@ namespace nasal
       /**
        * Register a new ghost type.
        *
-       * @note Only intialize each ghost type once!
+       * @note Only initialize each ghost type once!
        *
        * @param name    Descriptive name of the ghost type.
        */
@@ -825,6 +895,27 @@ namespace nasal
         );
 
         return method(name, method_variadic_t<Ret, Args...>(fn));
+      }
+
+      /**
+       * Register anything that accepts an object instance and a
+       * nasal::CallContext and returns naRef as method.
+       *
+       * @code{cpp}
+       * class MyClass
+       * {
+       *   public:
+       *     naRef myMethod(const nasal::CallContext& ctx);
+       * }
+       *
+       * Ghost<MyClassPtr>::init("Test")
+       *   .namedArgsMethod("myMethod", &MyClass::myMethod);
+       * @endcode
+       */
+      Ghost& namedArgsMethod(const std::string& name, const method_t& func)
+      {
+          _members[name].func = new NamedArgsMethodHolder(func);
+          return *this;
       }
 
       /**
