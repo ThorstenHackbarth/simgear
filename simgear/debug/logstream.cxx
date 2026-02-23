@@ -129,7 +129,7 @@ const sgDebugClass debugClassFromString(const std::string& s)
         if (lm.name == cleaned)
             return true;
 
-        // check alises as well
+        // check aliases as well
         auto it2 = std::find(lm.aliases.begin(), lm.aliases.end(), cleaned);
         if (it2 != lm.aliases.end()) {
             return true;
@@ -255,6 +255,9 @@ public:
 
 #endif
 
+// this is a global since we want to set it before LogStreamPrivate exists
+static bool global_disableStderrLogging = false;
+
 class logstream::LogStreamPrivate : public SGThread
 {
 private:
@@ -287,6 +290,8 @@ public:
         m_logClass(SG_ALL),
         m_logPriority(SG_ALERT)
     {
+        bool doLogToStderr = !global_disableStderrLogging;
+
 #if defined (SG_WINDOWS)
         /*
          * 2016-09-20(RJH) - Reworked console handling
@@ -310,6 +315,9 @@ public:
 
         m_stderr_isRedirectedAlready = stderr_handle_type == FILE_TYPE_DISK || stderr_handle_type == FILE_TYPE_PIPE || stderr_handle_type == FILE_TYPE_CHAR;
         m_stdout_isRedirectedAlready = stdout_handle_type == FILE_TYPE_DISK || stdout_handle_type == FILE_TYPE_PIPE || stdout_handle_type == FILE_TYPE_CHAR;
+        if (m_stderr_isRedirectedAlready) {
+            doLogToStderr = true;
+        }
 
         /*
          * We don't want to attach to the console if either stream has been redirected - so in this case ensure that both streams
@@ -379,9 +387,11 @@ public:
         std::cerr.clear();
 #endif
 
-        m_callbacks.push_back(new StderrLogCallback(m_logClass, m_logPriority));
-        m_consoleCallbacks.push_back(m_callbacks.back());
-        
+        if (doLogToStderr) {
+            m_callbacks.push_back(new StderrLogCallback(m_logClass, m_logPriority));
+            m_consoleCallbacks.push_back(m_callbacks.back());
+        }
+
 #if defined (SG_WINDOWS)
         const char* winDebugEnv = ::getenv("SG_WINDEBUG");
         const bool b = winDebugEnv ? simgear::strutils::to_bool(std::string{winDebugEnv}) : false;
@@ -863,10 +873,12 @@ sglog()
     return *(global_logstream.get());
 }
 
-void
-logstream::logToFile( const SGPath& aPath, sgDebugClass c, sgDebugPriority p )
+simgear::LogCallback*
+logstream::logToFile(const SGPath& aPath, sgDebugClass c, sgDebugPriority p)
 {
-    d->addCallback(new FileLogCallback(aPath, c, p));
+    auto cb = new FileLogCallback(aPath, c, p);
+    d->addCallback(cb);
+    return cb;
 }
 
 void logstream::setStartupLoggingEnabled(bool enabled)
@@ -926,12 +938,16 @@ logstream::setTestingMode( bool testMode )
     if (testMode) d->removeCallbacks();
 }
 
+void logstream::disableStderrLogging()
+{
+    global_disableStderrLogging = true;
+}
 
 namespace simgear
 {
 
 void requestConsole(bool ignoreErrors)
-{ 
+{
     sglog().requestConsole(ignoreErrors);
 }
 

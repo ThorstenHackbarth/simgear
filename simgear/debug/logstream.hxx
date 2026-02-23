@@ -17,7 +17,7 @@
 
 // forward decls
 class SGPath;
-      
+
 namespace simgear
 {
 
@@ -25,7 +25,7 @@ class LogCallback;
 /**
  * Helper force a console on platforms where it might optional, when
  * we need to show a console. This basically means Windows at the
- * moment - on other plaforms it's a no-op
+ * moment - on other platforms it's a no-op
  */
 void requestConsole(bool ignoreErrors);
 
@@ -40,13 +40,13 @@ class logstream final
 {
 public:
     ~logstream();   // non-virtual is intentional
-    
+
     static void initGlobalLogstream();
 
     /**
      * Helper force a console on platforms where it might optional, when
      * we need to show a console. This basically means Windows at the
-     * moment - on other plaforms it's a no-op
+     * moment - on other platforms it's a no-op
      */
     void requestConsole(bool ignoreErrors);
 
@@ -59,12 +59,12 @@ public:
 
     /**
      * @brief parse a string of the style given to --log-class= argument of
-     * FlightGear, i.e with potentially several classes seperated by vertical
+     * FlightGear, i.e with potentially several classes separated by vertical
      * bars eg 'input|io|aircraft'
-     * 
+     *
      * Parsing is case- and white-space insensitive.
-     * 
-     * @param logClassesSpecification 
+     *
+     * @param logClassesSpecification
      */
     void parseLogClasses(const std::string& logClassesSpecification);
 
@@ -72,10 +72,10 @@ public:
             const char* file, int line, const char* function,
             bool freeFilename=false ) const;
 
-    void logToFile( const SGPath& aPath, sgDebugClass c, sgDebugPriority p );
+    simgear::LogCallback* logToFile(const SGPath& aPath, sgDebugClass c, sgDebugPriority p);
 
     void set_log_priority( sgDebugPriority p);
-    
+
     void set_log_classes( sgDebugClass c);
 
     void addLogClass(const std::string& c);
@@ -85,7 +85,7 @@ public:
     /**
      * @brief Get the Log Classes as a string, in the format which could be passed
      * tp parseLogClasses
-     * 
+     *
      */
     std::string getLogClassesAsString() const;
 
@@ -122,14 +122,14 @@ public:
             const std::string& msg);
 
     // overload of above, which can transfer ownership of the file-name.
-    // this is unecesary overhead when logging from C++, since __FILE__ points
+    // this is unnecessary overhead when logging from C++, since __FILE__ points
     // to constant data, but it's needed when the filename is Nasal data (for
     // example) since during shutdown the filename is freed by Nasal GC
     // asynchronously with the logging thread.
     void logCopyingFilename( sgDebugClass c, sgDebugPriority p,
              const char* fileName, int line, const char* function,
              const std::string& msg);
-    
+
     /**
     * output formatted hex dump of memory block
     */
@@ -163,14 +163,14 @@ public:
     * @return current logstream
     */
     friend logstream& sglog();
-    
+
     /**
      * register a logging callback. Note callbacks are run in a
      * dedicated thread, so callbacks which pass data to other threads
      * must use appropriate locking.
      */
     void addCallback(simgear::LogCallback* cb);
-     
+
     void removeCallback(simgear::LogCallback* cb);
 
     void removeCallbacks();
@@ -188,6 +188,12 @@ public:
      * sanitized.
      */
     void setTestingMode(bool testMode);
+
+    /**
+    * @brief prevent logging to stderr, when we are outputting information on
+    * stdout for an early exit (eg version info or JSON report)
+    */
+    static void disableStderrLogging();
 
 private:
     // constructor
