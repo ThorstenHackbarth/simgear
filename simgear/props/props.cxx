@@ -45,7 +45,7 @@ using std::cerr;
 # include <simgear/compiler.h>
 # include <simgear/debug/logstream.hxx>
 # include <simgear/sg_inlines.h>
-
+# include <simgear/structure/exception.hxx>
 # include "PropertyInterpolationMgr.hxx"
 # include "vectorPropTemplates.hxx"
 
@@ -339,7 +339,7 @@ struct SGPropertyLock
                     << " _name=" << node._name
                     << ": " << e.what()
                     << "\n";
-            throw;
+            throw sg_exception(std::string{"SGPropertyLock::acquire_internal failed:"} + e.what(), "", sg_location{node.getLocation()});
         }
 
         /* Non-blocking call failed to acquire, so now do a blocking lock. */
@@ -359,7 +359,7 @@ struct SGPropertyLock
                     << " _name=" << node._name
                     << ": " << e.what()
                     << "\n";
-            throw;
+            throw sg_exception(std::string{"SGPropertyLock::acquire_internal failed:"} + e.what(), "", sg_location{node.getLocation()});
         }
     }
 
@@ -585,11 +585,9 @@ parse_name (const SGPropertyNode *node, const Range &path)
       i++;
     }
     if (i != max && *i != '/') {
-      throw std::runtime_error(
-          std::string() + "Illegal character '" + *i + "'"
-          + " after initial . or .. in leaf of property path: "
-          + node->getPath() + '/' + RangeToString(path)
-          );
+        throw sg_format_exception(
+            std::string() + "Illegal character '" + *i + "'" + " after initial . or .. in leaf of property path: " + node->getPath() + '/' + RangeToString(path),
+            {}, node->getLocation().str());
     }
   }
   else if (isalpha_c(*i) || *i == '_') {
@@ -605,23 +603,18 @@ parse_name (const SGPropertyNode *node, const Range &path)
 	    break;
       }
       else {
-        throw std::runtime_error(
-            std::string() + "Illegal character '" + *i + "'"
-            + " in leaf of property path"
-            + " (may contain only ._- and alphanumeric characters)"
-            + ": " + node->getPath() + '/' + RangeToString(path)
-            );
+          throw sg_format_exception(
+              std::string() + "Illegal character '" + *i + "'" + " in leaf of property path" + " (may contain only ._- and alphanumeric characters)" + ": " + node->getPath() + '/' + RangeToString(path),
+              {}, node->getLocation().str());
       }
       i++;
     }
   }
   else {
     if (path.begin() == i) {
-      throw std::runtime_error(
-          std::string() + "Illegal character '" + *i + "'"
-          + " at start of leaf of property path: "
-          + node->getPath() + '/' + RangeToString(path)
-          );
+        throw sg_format_exception(
+            std::string() + "Illegal character '" + *i + "'" + " at start of leaf of property path: " + node->getPath() + '/' + RangeToString(path),
+            {}, node->getLocation().str());
     }
   }
   return Range(path.begin(), i);
@@ -2069,9 +2062,9 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create, int last_ind
           }
         }
         if (i == token.end() || *i != ']')
-          throw std::runtime_error("unterminated index (looking for ']')");
+            throw sg_format_exception("unterminated index (looking for ']')", {}, current->getLocation().str());
       } else {
-          throw std::runtime_error(std::string{"illegal characters in token: "} + std::string(name.begin(), name.end()));
+          throw sg_format_exception("illegal characters in token: " + std::string(name.begin(), name.end()), {}, current->getLocation().str());
       }
     }
   }
