@@ -363,7 +363,9 @@ private:
 };
 
 SGSharedPtr<BVHNode>
-BVHPageNodeOSG::load(const string_list nameList, const osg::ref_ptr<const osg::Referenced>& options, bool forceFlatten)
+BVHPageNodeOSG::load(const std::vector<std::string>& nameList,
+                     const osg::ref_ptr<const osg::Referenced>& options,
+                     bool forceFlatten)
 {
     auto opt = dynamic_cast<const osgDB::Options*>(options.get());
 

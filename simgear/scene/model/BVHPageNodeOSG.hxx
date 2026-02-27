@@ -29,7 +29,10 @@ public:
     void setBoundingSphere(const SGSphered& sphere);
 
     static SGSharedPtr<BVHNode> load(const std::string& name, const osg::ref_ptr<const osg::Referenced>& options, bool forceFlatter = false);
-    static SGSharedPtr<BVHNode> load(const std::vector<std::string> nameList, const osg::ref_ptr<const osg::Referenced>& options, bool forceFlatter = false);
+    static SGSharedPtr<BVHNode> load(
+        const std::vector<std::string>& nameList,
+        const osg::ref_ptr<const osg::Referenced>& options,
+        bool forceFlatter = false);
 
 protected:
     virtual SGSphered computeBoundingSphere() const;
