@@ -68,8 +68,11 @@ target_include_directories(SimGearCore BEFORE PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>)
 
-target_precompile_headers(SimGearCore PRIVATE
+if(ENABLE_PRECOMPILED_HEADERS)
+    target_precompile_headers(SimGearCore PRIVATE
         "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/simgear_precompile.h>")
+endif()
+
 # for simgear_config.h
 target_include_directories(SimGearCore PRIVATE ${PROJECT_BINARY_DIR}/simgear)
 
@@ -151,10 +154,12 @@ if(NOT SIMGEAR_HEADLESS)
         OSG::osgViewer
     )
 
-    target_precompile_headers(SimGearScene PRIVATE
-        "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/simgear_precompile.h>"
-        "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/simgear_scene_precompile.h>"
-    )
+    if(ENABLE_PRECOMPILED_HEADERS)
+        target_precompile_headers(SimGearScene PRIVATE
+            "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/simgear_precompile.h>"
+            "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/simgear_scene_precompile.h>"
+        )
+    endif()
 
     if(HAVE_INTTYPES_H)
         # ShaderVG needs inttypes.h
