@@ -6,8 +6,11 @@
  * @brief Groups together two nodes representing a geographic position (lat + lon)
  */
 
-#ifndef CANVAS_GEO_NODE_PAIR_HXX_
-#define CANVAS_GEO_NODE_PAIR_HXX_
+#pragma once
+
+#include <cassert>
+
+#include <simgear/props/propsfwd.hxx>
 
 namespace simgear
 {
@@ -58,7 +61,7 @@ namespace canvas
         _node_lat = node;
         _status &= ~LAT_MISSING;
         _xNode.reset();
-          
+
         if( node == _node_lon )
         {
           _node_lon = 0;
@@ -71,7 +74,7 @@ namespace canvas
         _node_lon = node;
         _status &= ~LON_MISSING;
         _yNode.reset();
-          
+
         if( node == _node_lat )
         {
           _node_lat = 0;
@@ -91,10 +94,10 @@ namespace canvas
 
       void setCachedLatLon(const std::pair<double, double>& latLon)
       { _cachedLatLon = latLon; }
-      
+
       std::pair<double, double> getCachedLatLon()
       { return _cachedLatLon; }
-      
+
       void setTargetName(const std::string& name)
       {
         _target_name = name;
@@ -109,12 +112,12 @@ namespace canvas
           SGPropertyNode *parent = _node_lat->getParent();
           _xNode = parent->getChild(_target_name, _node_lat->getIndex(), true);
         }
-          
+
         if (!_yNode) {
           SGPropertyNode *parent = _node_lat->getParent();
           _yNode = parent->getChild(_target_name, _node_lon->getIndex(), true);
         }
-          
+
         _xNode->setDoubleValue(x);
         _yNode->setDoubleValue(y);
       }
@@ -140,5 +143,3 @@ namespace canvas
 
 } // namespace canvas
 } // namespace simgear
-
-#endif /* CANVAS_GEO_NODE_PAIR_HXX_ */

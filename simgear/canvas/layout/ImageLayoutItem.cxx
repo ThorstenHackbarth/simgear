@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // SPDX-FileCopyrightText: 2025 James Turner <james@flightgear.org>
 
@@ -7,10 +6,12 @@
  * @brief Element providing an image (possible a canvas) a layout.
  */
 
-#include "ImageLayoutItem.hxx"
-#include "simgear/math/SGRect.hxx"
 #include <simgear_config.h>
 
+#include "ImageLayoutItem.hxx"
+#include "simgear/math/SGRect.hxx"
+
+#include <simgear/canvas/Canvas.hxx>
 #include <simgear/canvas/elements/CanvasImage.hxx>
 
 

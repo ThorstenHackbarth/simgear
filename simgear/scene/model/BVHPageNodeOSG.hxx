@@ -1,14 +1,11 @@
-/*
- * SPDX-FileName: BVHPageNodeOSG.hxx
- * SPDX-FileComment: Bounding Volume Hierarchy for OSG
- * SPDX-FileCopyrightText: Copyright (C) 2008- 2025  Mathias Froehlich
- * SPDX-License-Identifier: LGPL-2.1-or-later
- */
+// SPDX-FileCopyrightText: 2008-2025 Mathias Froehlich
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileComment: Bounding Volume Hierarchy for OSG
 
-#ifndef BVHPageNodeOSG_hxx
-#define BVHPageNodeOSG_hxx
+#pragma once
 
 #include <string>
+#include <vector>
 
 #include "../../bvh/BVHPageNode.hxx"
 
@@ -32,7 +29,7 @@ public:
     void setBoundingSphere(const SGSphered& sphere);
 
     static SGSharedPtr<BVHNode> load(const std::string& name, const osg::ref_ptr<const osg::Referenced>& options, bool forceFlatter = false);
-    static SGSharedPtr<BVHNode> load(const string_list nameList, const osg::ref_ptr<const osg::Referenced>& options, bool forceFlatter = false);
+    static SGSharedPtr<BVHNode> load(const std::vector<std::string> nameList, const osg::ref_ptr<const osg::Referenced>& options, bool forceFlatter = false);
 
 protected:
     virtual SGSphered computeBoundingSphere() const;
@@ -51,5 +48,3 @@ private:
 };
 
 } // namespace simgear
-
-#endif

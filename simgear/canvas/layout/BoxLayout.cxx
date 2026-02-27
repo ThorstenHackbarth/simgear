@@ -8,6 +8,8 @@
 
 #include <simgear_config.h>
 
+#include <algorithm>
+
 #include "BoxLayout.hxx"
 #include "SpacerItem.hxx"
 #include <simgear/canvas/Canvas.hxx>

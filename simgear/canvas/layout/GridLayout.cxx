@@ -8,6 +8,8 @@
 
 #include <simgear_config.h>
 
+#include <algorithm>
+
 #include "GridLayout.hxx"
 #include "SpacerItem.hxx"
 #include <simgear/canvas/Canvas.hxx>
@@ -615,7 +617,7 @@ void GridLayout::doLayout(const SGRecti& geom)
 
     // TODO: apply height-for-width to all items, to calculate real heights now
 
-    // re-calculate row min/preferred now? Or is it not dependant?
+    // re-calculate row min/preferred now? Or is it not dependent?
 
     for (auto row = 0; row < static_cast<int>(_rows.size()); ++row) {
         auto& r = _rows[row];
@@ -666,4 +668,3 @@ bool GridLayout::hasHeightForWidth() const
 
 
 } // namespace simgear::canvas
-

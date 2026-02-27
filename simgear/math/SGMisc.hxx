@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // SPDX-FileCopyrightText: 2006 Mathias Froehlich <mathias.froehlich@web.de>
 
-#ifndef SGMisc_H
-#define SGMisc_H
+#pragma once
 
 #include <cmath>
+
+#include <simgear/math/SGLimits.hxx>
 
 template<typename T>
 class SGMisc {
@@ -138,7 +139,7 @@ public:
   { return val0*(T(1) - t) + val1*t; }
 
   /// Returns true if v is a NaN value
-  /// Use with care: allways code that you do not need to use that!
+  /// Use with care: always code that you do not need to use that!
   static bool isNaN(const T& v)
   {
     return std::isnan(v);
@@ -146,9 +147,7 @@ public:
 
   static bool eq(const T& a, const T& b, const T& epsilon = SGLimits<T>::epsilon())
   { return std::abs(a - b) < epsilon; }
-  
+
   static bool neq(const T& a, const T& b, const T& epsilon = SGLimits<T>::epsilon())
   { return !eq(a, b, epsilon); }
 };
-
-#endif

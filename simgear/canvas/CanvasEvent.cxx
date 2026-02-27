@@ -8,6 +8,8 @@
 
 #include <simgear_config.h>
 
+#include <algorithm>
+
 #include "CanvasEvent.hxx"
 
 namespace simgear
