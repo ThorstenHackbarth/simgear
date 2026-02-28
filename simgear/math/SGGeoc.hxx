@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // SPDX-FileCopyrightText: 2006 Mathias Froehlich <mathias.froehlich@web.de>
 
-#ifndef SGGeoc_H
-#define SGGeoc_H
+#pragma once
 
 #include <simgear/constants.h>
- 
+#include <simgear/math/SGVec3.hxx>
+
 // #define SG_GEOC_NATIVE_DEGREE
 
 /// Class representing a geocentric location
@@ -330,5 +330,3 @@ operator<<(std::basic_ostream<char_type, traits_type>& s, const SGGeoc& g)
            << ", lat = " << g.getLatitudeDeg()
            << ", radius = " << g.getRadiusM();
 }
-
-#endif

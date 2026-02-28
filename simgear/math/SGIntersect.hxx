@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // SPDX-FileCopyrightText: 2006-2009 Mathias Froehlich <mathias.froehlich@web.de>
 
-#ifndef SGIntersect_HXX
-#define SGIntersect_HXX
+#pragma once
 
 #include <algorithm>
+
+#include <simgear/math/SGVec3.hxx>
 
 template<typename T>
 inline bool
@@ -69,7 +70,7 @@ intersects(const SGRay<T>& ray, const SGPlane<T>& plane)
 {
   // We compute the intersection point
   //   x = origin + \alpha*direction
-  // from the ray origin and non nomalized direction.
+  // from the ray origin and non-normalized direction.
   // For 0 <= \alpha the ray intersects the infinite plane.
   // The intersection point x can also be written
   //   x = n*dist + y
@@ -84,7 +85,7 @@ intersects(const SGRay<T>& ray, const SGPlane<T>& plane)
   // The negative numerator for the \alpha expression
   T num = plane.getPositiveDist();
   num -= dot(plane.getNormal(), ray.getOrigin());
-  
+
   // If the numerator is zero, we have the rays origin included in the plane
   if (fabs(num) <= SGLimits<T>::min())
     return true;
@@ -94,7 +95,7 @@ intersects(const SGRay<T>& ray, const SGPlane<T>& plane)
 
   // If we get here, we already know that the rays origin is not included
   // in the plane. Thus if we have a zero denominator we have
-  // a ray paralell to the plane. That is no intersection.
+  // a ray parallel to the plane. That is no intersection.
   if (fabs(den) <= SGLimits<T>::min())
     return false;
 
@@ -119,7 +120,7 @@ intersects(SGVec3<T>& dst, const SGRay<T>& ray, const SGPlane<T>& plane)
 {
   // We compute the intersection point
   //   x = origin + \alpha*direction
-  // from the ray origin and non nomalized direction.
+  // from the ray origin and non normalized direction.
   // For 0 <= \alpha the ray intersects the infinite plane.
   // The intersection point x can also be written
   //   x = n*dist + y
@@ -134,7 +135,7 @@ intersects(SGVec3<T>& dst, const SGRay<T>& ray, const SGPlane<T>& plane)
   // The negative numerator for the \alpha expression
   T num = plane.getPositiveDist();
   num -= dot(plane.getNormal(), ray.getOrigin());
-  
+
   // If the numerator is zero, we have the rays origin included in the plane
   if (fabs(num) <= SGLimits<T>::min()) {
     dst = ray.getOrigin();
@@ -146,7 +147,7 @@ intersects(SGVec3<T>& dst, const SGRay<T>& ray, const SGPlane<T>& plane)
 
   // If we get here, we already know that the rays origin is not included
   // in the plane. Thus if we have a zero denominator we have
-  // a ray paralell to the plane. That is no intersection.
+  // a ray parallel to the plane. That is no intersection.
   if (fabs(den) <= SGLimits<T>::min())
     return false;
 
@@ -172,7 +173,7 @@ intersects(const SGLineSegment<T>& lineSegment, const SGPlane<T>& plane)
 {
   // We compute the intersection point
   //   x = origin + \alpha*direction
-  // from the line segments origin and non nomalized direction.
+  // from the line segments origin and non normalized direction.
   // For 0 <= \alpha <= 1 the line segment intersects the infinite plane.
   // The intersection point x can also be written
   //   x = n*dist + y
@@ -187,7 +188,7 @@ intersects(const SGLineSegment<T>& lineSegment, const SGPlane<T>& plane)
   // The negative numerator for the \alpha expression
   T num = plane.getPositiveDist();
   num -= dot(plane.getNormal(), lineSegment.getOrigin());
-  
+
   // If the numerator is zero, we have the lines origin included in the plane
   if (fabs(num) <= SGLimits<T>::min())
     return true;
@@ -197,7 +198,7 @@ intersects(const SGLineSegment<T>& lineSegment, const SGPlane<T>& plane)
 
   // If we get here, we already know that the lines origin is not included
   // in the plane. Thus if we have a zero denominator we have
-  // a line paralell to the plane. That is no intersection.
+  // a line parallel to the plane. That is no intersection.
   if (fabs(den) <= SGLimits<T>::min())
     return false;
 
@@ -225,7 +226,7 @@ intersects(SGVec3<T>& dst, const SGLineSegment<T>& lineSegment, const SGPlane<T>
 {
   // We compute the intersection point
   //   x = origin + \alpha*direction
-  // from the line segments origin and non nomalized direction.
+  // from the line segments origin and non normalized direction.
   // For 0 <= \alpha <= 1 the line segment intersects the infinite plane.
   // The intersection point x can also be written
   //   x = n*dist + y
@@ -240,7 +241,7 @@ intersects(SGVec3<T>& dst, const SGLineSegment<T>& lineSegment, const SGPlane<T>
   // The negative numerator for the \alpha expression
   T num = plane.getPositiveDist();
   num -= dot(plane.getNormal(), lineSegment.getStart());
-  
+
   // If the numerator is zero, we have the lines origin included in the plane
   if (fabs(num) <= SGLimits<T>::min()) {
     dst = lineSegment.getStart();
@@ -252,7 +253,7 @@ intersects(SGVec3<T>& dst, const SGLineSegment<T>& lineSegment, const SGPlane<T>
 
   // If we get here, we already know that the lines origin is not included
   // in the plane. Thus if we have a zero denominator we have
-  // a line paralell to the plane. That is: no intersection.
+  // a line parallel to the plane. That is: no intersection.
   if (fabs(den) <= SGLimits<T>::min())
     return false;
 
@@ -289,7 +290,7 @@ distSqr(const SGLineSegment<T>& lineSeg, const SGVec3<T>& p)
   SGVec3<T> pe = p - lineSeg.getEnd();
   if (0 <= dot(pe, lineSeg.getDirection()))
     return dot(pe, pe);
- 
+
   return dot(ps, ps) - psdotdir*psdotdir/dot(lineSeg.getDirection(), lineSeg.getDirection());
 }
 // make it symmetric
@@ -362,7 +363,7 @@ intersects(const SGLineSegment<T>& lineSegment, const SGSphere<T>& sphere)
   T t = s - q;
   if (ld < t)
     return false;
-  
+
   return true;
 }
 // make it symmetric
@@ -405,7 +406,7 @@ intersects(SGVec3<T>& x, const SGTriangle<T>& tri, const SGRay<T>& ray, T eps = 
   // with the original t. The multiplied test would read
   // if (absDenom < tDenom)
   //   return false;
-  
+
   T absDenom = fabs(denom);
   T absDenomEps = absDenom*eps;
 
@@ -419,12 +420,12 @@ intersects(SGVec3<T>& x, const SGTriangle<T>& tri, const SGRay<T>& ray, T eps = 
   T v = signDenom*dot(q, ray.getDirection());
   if (v < -absDenomEps)
     return false;
-  
+
   if (u + v > absDenom + absDenomEps)
     return false;
-  
-  // return if paralell ??? FIXME what if paralell and in plane?
-  // may be we are ok below than anyway??
+
+  // Return if parallel??? FIXME: what if parallel and in plane?
+  // Maybe we are ok below than anyway??
   if (absDenom <= SGLimits<T>::min())
     return false;
 
@@ -433,7 +434,7 @@ intersects(SGVec3<T>& x, const SGTriangle<T>& tri, const SGRay<T>& ray, T eps = 
   // that the point is already in plane. Then return the origin ...
   if (SGLimitsd::min() < absDenom)
     x += (tDenom/absDenom)*ray.getDirection();
-  
+
   return true;
 }
 
@@ -441,7 +442,7 @@ template<typename T>
 inline bool
 intersects(const SGTriangle<T>& tri, const SGRay<T>& ray, T eps = 0)
 {
-  // FIXME: for now just wrap the other method. When that has prooven
+  // FIXME: for now just wrap the other method. When that has proven
   // well optimized, implement that special case
   SGVec3<T> dummy;
   return intersects(dummy, tri, ray, eps);
@@ -481,7 +482,7 @@ intersects(SGVec3<T>& x, const SGTriangle<T>& tri, const SGLineSegment<T>& lineS
   T absDenom = fabs(denom);
   if (absDenom < tDenom)
     return false;
-  
+
   // take the CPU accuracy in account
   T absDenomEps = absDenom*eps;
 
@@ -495,12 +496,12 @@ intersects(SGVec3<T>& x, const SGTriangle<T>& tri, const SGLineSegment<T>& lineS
   T v = signDenom*dot(q, lineSegment.getDirection());
   if (v < -absDenomEps)
     return false;
-  
+
   if (u + v > absDenom + absDenomEps)
     return false;
-  
-  // return if paralell ??? FIXME what if paralell and in plane?
-  // may be we are ok below than anyway??
+
+  // Return if parallel??? FIXME: what if parallel and in plane?
+  // Maybe we are ok below than anyway??
   if (absDenom <= SGLimits<T>::min())
     return false;
 
@@ -509,7 +510,7 @@ intersects(SGVec3<T>& x, const SGTriangle<T>& tri, const SGLineSegment<T>& lineS
   // that the point is already in plane. Then return the origin ...
   if (SGLimitsd::min() < absDenom)
     x += (tDenom/absDenom)*lineSegment.getDirection();
-  
+
   return true;
 }
 
@@ -517,7 +518,7 @@ template<typename T>
 inline bool
 intersects(const SGTriangle<T>& tri, const SGLineSegment<T>& lineSegment, T eps = 0)
 {
-  // FIXME: for now just wrap the other method. When that has prooven
+  // FIXME: for now just wrap the other method. When that has proven
   // well optimized, implement that special case
   SGVec3<T> dummy;
   return intersects(dummy, tri, lineSegment, eps);
@@ -540,7 +541,7 @@ closestPoint(const SGTriangle<T>& tri, const SGVec3<T>& p)
   T c = dot(tri.getEdge(1), tri.getEdge(1));
   T d = dot(tri.getEdge(0), off);
   T e = dot(tri.getEdge(1), off);
-  
+
   T det = a*c - b*b;
 
   T u = b*e - c*d;
@@ -550,12 +551,13 @@ closestPoint(const SGTriangle<T>& tri, const SGVec3<T>& p)
   // Regions
   // \2|
   //  \|
-  //   |\ 
+  //   |\
   // 3 |0\ 1
   //----------
   // 4 | 5 \ 6
 */
 
+// codespell:ignore-begin       for the 'numer' variable name
   if (u + v <= det) {
     if (u < 0) {
       if (v < 0) {
@@ -736,7 +738,7 @@ intersects(const SGTriangle<T>& tri, const SGSphere<T2>& sphere)
   T c = dot(tri.getEdge(1), tri.getEdge(1));
   T d = dot(tri.getEdge(0), off);
   T e = dot(tri.getEdge(1), off);
-  
+
   T det = a*c - b*b;
 
   T u = b*e - c*d;
@@ -746,7 +748,7 @@ intersects(const SGTriangle<T>& tri, const SGSphere<T2>& sphere)
   // Regions
   // \2|
   //  \|
-  //   |\ 
+  //   |\
   // 3 |0\ 1
   //----------
   // 4 | 5 \ 6
@@ -932,6 +934,8 @@ intersects(const SGTriangle<T>& tri, const SGSphere<T2>& sphere)
     }
   }
 }
+// codespell:ignore-end
+
 template<typename T1, typename T2>
 inline bool
 intersects(const SGSphere<T1>& sphere, const SGTriangle<T2>& tri)
@@ -1047,5 +1051,3 @@ intersects(const SGBox<T1>& box1, const SGBox<T2>& box2)
 
   return true;
 }
-
-#endif
