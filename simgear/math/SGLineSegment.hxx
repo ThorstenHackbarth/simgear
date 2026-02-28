@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <ostream>
+#include <iosfwd>
 
 #include <simgear/math/SGVec3.hxx>
 
@@ -51,11 +51,9 @@ private:
 };
 
 /// Output to an ostream
-template<typename char_type, typename traits_type, typename T>
-inline
-std::basic_ostream<char_type, traits_type>&
-operator<<(std::basic_ostream<char_type, traits_type>& s,
-           const SGLineSegment<T>& lineSegment)
+template<typename T>
+std::ostream&
+operator<<(std::ostream& s, const SGLineSegment<T>& lineSegment)
 {
   return s << "line segment: start = " << lineSegment.getStart()
            << ", end = " << lineSegment.getEnd();
