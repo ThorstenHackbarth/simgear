@@ -55,7 +55,21 @@ pre-commit:
   # important for now until we get some checks passing :)
   allow_failure: true
 
-linux-build:
+.ccache-variables-and-stats:
+  variables:
+    CCACHE_DIR: ${CI_PROJECT_DIR}/.cache/ccache
+    # This allows one to obtain ccache stats for a single job.
+    CCACHE_STATSLOG: ${CI_PROJECT_DIR}/ccache-stats-log
+  before_script:
+    - rm -f $CCACHE_STATSLOG
+  after_script:
+    # For the particular build recorded in ${CCACHE_STATSLOG}
+    - ccache --show-log-stats
+    # Shows how much of the configurable cache size is used
+    - ccache --show-stats
+
+linux-build-and-test:
+  extends: .ccache-variables-and-stats
   image: ${CI_REGISTRY}/flightgear/flightgear-ci-docker/flightgear:latest
   stage: build
   script:
@@ -66,38 +80,48 @@ linux-build:
       -D CMAKE_BUILD_TYPE=RelWithDebInfo
       -D CMAKE_INSTALL_PREFIX=$PREFIX_DIR
       -D CMAKE_PREFIX_PATH=$CI_PROJECT_DIR/osg-dist
+      -D ENABLE_CCACHE=ON
 
     - cmake --build $BUILD_DIR
     - cmake --build $BUILD_DIR --target install
+    # Now run the tests. Set LD_LIBRARY_PATH because some of them need OSG
+    # libraries.
+    - cd $BUILD_DIR
+    - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CI_PROJECT_DIR/osg-dist/lib
+    - ctest --output-on-failure --output-junit result.xml
   needs:
     - project: flightgear/openscenegraph
       job: linux-build
       ref: $OSG_REF
       artifacts: true
   artifacts:
+    when: always
     paths:
       - $PREFIX_DIR
+      - $BUILD_DIR/result.xml
+    reports:
+      junit: $BUILD_DIR/result.xml
   cache:
-    key: "linux-x64-$CI_COMMIT_REF_SLUG"
-    policy: push
+    key: linux-amd64-next
     paths:
-      - $BUILD_DIR
+      - $CCACHE_DIR
 
 # even though Simgear doesn't use Qt5, we make some other changes in this image,
 # such as using a different C-Ares version, which mean we need a distinct Simgear build,
 # to match the FlighGear build
 linux-qt5-build:
+  extends: .ccache-variables-and-stats
   image: ${CI_REGISTRY}/flightgear/flightgear-ci-docker/flightgear-qt5:latest
   stage: build
   script:
     - rm -f $BUILD_DIR/CMakeCache.txt
-
     # --fresh would be ideal here to avoid the line above, but needs CMake 3.25
     - >
       cmake -B $BUILD_DIR -S $CI_PROJECT_DIR -G Ninja
       -D CMAKE_BUILD_TYPE=RelWithDebInfo
       -D CMAKE_INSTALL_PREFIX=$PREFIX_DIR
       -D CMAKE_PREFIX_PATH=$CI_PROJECT_DIR/osg-dist
+      -D ENABLE_CCACHE=ON
 
     - cmake --build $BUILD_DIR
     - cmake --build $BUILD_DIR --target install
@@ -110,9 +134,9 @@ linux-qt5-build:
     paths:
       - $PREFIX_DIR
   cache:
-    key: "linux-qt5-$CI_COMMIT_REF_SLUG"
+    key: linux-amd64-qt5-next
     paths:
-      - $BUILD_DIR
+      - $CCACHE_DIR
 
 windows-build:
   stage: build
@@ -190,35 +214,6 @@ macos-build:
   cache:
     paths:
       - $BUILD_DIR
-
-# run tests using the binary built before
-test:
-  image: ${CI_REGISTRY}/flightgear/flightgear-ci-docker/flightgear:latest
-  stage: test
-  needs:
-    # needed so we have the OSG libs
-    - project: flightgear/openscenegraph
-      job: linux-build
-      ref: $OSG_REF
-      artifacts: true
-    - job: linux-build
-      artifacts: false
-  script:
-    - cd $BUILD_DIR
-    # some tests need OSG libraries
-    - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CI_PROJECT_DIR/osg-dist/lib
-    - ctest --output-on-failure --output-junit result.xml
-  cache:
-    key: "linux-x64-$CI_COMMIT_REF_SLUG"
-    policy: pull
-    paths:
-      - $BUILD_DIR
-  artifacts:
-    when: always
-    paths:
-      - $BUILD_DIR/result.xml
-    reports:
-      junit: $BUILD_DIR/result.xml
 
 # if we're building a merge request, build the corresponding
 # target branch of FlightGear. This assumes that target
