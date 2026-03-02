@@ -11,6 +11,7 @@ variables:
   OSG_REF: next
   BRANCH_REF: next
   HOMEBREW_NO_AUTO_UPDATE: 1
+  PRE_COMMIT_HOME: ${CI_PROJECT_DIR}/.cache/pre-commit
 
 # do not run pipelines on forks
 # build merge requests, tags and the protected branches
@@ -35,6 +36,7 @@ pre-commit-merge:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   cache:
+    key: pre-commit-cache
     paths:
       - ${PRE_COMMIT_HOME}
 
@@ -47,6 +49,7 @@ pre-commit:
   rules:
     - if: $CI_COMMIT_REF_PROTECTED == "true"
   cache:
+    key: pre-commit-cache
     paths:
       - ${PRE_COMMIT_HOME}
   # important for now until we get some checks passing :)
