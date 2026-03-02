@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2010 James Turner
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 include (SimGearComponent)
 
 
@@ -36,8 +39,9 @@ set(HEADERS
     simd4x4.hxx
     )
 
-set(SOURCES 
+set(SOURCES
     SGGeodesy.cxx
+    SGLineSegment.cxx
     interpolater.cxx
     leastsqs.cxx
     sg_random.cxx

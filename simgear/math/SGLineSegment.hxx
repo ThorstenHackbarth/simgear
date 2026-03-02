@@ -53,8 +53,4 @@ private:
 /// Output to an ostream
 template<typename T>
 std::ostream&
-operator<<(std::ostream& s, const SGLineSegment<T>& lineSegment)
-{
-  return s << "line segment: start = " << lineSegment.getStart()
-           << ", end = " << lineSegment.getEnd();
-}
+operator<<(std::ostream& s, const SGLineSegment<T>& lineSegment);
