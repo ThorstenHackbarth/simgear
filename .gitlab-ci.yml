@@ -96,7 +96,9 @@ linux-build-and-test:
       ref: $OSG_REF
       artifacts: true
   artifacts:
-    when: always
+    # Note that the artifacts in artifacts:reports are _always_ uploaded,
+    # even for failed jobs (special rule).
+    when: on_success
     paths:
       - $PREFIX_DIR
       - $BUILD_DIR/result.xml
