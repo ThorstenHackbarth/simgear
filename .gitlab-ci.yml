@@ -102,7 +102,7 @@ linux-build-and-test:
     reports:
       junit: $BUILD_DIR/result.xml
   cache:
-    key: linux-amd64-next
+    key: linux-amd64-$BRANCH_REF
     paths:
       - $CCACHE_DIR
 
@@ -134,7 +134,7 @@ linux-qt5-build:
     paths:
       - $PREFIX_DIR
   cache:
-    key: linux-amd64-qt5-next
+    key: linux-amd64-qt5-$BRANCH_REF
     paths:
       - $CCACHE_DIR
 
