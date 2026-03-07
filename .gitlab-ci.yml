@@ -1,6 +1,14 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # SPDX-FileCopyrightText: James Turner <james@flightgear.org>
 
+spec:
+  inputs:
+    clear-ccache-cache:
+      type: boolean
+      default: false
+      description: "Clear the 'ccache' cache before starting the builds"
+---
+
 variables:
   BUILD_DIR: "$CI_PROJECT_DIR/build"
   PREFIX_DIR: "$CI_PROJECT_DIR/simgear-dist"
@@ -56,13 +64,31 @@ pre-commit:
   rules:
     - if: $CI_COMMIT_REF_PROTECTED == "true"
 
-.ccache-variables-and-stats:
+.ccache-variables:
   variables:
-    CCACHE_DIR: ${CI_PROJECT_DIR}/.cache/ccache
+    CCACHE_DIR: ${CI_PROJECT_DIR}/ccache-cache
     # This allows one to obtain ccache stats for a single job.
-    CCACHE_STATSLOG: ${CI_PROJECT_DIR}/ccache-stats-log
+    CCACHE_STATSLOG: ${CI_PROJECT_DIR}/ccache-stats.log
+
+# Optional clearing of the 'ccache' cache (Bash version)
+.ccache-pre_non-windows:
   before_script:
-    - rm -f $CCACHE_STATSLOG
+    - |
+      if $[[ inputs.clear-ccache-cache ]]; then
+        echo "Clearing the 'ccache' cache"
+        ccache --clear
+      fi
+
+# Optional clearing of the 'ccache' cache (PowerShell version)
+.ccache-pre_windows:
+  before_script:
+    - |
+      if ('$[[ inputs.clear-ccache-cache ]]' -eq 'true') {
+        echo 'Clearing the ''ccache'' cache'
+        ccache --clear
+      }
+
+.ccache-stats:
   after_script:
     # For the particular build recorded in ${CCACHE_STATSLOG}
     - ccache --show-log-stats
@@ -70,9 +96,11 @@ pre-commit:
     - ccache --show-stats
 
 linux-build-and-test:
-  extends: .ccache-variables-and-stats
+  extends: .ccache-variables
   image: ${CI_REGISTRY}/flightgear/flightgear-ci-docker/flightgear:latest
   stage: build
+  before_script:
+    - !reference [.ccache-pre_non-windows, before_script]
   script:
     - rm -f $BUILD_DIR/CMakeCache.txt
     # --fresh would be ideal here
@@ -90,6 +118,8 @@ linux-build-and-test:
     - cd $BUILD_DIR
     - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CI_PROJECT_DIR/osg-dist/lib
     - ctest --output-on-failure --output-junit result.xml
+  after_script:
+    - !reference [.ccache-stats, after_script]
   needs:
     - project: flightgear/openscenegraph
       job: linux-build
@@ -113,9 +143,11 @@ linux-build-and-test:
 # such as using a different C-Ares version, which mean we need a distinct Simgear build,
 # to match the FlighGear build
 linux-qt5-build:
-  extends: .ccache-variables-and-stats
+  extends: .ccache-variables
   image: ${CI_REGISTRY}/flightgear/flightgear-ci-docker/flightgear-qt5:latest
   stage: build
+  before_script:
+    - !reference [.ccache-pre_non-windows, before_script]
   script:
     - rm -f $BUILD_DIR/CMakeCache.txt
     # --fresh would be ideal here to avoid the line above, but needs CMake 3.25
@@ -128,6 +160,8 @@ linux-qt5-build:
 
     - cmake --build $BUILD_DIR
     - cmake --build $BUILD_DIR --target install
+  after_script:
+    - !reference [.ccache-stats, after_script]
   needs:
     - project: flightgear/openscenegraph
       job: linux-build
@@ -143,6 +177,9 @@ linux-qt5-build:
 
 windows-build:
   stage: build
+  variables:
+    CCACHE_DIR: ${CI_PROJECT_DIR}\ccache-cache
+    CCACHE_STATSLOG: ${CI_PROJECT_DIR}\ccache-stats.log
   tags:
     - saas-windows-medium-amd64
   before_script:
@@ -154,16 +191,25 @@ windows-build:
     # CMake gets sad.
     - Move-Item -Path $CI_PROJECT_DIR\boost $WIN_FG_DIR\boost
     - Move-Item -Path $CI_PROJECT_DIR\msvc140 $WIN_FG_DIR\msvc140
+    # This is for ccache.exe.
+    - $Env:PATH += ";$CI_PROJECT_DIR"
+    - !reference [.ccache-pre_windows, before_script]
   script:
     - >
-      cmake -B $env:BUILD_DIR -S $env:CI_PROJECT_DIR --fresh -G "Visual Studio 17 2022" -A x64
+      cmake -B $env:BUILD_DIR -S $env:CI_PROJECT_DIR -G "Ninja Multi-Config"
+      --fresh
       -D CMAKE_INSTALL_PREFIX=$env:PREFIX_DIR
       -D CMAKE_PREFIX_PATH=$env:CI_PROJECT_DIR/osg-dist
       -D MSVC_3RDPARTY_ROOT=$WIN_FG_DIR
       -D OSG_FSTREAM_EXPORT_FIXED:BOOL=ON
+      -D ENABLE_CCACHE=ON
 
-    - cmake --build $BUILD_DIR --config RelWithDebInfo
-    - cmake --build $BUILD_DIR --config RelWithDebInfo --target install
+    - cmake --build $BUILD_DIR --config Release
+    - cmake --build $BUILD_DIR --config Release --target install
+  after_script:
+    # This is needed for ccache.exe.
+    - $Env:PATH += ";$CI_PROJECT_DIR"
+    - !reference [.ccache-stats, after_script]
   needs:
     - project: flightgear/openscenegraph
       job: windows_build
@@ -177,18 +223,21 @@ windows-build:
     paths:
       - $PREFIX_DIR
   cache:
+    key: windows-amd64-$BRANCH_REF
     paths:
-      - $BUILD_DIR
+      - $CCACHE_DIR
 
 macos-build:
   stage: build
+  extends: .ccache-variables
   tags:
     - saas-macos-medium-m1
   image: $MAC_IMAGE
   before_script:
     - export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
     - export HOMEBREW_NO_INSTALL_CLEANUP=1
-    - brew install ninja cmake boost c-ares
+    - brew install ninja cmake boost c-ares ccache
+    - !reference [.ccache-pre_non-windows, before_script]
   script:
     - >
       cmake -B $BUILD_DIR -S $CI_PROJECT_DIR -G Ninja --fresh
@@ -198,10 +247,13 @@ macos-build:
       -D CMAKE_OSX_ARCHITECTURES="arm64;x86_64"
       -D ENABLE_SIMD=OFF
       -D ENABLE_VIDEO_RECORD:BOOL=OFF
+      -D ENABLE_CCACHE=ON
       -D ENABLE_TESTS:BOOL=OFF # BoostTest isn't build fat, so we need to disable tests on macOS : ho-hum.
 
     - cmake --build $BUILD_DIR
     - cmake --build $BUILD_DIR --target install
+  after_script:
+    - !reference [.ccache-stats, after_script]
   needs:
     - project: flightgear/openscenegraph
       job: macos-build
@@ -215,8 +267,9 @@ macos-build:
     paths:
       - $PREFIX_DIR
   cache:
+    key: macos-universal-$BRANCH_REF
     paths:
-      - $BUILD_DIR
+      - $CCACHE_DIR
 
 # if we're building a merge request, build the corresponding
 # target branch of FlightGear. This assumes that target
