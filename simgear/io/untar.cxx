@@ -18,9 +18,10 @@
 #include <simgear/misc/sg_dir.hxx>
 #include <simgear/misc/strutils.hxx>
 
-#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/debug/logstream.hxx>
+#include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/package/unzip.h>
+#include <simgear/package/unzip_buffer.hxx>
 #include <simgear/structure/exception.hxx>
 
 #include "ArchiveExtractor_private.hxx"
@@ -560,49 +561,36 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-extern "C" {
-	void fill_memory_filefunc(zlib_filefunc_def*);
-}
-
 class ZipExtractorPrivate : public ArchiveExtractorPrivate
 {
 public:
-	std::string m_buffer;
+    simgear::UnzipOpaqueData m_data;
 
-	ZipExtractorPrivate(ArchiveExtractor* outer) :
-		ArchiveExtractorPrivate(outer)
-	{
+    ZipExtractorPrivate(ArchiveExtractor* outer) : ArchiveExtractorPrivate(outer)
+    {
+    }
 
-	}
+    ~ZipExtractorPrivate()
+    {
+    }
 
-	~ZipExtractorPrivate()
-	{
+    void extractBytes(const uint8_t* bytes, size_t count) override
+    {
+        // because the .zip central directory is at the end of the file,
+        // we have no choice but to simply buffer bytes here until flush()
+        // is called
+        m_data.buffer.insert(m_data.buffer.end(), bytes, bytes + count);
+    }
 
-	}
+    void flush() override
+    {
+        zlib_filefunc_def memoryAccessFuncs;
+        simgear::fillUnzipBufferFuncs(&m_data, &memoryAccessFuncs);
 
-	void extractBytes(const uint8_t* bytes, size_t count) override
-	{
-		// because the .zip central directory is at the end of the file,
-		// we have no choice but to simply buffer bytes here until flush()
-		// is called
-		m_buffer.append((const char*) bytes, count);
-	}
+        unzFile zip = unzOpen2("", &memoryAccessFuncs);
 
-	void flush() override
-	{
-		zlib_filefunc_def memoryAccessFuncs;
-		fill_memory_filefunc(&memoryAccessFuncs);
-
-		char bufferName[128];
-#if defined(SG_WINDOWS)
-        ::snprintf(bufferName, 128, "%p+%llx", m_buffer.data(), m_buffer.size());
-#else
-		::snprintf(bufferName, 128, "%p+%lx", m_buffer.data(), m_buffer.size());
-#endif
-		unzFile zip = unzOpen2(bufferName, &memoryAccessFuncs);
-
-		const size_t BUFFER_SIZE = 1024 * 1024;
-		void* buf = malloc(BUFFER_SIZE);
+        const size_t BUFFER_SIZE = 1024 * 1024;
+        void* buf = malloc(BUFFER_SIZE);
 
         int result = unzGoToFirstFile(zip);
         if (result != UNZ_OK) {

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: James Turner <james@flightgear.org>
 
 include (SimGearComponent)
 
@@ -18,8 +20,9 @@ set(SOURCES
 	Delegate.cxx
 # internal helpers
     md5.h md5.c
-    ioapi.c ioapi_mem.c ioapi.h
+    ioapi.c ioapi.h
     unzip.h unzip.c
+    unzip_buffer.hxx unzip_buffer.cxx
     )
 
 simgear_component(package package "${SOURCES}" "${HEADERS}")
