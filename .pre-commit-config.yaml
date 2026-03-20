@@ -3,6 +3,7 @@
 
 exclude: ^3rdparty/
 exclude: ^simgear/canvas/ShaderVG/
+exclude: ^\.gitignore$
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks

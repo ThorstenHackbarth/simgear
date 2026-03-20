@@ -20,6 +20,7 @@
 #include <initializer_list>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 class SGGeod;
@@ -34,6 +35,11 @@ namespace nasal
    * Convert std::string to Nasal string
    */
   naRef to_nasal_helper(naContext c, const std::string& str);
+
+  /**
+   * Convert std::string_view to Nasal string
+   */
+  naRef to_nasal_helper(naContext c, std::string_view str);
 
   /**
    * Convert C-string to Nasal string
