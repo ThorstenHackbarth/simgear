@@ -956,7 +956,9 @@ struct CSMPassBuilder : public PassBuilder {
         CSMCullCallback *cull_callback = new CSMCullCallback(compositor, pass->name);
         camera->setCullCallback(cull_callback);
 
+        osg::StateSet* ss = camera->getOrCreateStateSet();
         auto builtin_uniforms = compositor->getBuiltinUniforms();
+        ss->addUniform(builtin_uniforms[Compositor::SG_UNIFORM_TEXTURE_MATRIX]);
         const osg::Uniform* sundir_uniform = builtin_uniforms[Compositor::SG_UNIFORM_SUN_DIRECTION_WORLD];
 
         bool render_at_night = root->getBoolValue("render-at-night", true);
