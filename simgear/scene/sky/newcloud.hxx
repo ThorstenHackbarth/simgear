@@ -1,32 +1,14 @@
-// 3D cloud class
-//
-// Written by Harald JOHNSEN, started April 2005.
-//
-// Copyright (C) 2005  Harald JOHNSEN - hjohnsen@evc.net
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-//
+// Voxel cloud class
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2025 Stuart Buchanan (stuart13@gmail.com)
 
 #ifndef _NEWCLOUD_HXX
 #define _NEWCLOUD_HXX
 
+#include <osg/Image>
 #include <simgear/compiler.h>
 #include <string>
 #include <vector>
-#include <osg/Fog>
 
 #include <simgear/math/sg_random.hxx>
 #include <simgear/scene/material/Effect.hxx>
@@ -35,81 +17,94 @@
 using std::string;
 using std::vector;
 
+using ImageRef = osg::ref_ptr<osg::Image>;
+
 /**
  * 3D cloud class.
  */
-class SGNewCloud final {
 
+class SGVoxelCloud
+{
 public:
-        SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def, mt* s);
+    SGVoxelCloud() {};
+    virtual ~SGVoxelCloud() {};
 
-        ~SGNewCloud();  // non-virtual intentional
+    virtual int addCloudToDetailedVoxelField(ImageRef voxelField, float voxelSize, osg::Vec3f p) const = 0;
+    virtual int addCloudToRoughVoxelField(ImageRef voxelField, float voxelSize, osg::Vec3f p) const = 0;
 
-        // Generate a Cloud
-        osg::ref_ptr<simgear::EffectGeode> genCloud ();
-
-        static float getDensity(void)
-        {
-            return sprite_density;
-        }
-    
-        // Set the sprite density
-        static void setDensity(double d)
-        {
-            sprite_density = d;
-        }
-        
-
-private:
-
-        float min_width;
-        float max_width;
-        float min_height;
-        float max_height;
-        float min_sprite_width;
-        float max_sprite_width;
-        float min_sprite_height;
-        float max_sprite_height;
-        
-        // Minimum and maximum bottom, middle, top, sunny, shade lighting
-        // factors. For individual clouds we choose a bottom/middle/top
-        // shade from between each min/max value
-        float min_bottom_lighting_factor;
-        float max_bottom_lighting_factor;
-        float min_middle_lighting_factor;
-        float max_middle_lighting_factor;
-        float min_top_lighting_factor;
-        float max_top_lighting_factor;
-        float min_shade_lighting_factor;
-        float max_shade_lighting_factor;
-        
-        // The density of the cloud is the shading applied
-        // to cloud sprites on the opposite side of the cloud
-        // from the sun. For an individual cloud instance a value
-        // between min_density and max_density is chosen.
-        float min_density;
-        float max_density;
-        
-        // zscale indicates how sprites should be scaled vertically
-        // after billboarding. 
-        float zscale;
-        // alpha_factor is the transparency adjustment of the clouds
-        float alpha_factor;
-        bool height_map_texture;
-        int num_sprites;
-        int num_textures_x;
-        int num_textures_y;
-        string texture;
-        osg::Geometry* quad;
-        osg::ref_ptr<simgear::Effect> effect;
-        static float sprite_density;
-        
-        // RNG seed for this cloud
-        mt* seed;
-
-        osg::Geometry* createOrthQuad(float w, float h, int varieties_x, int varieties_y);
+    // Factory
+    static SGVoxelCloud* buildCloud(const string name, const SGPropertyNode* cld_def, mt* s, const simgear::SGReaderWriterOptions* options);
 };
 
+class SGVoxelTextureCloud : public SGVoxelCloud
+{
+public:
+    SGVoxelTextureCloud(const string name, const SGPropertyNode* cld_def, mt* s, const simgear::SGReaderWriterOptions* options);
+    ~SGVoxelTextureCloud();
+
+    int addCloudToDetailedVoxelField(ImageRef voxelField, float voxelSize, osg::Vec3f p) const override;
+    int addCloudToRoughVoxelField(ImageRef voxelField, float voxelSize, osg::Vec3f p) const override;
+
+    // Manage the cache
+    inline static void setRoughVoxelScale(size_t scale)
+    {
+        if (scale != _roughVoxelScale) _roughVoxelImageCache.clear();
+        _roughVoxelScale = scale;
+    };
+
+private:
+    const string _name;
+    string _voxelTextureFile;
+
+    // RNG seed for this cloud
+    mt* _seed;
+    const simgear::SGReaderWriterOptions* _options;
+    bool _reflectX;
+    bool _reflectY;
+
+    void copySubImage(const osg::Image* srcImage, int src_s, int src_t, int width, int height, osg::Image* destImage, int dest_s, int dest_t) const;
+
+    // Generate a Cloud
+    ImageRef generateCloud(ImageRef voxelImage2D) const;
+    const ImageRef getDetailedCloud() const;
+    const ImageRef getRoughCloud() const;
+
+    int addCloudToVoxelField(ImageRef voxelField, ImageRef cloudVoxels, float voxelSize, osg::Vec3f p) const;
+
+    inline static std::shared_mutex _voxelImageCacheMutex;
+    typedef std::unordered_map<std::string, ImageRef> ImageCache;
+    inline static ImageCache _detailedVoxelImageCache;
+    inline static ImageCache _roughVoxelImageCache;
+    inline static size_t _roughVoxelScale;
+};
+
+class SGVoxelLayerCloud : public SGVoxelCloud
+{
+public:
+    SGVoxelLayerCloud(const string name, const SGPropertyNode* cld_def, mt* s, float coverage, float thicknessM);
+    ~SGVoxelLayerCloud();
+
+    int addCloudToDetailedVoxelField(ImageRef voxelField, float voxelSize, osg::Vec3f p) const override;
+    int addCloudToRoughVoxelField(ImageRef voxelField, float voxelSize, osg::Vec3f p) const override;
+    int addCloudToVoxelField(ImageRef voxelField, float voxelSize, osg::Vec3f p) const;
+
+private:
+    const string _name;
+    mt* _seed;
+    float _coverage;   // Percentage coverage
+    float _thicknessM; // Thickness of layer in M
+
+    float _minDensity; // Density of the field
+    float _maxDensity;
+    float _minType; // Cloud type 0 = wispy, 1 = structured
+    float _maxType;
+
+    // Perlin noise parameters.
+    int _perlinNoiseFrequency;
+    double _perlinAlpha;
+    double _perlinBeta;
+    int _perlinN;
+};
 
 
 #endif // _NEWCLOUD_HXX

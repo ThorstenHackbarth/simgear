@@ -3,9 +3,9 @@
 
 #pragma once
 
+#include <array>
 #include <unordered_map>
 #include <vector>
-#include <array>
 
 // For osgUtil::LineSegmentIntersector::Intersections, which is a typedef.
 #include <osgUtil/LineSegmentIntersector>
@@ -30,7 +30,8 @@ namespace compositor {
  *     and they can output to other buffers. They are also integrated with the
  *     Effects framework, so the OpenGL internal state is configurable per pass.
  */
-class Compositor final {
+class Compositor final
+{
 public:
     enum BuiltinUniform {
         SG_UNIFORM_TEXTURE_MATRIX = 0,
@@ -49,6 +50,7 @@ public:
         SG_UNIFORM_CAMERA_POSITION_GEOD,
         SG_UNIFORM_CAMERA_DISTANCE_TO_EARTH_CENTER,
         SG_UNIFORM_CAMERA_WORLD_UP,
+        SG_UNIFORM_CAMERA_Z_UP_MATRIX,
         SG_UNIFORM_CAMERA_VIEW_UP,
         SG_UNIFORM_NEAR_FAR,
         SG_UNIFORM_FCOEF,
@@ -71,10 +73,10 @@ public:
         unsigned int cells = 1;
     };
 
-    Compositor(osg::View *view,
-               osg::GraphicsContext *gc,
-               osg::Viewport *viewport,
-               const MVRInfo *mvr_info = nullptr);
+    Compositor(osg::View* view,
+               osg::GraphicsContext* gc,
+               osg::Viewport* viewport,
+               const MVRInfo* mvr_info = nullptr);
     ~Compositor();
 
     /**
@@ -87,12 +89,12 @@ public:
      * @param mvr_info Multiview rendering information.
      * @return A Compositor or a null pointer if there was an error.
      */
-    static Compositor *create(osg::View *view,
-                              osg::GraphicsContext *gc,
-                              osg::Viewport *viewport,
-                              const SGPropertyNode *property_list,
-                              const SGReaderWriterOptions *options,
-                              const MVRInfo *mvr_info = nullptr);
+    static Compositor* create(osg::View* view,
+                              osg::GraphicsContext* gc,
+                              osg::Viewport* viewport,
+                              const SGPropertyNode* property_list,
+                              const SGReaderWriterOptions* options,
+                              const MVRInfo* mvr_info = nullptr);
     /**
      * \overload
      * \brief Create a Compositor from a file.
@@ -100,73 +102,75 @@ public:
      * @param name Name of the compositor. The function will search for a file
      *             named <name>.xml in $FG_ROOT.
      */
-    static Compositor *create(osg::View *view,
-                              osg::GraphicsContext *gc,
-                              osg::Viewport *viewport,
-                              const std::string &name,
-                              const SGReaderWriterOptions *options,
-                              const MVRInfo *mvr_info = nullptr);
+    static Compositor* create(osg::View* view,
+                              osg::GraphicsContext* gc,
+                              osg::Viewport* viewport,
+                              const std::string& name,
+                              const SGReaderWriterOptions* options,
+                              const MVRInfo* mvr_info = nullptr);
 
-    static SGPropertyNode_ptr loadPropertyList(const std::string &name);
+    static SGPropertyNode_ptr loadPropertyList(const std::string& name);
 
     void updateSubView(unsigned int sub_view_index,
-                       const osg::Matrix &view_matrix,
-                       const osg::Matrix &proj_matrix,
-                       const osg::Vec4 &viewport);
+                       const osg::Matrix& view_matrix,
+                       const osg::Matrix& proj_matrix,
+                       const osg::Vec4& viewport);
 
-    void               update(const osg::Matrix &view_matrix,
-                              const osg::Matrix &proj_matrix);
+    void update(const osg::Matrix& view_matrix,
+                const osg::Matrix& proj_matrix);
 
-    void               resized();
+    void resized();
 
-    void               setCullMask(osg::Node::NodeMask cull_mask);
+    void setCullMask(osg::Node::NodeMask cull_mask);
 
-    void               setLODScale(float scale);
+    void setLODScale(float scale);
 
-    osg::View         *getView() const { return _view; }
+    osg::View* getView() const { return _view; }
 
-    osg::GraphicsContext *getGraphicsContext() const { return _gc; }
+    osg::GraphicsContext* getGraphicsContext() const { return _gc; }
 
-    osg::Viewport     *getViewport() const { return _viewport; }
+    osg::Viewport* getViewport() const { return _viewport; }
 
     typedef std::array<
         osg::ref_ptr<osg::Uniform>,
-        SG_TOTAL_BUILTIN_UNIFORMS> BuiltinUniforms;
-    const BuiltinUniforms &getBuiltinUniforms() const { return _uniforms; }
+        SG_TOTAL_BUILTIN_UNIFORMS>
+        BuiltinUniforms;
+    const BuiltinUniforms& getBuiltinUniforms() const { return _uniforms; }
 
-    void               addBuffer(const std::string &name, Buffer *buffer);
-    void               addPass(Pass *pass);
+    void addBuffer(const std::string& name, Buffer* buffer);
+    void addPass(Pass* pass);
 
-    void               setName(const std::string &name) { _name = name; }
-    const std::string &getName() const { return _name; }
+    void setName(const std::string& name) { _name = name; }
+    const std::string& getName() const { return _name; }
 
     unsigned int getMVRViews() const { return _mvr.views; }
-    const std::string &getMVRViewIdGlobalStr() const { return _mvr.viewIdGlobalStr; }
-    const std::string &getMVRViewIdStr(unsigned int index) const { return _mvr.viewIdStr[index]; }
+    const std::string& getMVRViewIdGlobalStr() const { return _mvr.viewIdGlobalStr; }
+    const std::string& getMVRViewIdStr(unsigned int index) const { return _mvr.viewIdStr[index]; }
     unsigned int getMVRCells() const { return _mvr.cells; }
 
     typedef std::unordered_map<std::string, osg::ref_ptr<Buffer>> BufferMap;
-    const BufferMap &  getBufferMap() const { return _buffers; }
-    Buffer *           getBuffer(const std::string &name) const;
+    const BufferMap& getBufferMap() const { return _buffers; }
+    Buffer* getBuffer(const std::string& name) const;
 
     typedef std::vector<osg::ref_ptr<Pass>> PassList;
-    const PassList &   getPassList() const { return _passes; }
-    unsigned int       getNumPasses() const { return _passes.size(); }
-    Pass *             getPass(size_t index) const { return _passes[index]; }
-    Pass *             getPass(const std::string &name) const;
+    const PassList& getPassList() const { return _passes; }
+    unsigned int getNumPasses() const { return _passes.size(); }
+    Pass* getPass(size_t index) const { return _passes[index]; }
+    Pass* getPass(const std::string& name) const;
 
-    int                getOrderOffset() const { return _order_offset; }
-    static void        resetOrderOffset() { _order_offset = 0; }
+    int getOrderOffset() const { return _order_offset; }
+    static void resetOrderOffset() { _order_offset = 0; }
+
 protected:
-    osg::View                   *_view;
-    osg::GraphicsContext        *_gc;
-    osg::ref_ptr<osg::Viewport>  _viewport;
-    std::string                  _name;
-    MVRInfo                      _mvr;
-    BufferMap                    _buffers;
-    PassList                     _passes;
-    BuiltinUniforms              _uniforms;
-    static int                   _order_offset;
+    osg::View* _view;
+    osg::GraphicsContext* _gc;
+    osg::ref_ptr<osg::Viewport> _viewport;
+    std::string _name;
+    MVRInfo _mvr;
+    BufferMap _buffers;
+    PassList _passes;
+    BuiltinUniforms _uniforms;
+    static int _order_offset;
 };
 
 } // namespace compositor

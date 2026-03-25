@@ -4,13 +4,12 @@
 #pragma once
 
 #include <OpenThreads/Mutex>
-#include <osg/ref_ptr>
-#include <osg/Array>
 #include <map>
 #include <mutex>
+#include <osg/Array>
+#include <osg/ref_ptr>
 
-namespace osg
-{
+namespace osg {
 class AlphaFunc;
 class BlendFunc;
 class CullFace;
@@ -19,14 +18,14 @@ class ShadeModel;
 class Texture2D;
 class Texture3D;
 class TexEnv;
-}
+} // namespace osg
 
 #include <simgear/scene/util/OsgSingleton.hxx>
 
 // Return read-only instances of common OSG state attributes.
-namespace simgear
+namespace simgear {
+class StateAttributeFactory : public ReferencedSingleton<StateAttributeFactory>
 {
-class StateAttributeFactory : public ReferencedSingleton<StateAttributeFactory> {
 public:
     virtual ~StateAttributeFactory();
 
@@ -40,6 +39,13 @@ public:
     osg::Texture2D* getTransparentTexture() { return _transparentTexture.get(); }
     // Null normalmap texture vec3(0.5, 0.5, 1.0)
     osg::Texture2D* getNullNormalmapTexture() { return _nullNormalmapTexture.get(); }
+
+    // Voxel textures for clouds
+    osg::Texture3D* getDetailedCloudVoxelTexture() { return _detailedVoxelTexture.get(); }
+    osg::Texture3D* getRoughCloudVoxelTexture() { return _roughVoxelTexture.get(); }
+    osg::Texture3D* getCloudVoxelShadeTexture() { return _cloudVoxelShadeTexture.get(); }
+    void setCloudVoxelImages(osg::ref_ptr<osg::Image> detailedVoxelImage, osg::ref_ptr<osg::Image> retailedVoxelImage, osg::ref_ptr<osg::Image> voxelShadeImage, bool repeat);
+
     // cull front and back facing polygons
     osg::CullFace* getCullFaceFront() { return _cullFaceFront.get(); }
     osg::CullFace* getCullFaceBack() { return _cullFaceBack.get(); }
@@ -48,14 +54,19 @@ public:
     // Standard depth with writes disabled
     osg::Depth* getStandardDepthWritesDisabled() { return _standardDepthWritesDisabled.get(); }
     osg::Texture3D* getNoiseTexture(int size);
+    osg::Texture3D* getCloudNoiseTexture(int size);
 
-    StateAttributeFactory();    
+    StateAttributeFactory();
+
 protected:
     osg::ref_ptr<osg::BlendFunc> _standardBlendFunc;
     osg::ref_ptr<osg::Vec4Array> _white;
     osg::ref_ptr<osg::Texture2D> _whiteTexture;
     osg::ref_ptr<osg::Texture2D> _transparentTexture;
     osg::ref_ptr<osg::Texture2D> _nullNormalmapTexture;
+    osg::ref_ptr<osg::Texture3D> _detailedVoxelTexture;
+    osg::ref_ptr<osg::Texture3D> _roughVoxelTexture;
+    osg::ref_ptr<osg::Texture3D> _cloudVoxelShadeTexture;
     osg::ref_ptr<osg::CullFace> _cullFaceFront;
     osg::ref_ptr<osg::CullFace> _cullFaceBack;
     osg::ref_ptr<osg::Depth> _standardDepth;
@@ -63,7 +74,11 @@ protected:
 
     typedef std::map<int, osg::ref_ptr<osg::Texture3D>> NoiseMap;
     NoiseMap _noises;
-    inline static std::mutex _noise_mutex; // Protects the NoiseMap _noises for mult-threaded access
+    osg::ref_ptr<osg::Texture3D> _cloudnoise;
+    inline static std::mutex _noise_mutex;      // Protects the NoiseMap _noises for mult-threaded access
+    inline static std::mutex _cloudnoise_mutex; // Protects the NoiseMap _cloudnoises for mult-threaded access
+
+    void copySubImage(const osg::Image* srcImage, int src_s, int src_t, int width, int height, osg::Image* destImage, int dest_s, int dest_t);
 };
 
 } // namespace simgear

@@ -11,23 +11,25 @@
 #include <osg/Texture2DArray>
 #include <osg/Texture2DMultisample>
 #include <osg/Texture3D>
-#include <osg/TextureRectangle>
 #include <osg/TextureCubeMap>
+#include <osg/TextureRectangle>
 #include <osgUtil/IntersectionVisitor>
 
 #include <simgear/math/SGRect.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/scene/material/EffectCullVisitor.hxx>
-#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
 #include <simgear/structure/exception.hxx>
 
 #include "CompositorUtil.hxx"
 
-class SunDirectionWorldCallback : public osg::Uniform::Callback {
+class SunDirectionWorldCallback : public osg::Uniform::Callback
+{
 public:
-    virtual void operator()(osg::Uniform *uniform, osg::NodeVisitor *nv) {
+    virtual void operator()(osg::Uniform* uniform, osg::NodeVisitor* nv)
+    {
         assert(dynamic_cast<SGUpdateVisitor*>(nv));
         SGUpdateVisitor* uv = static_cast<SGUpdateVisitor*>(nv);
         osg::Vec3f l = toOsg(uv->getLightDirection());
@@ -36,9 +38,11 @@ public:
     }
 };
 
-class MoonDirectionWorldCallback : public osg::Uniform::Callback {
+class MoonDirectionWorldCallback : public osg::Uniform::Callback
+{
 public:
-    virtual void operator()(osg::Uniform *uniform, osg::NodeVisitor *nv) {
+    virtual void operator()(osg::Uniform* uniform, osg::NodeVisitor* nv)
+    {
         assert(dynamic_cast<SGUpdateVisitor*>(nv));
         SGUpdateVisitor* uv = static_cast<SGUpdateVisitor*>(nv);
         osg::Vec3f l = toOsg(uv->getSecondLightDirection());
@@ -52,15 +56,15 @@ namespace compositor {
 
 int Compositor::_order_offset = 0;
 
-Compositor *
-Compositor::create(osg::View *view,
-                   osg::GraphicsContext *gc,
-                   osg::Viewport *viewport,
-                   const SGPropertyNode *property_list,
-                   const SGReaderWriterOptions *options,
-                   const Compositor::MVRInfo *mvr_info)
+Compositor*
+Compositor::create(osg::View* view,
+                   osg::GraphicsContext* gc,
+                   osg::Viewport* viewport,
+                   const SGPropertyNode* property_list,
+                   const SGReaderWriterOptions* options,
+                   const Compositor::MVRInfo* mvr_info)
 {
-    Compositor *compositor = new Compositor(view, gc, viewport, mvr_info);
+    Compositor* compositor = new Compositor(view, gc, viewport, mvr_info);
     compositor->_name = property_list->getStringValue("name");
 
     gc->getState()->setUseModelViewAndProjectionUniforms(
@@ -70,25 +74,25 @@ Compositor::create(osg::View *view,
 
     // Read all buffers first so passes can use them
     PropertyList p_buffers = property_list->getChildren("buffer");
-    for (auto const &p_buffer : p_buffers) {
+    for (auto const& p_buffer : p_buffers) {
         if (!checkConditional(p_buffer))
             continue;
-        const std::string &buffer_name = p_buffer->getStringValue("name");
+        const std::string& buffer_name = p_buffer->getStringValue("name");
         if (buffer_name.empty()) {
             SG_LOG(SG_INPUT, SG_ALERT, "Compositor::build: Buffer requires "
-                   "a name to be available to passes. Skipping...");
+                                       "a name to be available to passes. Skipping...");
             continue;
         }
-        Buffer *buffer = buildBuffer(compositor, p_buffer, options);
+        Buffer* buffer = buildBuffer(compositor, p_buffer, options);
         if (buffer)
             compositor->addBuffer(buffer_name, buffer);
     }
     // Read passes
     PropertyList p_passes = property_list->getChildren("pass");
-    for (auto const &p_pass : p_passes) {
+    for (auto const& p_pass : p_passes) {
         if (!checkConditional(p_pass))
             continue;
-        Pass *pass = buildPass(compositor, p_pass, options);
+        Pass* pass = buildPass(compositor, p_pass, options);
         if (pass)
             compositor->addPass(pass);
     }
@@ -98,13 +102,13 @@ Compositor::create(osg::View *view,
     return compositor;
 }
 
-Compositor *
-Compositor::create(osg::View *view,
-                   osg::GraphicsContext *gc,
-                   osg::Viewport *viewport,
-                   const std::string &name,
-                   const SGReaderWriterOptions *options,
-                   const Compositor::MVRInfo *mvr_info)
+Compositor*
+Compositor::create(osg::View* view,
+                   osg::GraphicsContext* gc,
+                   osg::Viewport* viewport,
+                   const std::string& name,
+                   const SGReaderWriterOptions* options,
+                   const Compositor::MVRInfo* mvr_info)
 {
     SGPropertyNode_ptr property_list = loadPropertyList(name);
     if (!property_list.valid())
@@ -112,14 +116,13 @@ Compositor::create(osg::View *view,
     return create(view, gc, viewport, property_list, options, mvr_info);
 }
 
-SGPropertyNode_ptr Compositor::loadPropertyList(const std::string &name)
+SGPropertyNode_ptr Compositor::loadPropertyList(const std::string& name)
 {
     std::string filename(name);
     filename += ".xml";
     std::string abs_filename = SGModelLib::findDataFile(filename);
     if (abs_filename.empty()) {
-        SG_LOG(SG_INPUT, SG_ALERT, "Compositor::build: Could not find file '"
-               << filename << "'");
+        SG_LOG(SG_INPUT, SG_ALERT, "Compositor::build: Could not find file '" << filename << "'");
         return nullptr;
     }
 
@@ -127,51 +130,50 @@ SGPropertyNode_ptr Compositor::loadPropertyList(const std::string &name)
     try {
         readProperties(abs_filename, property_list.ptr(), 0, true);
         return property_list;
-    } catch (sg_io_exception &e) {
-        SG_LOG(SG_INPUT, SG_ALERT, "Compositor::build: Failed to parse file '"
-               << abs_filename << "'. " << e.getFormattedMessage());
+    } catch (sg_io_exception& e) {
+        SG_LOG(SG_INPUT, SG_ALERT, "Compositor::build: Failed to parse file '" << abs_filename << "'. " << e.getFormattedMessage());
         return nullptr;
     }
 }
 
-Compositor::Compositor(osg::View *view,
-                       osg::GraphicsContext *gc,
-                       osg::Viewport *viewport,
-                       const Compositor::MVRInfo *mvr_info) :
-    _view(view),
-    _gc(gc),
-    _viewport(viewport),
-    _mvr{ mvr_info ? mvr_info->views : 1 },
-    _uniforms{
-    new osg::Uniform("fg_TextureMatrix", osg::Matrixf()),
-    new osg::Uniform(osg::Uniform::FLOAT_VEC4, "fg_Viewport", _mvr.views),
-    new osg::Uniform("fg_PixelSize", osg::Vec2f()),
-    new osg::Uniform("fg_AspectRatio", 0.0f),
-    new osg::Uniform(osg::Uniform::FLOAT_MAT4, "fg_ViewMatrix", _mvr.views),
-    new osg::Uniform(osg::Uniform::FLOAT_MAT4, "fg_ViewMatrixInverse", _mvr.views),
-    new osg::Uniform(osg::Uniform::FLOAT_MAT4, "fg_ProjectionMatrix", _mvr.views),
-    new osg::Uniform(osg::Uniform::FLOAT_MAT4, "fg_ProjectionMatrixInverse", _mvr.views),
-    new osg::Uniform("fg_PrevViewMatrix", osg::Matrixf()),
-    new osg::Uniform("fg_PrevViewMatrixInverse", osg::Matrixf()),
-    new osg::Uniform("fg_PrevProjectionMatrix", osg::Matrixf()),
-    new osg::Uniform("fg_PrevProjectionMatrixInverse", osg::Matrixf()),
-    new osg::Uniform("fg_CameraPositionCart", osg::Vec3f()),
-    new osg::Uniform("fg_CameraPositionGeod", osg::Vec3f()),
-    new osg::Uniform("fg_CameraDistanceToEarthCenter", 0.0f),
-    new osg::Uniform("fg_CameraWorldUp", osg::Vec3f()),
-    new osg::Uniform(osg::Uniform::FLOAT_VEC3, "fg_CameraViewUp", _mvr.views),
-    new osg::Uniform("fg_NearFar", osg::Vec2f()),
-    new osg::Uniform("fg_Fcoef", 0.0f),
-    new osg::Uniform(osg::Uniform::FLOAT_VEC2, "fg_FOVScale", _mvr.views),
-    new osg::Uniform(osg::Uniform::FLOAT_VEC2, "fg_FOVCenter", _mvr.views),
-    new osg::Uniform(osg::Uniform::FLOAT_VEC3, "fg_SunDirection", _mvr.views),
-    new osg::Uniform("fg_SunDirectionWorld", osg::Vec3f()),
-    new osg::Uniform("fg_SunZenithCosTheta", 0.0f),
-    new osg::Uniform(osg::Uniform::FLOAT_VEC3, "fg_MoonDirection", _mvr.views),
-    new osg::Uniform("fg_MoonDirectionWorld", osg::Vec3f()),
-    new osg::Uniform("fg_MoonZenithCosTheta", 0.0f),
-    new osg::Uniform("fg_EarthRadius", 0.0f),
-    }
+Compositor::Compositor(osg::View* view,
+                       osg::GraphicsContext* gc,
+                       osg::Viewport* viewport,
+                       const Compositor::MVRInfo* mvr_info) : _view(view),
+                                                              _gc(gc),
+                                                              _viewport(viewport),
+                                                              _mvr{mvr_info ? mvr_info->views : 1},
+                                                              _uniforms{
+                                                                  new osg::Uniform("fg_TextureMatrix", osg::Matrixf()),
+                                                                  new osg::Uniform(osg::Uniform::FLOAT_VEC4, "fg_Viewport", _mvr.views),
+                                                                  new osg::Uniform("fg_PixelSize", osg::Vec2f()),
+                                                                  new osg::Uniform("fg_AspectRatio", 0.0f),
+                                                                  new osg::Uniform(osg::Uniform::FLOAT_MAT4, "fg_ViewMatrix", _mvr.views),
+                                                                  new osg::Uniform(osg::Uniform::FLOAT_MAT4, "fg_ViewMatrixInverse", _mvr.views),
+                                                                  new osg::Uniform(osg::Uniform::FLOAT_MAT4, "fg_ProjectionMatrix", _mvr.views),
+                                                                  new osg::Uniform(osg::Uniform::FLOAT_MAT4, "fg_ProjectionMatrixInverse", _mvr.views),
+                                                                  new osg::Uniform("fg_PrevViewMatrix", osg::Matrixf()),
+                                                                  new osg::Uniform("fg_PrevViewMatrixInverse", osg::Matrixf()),
+                                                                  new osg::Uniform("fg_PrevProjectionMatrix", osg::Matrixf()),
+                                                                  new osg::Uniform("fg_PrevProjectionMatrixInverse", osg::Matrixf()),
+                                                                  new osg::Uniform("fg_CameraPositionCart", osg::Vec3f()),
+                                                                  new osg::Uniform("fg_CameraPositionGeod", osg::Vec3f()),
+                                                                  new osg::Uniform("fg_CameraDistanceToEarthCenter", 0.0f),
+                                                                  new osg::Uniform("fg_CameraWorldUp", osg::Vec3f()),
+                                                                  new osg::Uniform("fg_CameraZUpMatrix", osg::Matrixf()),
+                                                                  new osg::Uniform(osg::Uniform::FLOAT_VEC3, "fg_CameraViewUp", _mvr.views),
+                                                                  new osg::Uniform("fg_NearFar", osg::Vec2f()),
+                                                                  new osg::Uniform("fg_Fcoef", 0.0f),
+                                                                  new osg::Uniform(osg::Uniform::FLOAT_VEC2, "fg_FOVScale", _mvr.views),
+                                                                  new osg::Uniform(osg::Uniform::FLOAT_VEC2, "fg_FOVCenter", _mvr.views),
+                                                                  new osg::Uniform(osg::Uniform::FLOAT_VEC3, "fg_SunDirection", _mvr.views),
+                                                                  new osg::Uniform("fg_SunDirectionWorld", osg::Vec3f()),
+                                                                  new osg::Uniform("fg_SunZenithCosTheta", 0.0f),
+                                                                  new osg::Uniform(osg::Uniform::FLOAT_VEC3, "fg_MoonDirection", _mvr.views),
+                                                                  new osg::Uniform("fg_MoonDirectionWorld", osg::Vec3f()),
+                                                                  new osg::Uniform("fg_MoonZenithCosTheta", 0.0f),
+                                                                  new osg::Uniform("fg_EarthRadius", 0.0f),
+                                                              }
 {
     if (mvr_info) {
         _mvr = *mvr_info;
@@ -185,8 +187,8 @@ Compositor::Compositor(osg::View *view,
 Compositor::~Compositor()
 {
     // Remove slave cameras from the viewer
-    for (const auto &pass : _passes) {
-        osg::Camera *camera = pass->camera;
+    for (const auto& pass : _passes) {
+        osg::Camera* camera = pass->camera;
         // Remove all children before removing the slave to prevent the graphics
         // window from automatically cleaning up all associated OpenGL objects.
         camera->removeChildren(0, camera->getNumChildren());
@@ -197,11 +199,11 @@ Compositor::~Compositor()
 }
 
 void Compositor::updateSubView(unsigned int sub_view_index,
-                               const osg::Matrix &view_matrix,
-                               const osg::Matrix &proj_matrix,
-                               const osg::Vec4 &viewport)
+                               const osg::Matrix& view_matrix,
+                               const osg::Matrix& proj_matrix,
+                               const osg::Vec4& viewport)
 {
-    for (auto &pass : _passes) {
+    for (auto& pass : _passes) {
         if (pass->update_callback.valid())
             pass->update_callback->updateSubView(*pass.get(), sub_view_index, view_matrix, proj_matrix);
     }
@@ -241,44 +243,46 @@ void Compositor::updateSubView(unsigned int sub_view_index,
     // multiview viewports, and also asymmetric FOV (especially for VR HMDs).
     if (_mvr.views > 1) {
         _uniforms[SG_UNIFORM_FOV_SCALE]->setElement(sub_view_index, osg::Vec2f(
-            tan_fov_x * _viewport->width() / viewport.z(),
-            tan_fov_y * _viewport->height() / viewport.w()) * 2.0f);
+                                                                        tan_fov_x * _viewport->width() / viewport.z(),
+                                                                        tan_fov_y * _viewport->height() / viewport.w()) *
+                                                                        2.0f);
         _uniforms[SG_UNIFORM_FOV_CENTER]->setElement(sub_view_index, osg::Vec2f(
-            (viewport.x() + viewport.z() * (-left / (right - left))) / _viewport->width(),
-            (viewport.y() + viewport.w() * (-bottom / (top - bottom))) / _viewport->height()));
+                                                                         (viewport.x() + viewport.z() * (-left / (right - left))) / _viewport->width(),
+                                                                         (viewport.y() + viewport.w() * (-bottom / (top - bottom))) / _viewport->height()));
     } else {
         _uniforms[SG_UNIFORM_FOV_SCALE]->setElement(sub_view_index, osg::Vec2f(
-            tan_fov_x,
-            tan_fov_y) * 2.0f);
+                                                                        tan_fov_x,
+                                                                        tan_fov_y) *
+                                                                        2.0f);
         _uniforms[SG_UNIFORM_FOV_CENTER]->setElement(sub_view_index, osg::Vec2f(
-            -left / (right - left),
-            -bottom / (top - bottom)));
+                                                                         -left / (right - left),
+                                                                         -bottom / (top - bottom)));
     }
 
     osg::Vec3f sun_dir_world;
     _uniforms[SG_UNIFORM_SUN_DIRECTION_WORLD]->get(sun_dir_world);
     osg::Vec4f sun_dir_view = osg::Vec4f(
-        sun_dir_world.x(), sun_dir_world.y(), sun_dir_world.z(), 0.0f) * view_matrix;
+                                  sun_dir_world.x(), sun_dir_world.y(), sun_dir_world.z(), 0.0f) *
+                              view_matrix;
     _uniforms[SG_UNIFORM_SUN_DIRECTION]->setElement(sub_view_index, osg::Vec3f(sun_dir_view.x(), sun_dir_view.y(), sun_dir_view.z()));
 
     osg::Vec3f moon_dir_world;
     _uniforms[SG_UNIFORM_MOON_DIRECTION_WORLD]->get(moon_dir_world);
     osg::Vec4f moon_dir_view = osg::Vec4f(
-        moon_dir_world.x(), moon_dir_world.y(), moon_dir_world.z(), 0.0f) * view_matrix;
+                                   moon_dir_world.x(), moon_dir_world.y(), moon_dir_world.z(), 0.0f) *
+                               view_matrix;
     _uniforms[SG_UNIFORM_MOON_DIRECTION]->setElement(sub_view_index, osg::Vec3f(moon_dir_view.x(), moon_dir_view.y(), moon_dir_view.z()));
 }
 
-void
-Compositor::update(const osg::Matrix &view_matrix,
-                   const osg::Matrix &proj_matrix)
+void Compositor::update(const osg::Matrix& view_matrix,
+                        const osg::Matrix& proj_matrix)
 {
     // Enable/disable passes by setting or unsetting their graphics context.
     // XXX: Check if this causes threading-related crashes.
     // Also run the update callback for enabled passes.
-    for (auto &pass : _passes) {
+    for (auto& pass : _passes) {
         osg::Camera* camera = pass->camera;
-        bool should_render = (!pass->render_condition || pass->render_condition->test())
-            && (!pass->render_once || !pass->has_ever_rendered);
+        bool should_render = (!pass->render_condition || pass->render_condition->test()) && (!pass->render_once || !pass->has_ever_rendered);
         if (should_render) {
             // Pass is enabled
             camera->setNodeMask(0xffffffff);
@@ -290,7 +294,6 @@ Compositor::update(const osg::Matrix &view_matrix,
             // Pass is disabled
             camera->setNodeMask(0);
         }
-
     }
 
     // Update uniforms
@@ -302,13 +305,15 @@ Compositor::update(const osg::Matrix &view_matrix,
     SGGeod camera_pos_geod = SGGeod::fromCart(
         SGVec3d(camera_pos.x(), camera_pos.y(), camera_pos.z()));
 
+    osg::Matrixf camera_z_up = osg::Matrix::inverse(makeZUpFrameRelative(camera_pos_geod));
+
     osg::Vec3d world_up = camera_pos;
     world_up.normalize();
     osg::Vec3d view_up = world_up * view_matrix;
     view_up.normalize();
 
     double left = 0.0, right = 0.0, bottom = 0.0, top = 0.0,
-        zNear = 0.0, zFar = 0.0;
+           zNear = 0.0, zFar = 0.0;
     proj_matrix.getFrustum(left, right, bottom, top, zNear, zFar);
 
     osg::Matrixf prev_view_matrix, prev_view_matrix_inv;
@@ -326,15 +331,17 @@ Compositor::update(const osg::Matrix &view_matrix,
     osg::Vec3f sun_dir_world;
     _uniforms[SG_UNIFORM_SUN_DIRECTION_WORLD]->get(sun_dir_world);
     osg::Vec4f sun_dir_view = osg::Vec4f(
-        sun_dir_world.x(), sun_dir_world.y(), sun_dir_world.z(), 0.0f) * view_matrix;
+                                  sun_dir_world.x(), sun_dir_world.y(), sun_dir_world.z(), 0.0f) *
+                              view_matrix;
 
     osg::Vec3f moon_dir_world;
     _uniforms[SG_UNIFORM_MOON_DIRECTION_WORLD]->get(moon_dir_world);
     osg::Vec4f moon_dir_view = osg::Vec4f(
-        moon_dir_world.x(), moon_dir_world.y(), moon_dir_world.z(), 0.0f) * view_matrix;
+                                   moon_dir_world.x(), moon_dir_world.y(), moon_dir_world.z(), 0.0f) *
+                               view_matrix;
 
-    float aspect_ratio = proj_matrix(1,1) / proj_matrix(0,0);
-    float tan_fov_y = 1.0f / proj_matrix(1,1);
+    float aspect_ratio = proj_matrix(1, 1) / proj_matrix(0, 0);
+    float tan_fov_y = 1.0f / proj_matrix(1, 1);
     float tan_fov_x = tan_fov_y * aspect_ratio;
 
     for (int i = 0; i < SG_TOTAL_BUILTIN_UNIFORMS; ++i) {
@@ -365,6 +372,9 @@ Compositor::update(const osg::Matrix &view_matrix,
             break;
         case SG_UNIFORM_CAMERA_WORLD_UP:
             u->set(osg::Vec3f(world_up));
+            break;
+        case SG_UNIFORM_CAMERA_Z_UP_MATRIX:
+            u->set(osg::Matrixf(camera_z_up));
             break;
         case SG_UNIFORM_CAMERA_VIEW_UP:
             u->setElement(0, osg::Vec3f(view_up));
@@ -404,39 +414,29 @@ Compositor::update(const osg::Matrix &view_matrix,
     }
 }
 
-void
-Compositor::resized()
+void Compositor::resized()
 {
     // Cameras attached directly to the framebuffer were already resized by
     // osg::GraphicsContext::resizedImplementation(). However, RTT cameras were
     // ignored. Here we resize RTT cameras that need to match the physical
     // viewport size.
-    for (const auto &pass : _passes) {
-        osg::Camera *camera = pass->camera;
+    for (const auto& pass : _passes) {
+        osg::Camera* camera = pass->camera;
         if (!camera)
             continue;
 
-        osg::Viewport *viewport = camera->getViewport();
+        osg::Viewport* viewport = camera->getViewport();
 
         if (camera->isRenderToTextureCamera() &&
-            (pass->viewport_x_scale      != 0.0f ||
-             pass->viewport_y_scale      != 0.0f ||
-             pass->viewport_width_scale  != 0.0f ||
+            (pass->viewport_x_scale != 0.0f ||
+             pass->viewport_y_scale != 0.0f ||
+             pass->viewport_width_scale != 0.0f ||
              pass->viewport_height_scale != 0.0f)) {
-
             // Resize the viewport
-            int new_x = (pass->viewport_x_scale == 0.0f) ?
-                viewport->x() :
-                pass->viewport_x_scale * _viewport->width();
-            int new_y = (pass->viewport_y_scale == 0.0f) ?
-                viewport->y() :
-                pass->viewport_y_scale * _viewport->height();
-            int new_width = (pass->viewport_width_scale == 0.0f) ?
-                viewport->width() :
-                pass->viewport_width_scale * _viewport->width();
-            int new_height = (pass->viewport_height_scale == 0.0f) ?
-                viewport->height() :
-                pass->viewport_height_scale * _viewport->height();
+            int new_x = (pass->viewport_x_scale == 0.0f) ? viewport->x() : pass->viewport_x_scale * _viewport->width();
+            int new_y = (pass->viewport_y_scale == 0.0f) ? viewport->y() : pass->viewport_y_scale * _viewport->height();
+            int new_width = (pass->viewport_width_scale == 0.0f) ? viewport->width() : pass->viewport_width_scale * _viewport->width();
+            int new_height = (pass->viewport_height_scale == 0.0f) ? viewport->height() : pass->viewport_height_scale * _viewport->height();
             camera->setViewport(new_x, new_y, new_width, new_height);
 
             // Force the OSG rendering backend to handle the new sizes
@@ -464,10 +464,10 @@ Compositor::resized()
 
         // Update the uniforms even if it isn't a RTT camera
         _uniforms[SG_UNIFORM_VIEWPORT]->setElement(0,
-            osg::Vec4f(viewport->x(),
-                       viewport->y(),
-                       viewport->width(),
-                       viewport->height()));
+                                                   osg::Vec4f(viewport->x(),
+                                                              viewport->y(),
+                                                              viewport->width(),
+                                                              viewport->height()));
         _uniforms[SG_UNIFORM_PIXEL_SIZE]->set(
             osg::Vec2f(1.0f / viewport->width(),
                        1.0f / viewport->height()));
@@ -476,95 +476,69 @@ Compositor::resized()
     }
 
     // Resize buffers that must be a multiple of the screen size
-    for (const auto &buffer : _buffers) {
-        osg::Texture *texture = buffer.second->texture;
+    for (const auto& buffer : _buffers) {
+        osg::Texture* texture = buffer.second->texture;
         if (texture &&
-            (buffer.second->width_scale  != 0.0f ||
+            (buffer.second->width_scale != 0.0f ||
              buffer.second->height_scale != 0.0f)) {
             {
-                auto tex = dynamic_cast<osg::Texture1D *>(texture);
+                auto tex = dynamic_cast<osg::Texture1D*>(texture);
                 if (tex) {
-                    int new_width = (buffer.second->width_scale == 0.0f) ?
-                        tex->getTextureWidth() :
-                        buffer.second->width_scale * _viewport->width();
+                    int new_width = (buffer.second->width_scale == 0.0f) ? tex->getTextureWidth() : buffer.second->width_scale * _viewport->width();
                     tex->setTextureWidth(new_width);
                     tex->dirtyTextureObject();
                 }
             }
             {
-                auto tex = dynamic_cast<osg::Texture2D *>(texture);
+                auto tex = dynamic_cast<osg::Texture2D*>(texture);
                 if (tex) {
-                    int new_width = (buffer.second->width_scale == 0.0f) ?
-                        tex->getTextureWidth() :
-                        buffer.second->width_scale * _viewport->width();
-                    int new_height = (buffer.second->height_scale == 0.0f) ?
-                        tex->getTextureHeight() :
-                        buffer.second->height_scale * _viewport->height();
+                    int new_width = (buffer.second->width_scale == 0.0f) ? tex->getTextureWidth() : buffer.second->width_scale * _viewport->width();
+                    int new_height = (buffer.second->height_scale == 0.0f) ? tex->getTextureHeight() : buffer.second->height_scale * _viewport->height();
                     tex->setTextureSize(new_width, new_height);
                     tex->dirtyTextureObject();
                 }
             }
             {
-                auto tex = dynamic_cast<osg::Texture2DArray *>(texture);
+                auto tex = dynamic_cast<osg::Texture2DArray*>(texture);
                 if (tex) {
-                    int new_width = (buffer.second->width_scale == 0.0f) ?
-                        tex->getTextureWidth() :
-                        buffer.second->width_scale * _viewport->width();
-                    int new_height = (buffer.second->height_scale == 0.0f) ?
-                        tex->getTextureHeight() :
-                        buffer.second->height_scale * _viewport->height();
+                    int new_width = (buffer.second->width_scale == 0.0f) ? tex->getTextureWidth() : buffer.second->width_scale * _viewport->width();
+                    int new_height = (buffer.second->height_scale == 0.0f) ? tex->getTextureHeight() : buffer.second->height_scale * _viewport->height();
                     tex->setTextureSize(new_width, new_height, tex->getTextureDepth());
                     tex->dirtyTextureObject();
                 }
             }
             {
-                auto tex = dynamic_cast<osg::Texture2DMultisample *>(texture);
+                auto tex = dynamic_cast<osg::Texture2DMultisample*>(texture);
                 if (tex) {
-                    int new_width = (buffer.second->width_scale == 0.0f) ?
-                        tex->getTextureWidth() :
-                        buffer.second->width_scale * _viewport->width();
-                    int new_height = (buffer.second->height_scale == 0.0f) ?
-                        tex->getTextureHeight() :
-                        buffer.second->height_scale * _viewport->height();
+                    int new_width = (buffer.second->width_scale == 0.0f) ? tex->getTextureWidth() : buffer.second->width_scale * _viewport->width();
+                    int new_height = (buffer.second->height_scale == 0.0f) ? tex->getTextureHeight() : buffer.second->height_scale * _viewport->height();
                     tex->setTextureSize(new_width, new_height);
                     tex->dirtyTextureObject();
                 }
             }
             {
-                auto tex = dynamic_cast<osg::Texture3D *>(texture);
+                auto tex = dynamic_cast<osg::Texture3D*>(texture);
                 if (tex) {
-                    int new_width = (buffer.second->width_scale == 0.0f) ?
-                        tex->getTextureWidth() :
-                        buffer.second->width_scale * _viewport->width();
-                    int new_height = (buffer.second->height_scale == 0.0f) ?
-                        tex->getTextureHeight() :
-                        buffer.second->height_scale * _viewport->height();
+                    int new_width = (buffer.second->width_scale == 0.0f) ? tex->getTextureWidth() : buffer.second->width_scale * _viewport->width();
+                    int new_height = (buffer.second->height_scale == 0.0f) ? tex->getTextureHeight() : buffer.second->height_scale * _viewport->height();
                     tex->setTextureSize(new_width, new_height, tex->getTextureDepth());
                     tex->dirtyTextureObject();
                 }
             }
             {
-                auto tex = dynamic_cast<osg::TextureRectangle *>(texture);
+                auto tex = dynamic_cast<osg::TextureRectangle*>(texture);
                 if (tex) {
-                    int new_width = (buffer.second->width_scale == 0.0f) ?
-                        tex->getTextureWidth() :
-                        buffer.second->width_scale * _viewport->width();
-                    int new_height = (buffer.second->height_scale == 0.0f) ?
-                        tex->getTextureHeight() :
-                        buffer.second->height_scale * _viewport->height();
+                    int new_width = (buffer.second->width_scale == 0.0f) ? tex->getTextureWidth() : buffer.second->width_scale * _viewport->width();
+                    int new_height = (buffer.second->height_scale == 0.0f) ? tex->getTextureHeight() : buffer.second->height_scale * _viewport->height();
                     tex->setTextureSize(new_width, new_height);
                     tex->dirtyTextureObject();
                 }
             }
             {
-                auto tex = dynamic_cast<osg::TextureCubeMap *>(texture);
+                auto tex = dynamic_cast<osg::TextureCubeMap*>(texture);
                 if (tex) {
-                    int new_width = (buffer.second->width_scale == 0.0f) ?
-                        tex->getTextureWidth() :
-                        buffer.second->width_scale * _viewport->width();
-                    int new_height = (buffer.second->height_scale == 0.0f) ?
-                        tex->getTextureHeight() :
-                        buffer.second->height_scale * _viewport->height();
+                    int new_width = (buffer.second->width_scale == 0.0f) ? tex->getTextureWidth() : buffer.second->width_scale * _viewport->width();
+                    int new_height = (buffer.second->height_scale == 0.0f) ? tex->getTextureHeight() : buffer.second->height_scale * _viewport->height();
                     tex->setTextureSize(new_width, new_height);
                     tex->dirtyTextureObject();
                 }
@@ -573,11 +547,10 @@ Compositor::resized()
     }
 }
 
-void
-Compositor::setCullMask(osg::Node::NodeMask cull_mask)
+void Compositor::setCullMask(osg::Node::NodeMask cull_mask)
 {
-    for (auto &pass : _passes) {
-        osg::Camera *camera = pass->camera;
+    for (auto& pass : _passes) {
+        osg::Camera* camera = pass->camera;
         if (pass->inherit_cull_mask) {
             camera->setCullMask(pass->cull_mask & cull_mask);
             camera->setCullMaskLeft(pass->cull_mask & cull_mask & ~RIGHT_BIT);
@@ -590,10 +563,9 @@ Compositor::setCullMask(osg::Node::NodeMask cull_mask)
     }
 }
 
-void
-Compositor::setLODScale(float scale)
+void Compositor::setLODScale(float scale)
 {
-    for (auto &pass: _passes) {
+    for (auto& pass : _passes) {
         // Only change the LOD scale for passes that actually render the scene
         // and do not have a custom scale.
         if (pass->useMastersSceneData && !pass->has_custom_lod_scale) {
@@ -602,18 +574,16 @@ Compositor::setLODScale(float scale)
     }
 }
 
-void
-Compositor::addBuffer(const std::string &name, Buffer *buffer)
+void Compositor::addBuffer(const std::string& name, Buffer* buffer)
 {
     _buffers[name] = buffer;
 }
 
-void
-Compositor::addPass(Pass *pass)
+void Compositor::addPass(Pass* pass)
 {
     if (!_view) {
         SG_LOG(SG_GENERAL, SG_ALERT, "Compositor::addPass: Couldn't add camera "
-               "as a slave to the view. View doesn't exist!");
+                                     "as a slave to the view. View doesn't exist!");
         return;
     }
     _view->addSlave(pass->camera, pass->useMastersSceneData);
@@ -621,8 +591,8 @@ Compositor::addPass(Pass *pass)
     _passes.push_back(pass);
 }
 
-Buffer *
-Compositor::getBuffer(const std::string &name) const
+Buffer*
+Compositor::getBuffer(const std::string& name) const
 {
     auto it = _buffers.find(name);
     if (it == _buffers.end())
@@ -630,11 +600,10 @@ Compositor::getBuffer(const std::string &name) const
     return it->second.get();
 }
 
-Pass *
-Compositor::getPass(const std::string &name) const
+Pass* Compositor::getPass(const std::string& name) const
 {
     auto it = std::find_if(_passes.begin(), _passes.end(),
-                           [&name](const osg::ref_ptr<Pass> &p) {
+                           [&name](const osg::ref_ptr<Pass>& p) {
                                return p->name == name;
                            });
     if (it == _passes.end())

@@ -1,21 +1,8 @@
-// Copyright (C) 2009  Tim Moore timoore@redhat.com
-//
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
-//
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2009  Tim Moore timoore@redhat.com
 
 #ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
+    #include <simgear_config.h>
 #endif
 
 #include "TextureBuilder.hxx"
@@ -23,14 +10,14 @@
 
 #include "Pass.hxx"
 
-#include <osg/Version>
 #include <osg/PointSprite>
 #include <osg/Texture1D>
 #include <osg/Texture2D>
 #include <osg/Texture2DArray>
 #include <osg/Texture3D>
-#include <osg/TextureRectangle>
 #include <osg/TextureCubeMap>
+#include <osg/TextureRectangle>
+#include <osg/Version>
 #include <osgDB/FileUtils>
 #include <osgDB/ReadFile>
 
@@ -40,13 +27,12 @@
 #include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/props/vectorPropTemplates.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/OsgUtils.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
-#include <simgear/scene/util/OsgUtils.hxx>
 
-namespace simgear
-{
+namespace simgear {
 
 using OpenThreads::Mutex;
 using OpenThreads::ScopedLock;
@@ -58,16 +44,17 @@ using namespace effect;
 
 // Hack to force inclusion of TextureBuilder.cxx in library
 osg::Texture* TextureBuilder::buildFromType(Effect* effect, const string& type,
-                                            const SGPropertyNode*props,
+                                            const SGPropertyNode* props,
                                             const SGReaderWriterOptions*
-                                            options)
+                                                options)
 {
     return EffectBuilder<Texture>::buildFromType(effect, type, props, options);
 }
 
 typedef std::tuple<string, Texture::FilterMode, Texture::FilterMode,
                    Texture::WrapMode, Texture::WrapMode, Texture::WrapMode,
-                   string, MipMapTuple, ImageInternalFormat> TexTuple;
+                   string, MipMapTuple, ImageInternalFormat>
+    TexTuple;
 
 void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
                                         const SGPropertyNode* prop,
@@ -85,10 +72,8 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
         if (pName)
             try {
                 unit = std::stoi(pName->getStringValue());
-            }
-            catch (const std::invalid_argument& ia) {
-                SG_LOG(SG_INPUT, SG_ALERT, "can't decode name as texture unit "
-                       << ia.what());
+            } catch (const std::invalid_argument& ia) {
+                SG_LOG(SG_INPUT, SG_DEV_ALERT, "can't decode name as texture unit " << ia.what());
             }
     }
     const SGPropertyNode* pType = getEffectPropertyChild(effect, prop, "type");
@@ -101,11 +86,8 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
     try {
         texture = TextureBuilder::buildFromType(effect, type, prop,
                                                 options);
-    }
-    catch (BuilderException& e) {
-        SG_LOG(SG_INPUT, SG_DEBUG, e.getFormattedMessage() << ", "
-            << "maybe the reader did not set the filename attribute, "
-            << "using white for type '" << type << "' on '" << pass->getName() << "', in " << prop->getPath() );
+    } catch (BuilderException& e) {
+        SG_LOG(SG_INPUT, SG_DEBUG, e.getFormattedMessage() << ", " << "maybe the reader did not set the filename attribute, " << "using white for type '" << type << "' on '" << pass->getName() << "', in " << prop->getPath());
         texture = StateAttributeFactory::instance()->getWhiteTexture();
     }
 
@@ -121,26 +103,23 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
 // InstallAttributeBuilder call is in Effect.cxx to force this file to
 // be linked in.
 
-namespace
-{
+namespace {
 EffectNameValue<Texture::FilterMode> filterModesInit[] =
-{
-    { "linear", Texture::LINEAR },
-    { "linear-mipmap-linear", Texture::LINEAR_MIPMAP_LINEAR},
-    { "linear-mipmap-nearest", Texture::LINEAR_MIPMAP_NEAREST},
-    { "nearest", Texture::NEAREST},
-    { "nearest-mipmap-linear", Texture::NEAREST_MIPMAP_LINEAR},
-    { "nearest-mipmap-nearest", Texture::NEAREST_MIPMAP_NEAREST}
-};
+    {
+        {"linear", Texture::LINEAR},
+        {"linear-mipmap-linear", Texture::LINEAR_MIPMAP_LINEAR},
+        {"linear-mipmap-nearest", Texture::LINEAR_MIPMAP_NEAREST},
+        {"nearest", Texture::NEAREST},
+        {"nearest-mipmap-linear", Texture::NEAREST_MIPMAP_LINEAR},
+        {"nearest-mipmap-nearest", Texture::NEAREST_MIPMAP_NEAREST}};
 EffectPropertyMap<Texture::FilterMode> filterModes(filterModesInit);
 
 EffectNameValue<Texture::WrapMode> wrapModesInit[] =
-{
-    {"clamp-to-border", Texture::CLAMP_TO_BORDER},
-    {"clamp-to-edge", Texture::CLAMP_TO_EDGE},
-    {"mirror", Texture::MIRROR},
-    {"repeat", Texture::REPEAT}
-};
+    {
+        {"clamp-to-border", Texture::CLAMP_TO_BORDER},
+        {"clamp-to-edge", Texture::CLAMP_TO_EDGE},
+        {"mirror", Texture::MIRROR},
+        {"repeat", Texture::REPEAT}};
 EffectPropertyMap<Texture::WrapMode> wrapModes(wrapModesInit);
 
 TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
@@ -154,33 +133,26 @@ TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
     Texture::FilterMode magFilter = Texture::LINEAR;
     if ((ep = getEffectPropertyChild(effect, props, "mag-filter")))
         findAttr(filterModes, ep, magFilter);
-    const SGPropertyNode* pWrapS
-        = getEffectPropertyChild(effect, props, "wrap-s");
+    const SGPropertyNode* pWrapS = getEffectPropertyChild(effect, props, "wrap-s");
     Texture::WrapMode sWrap = Texture::CLAMP_TO_EDGE;
     if (pWrapS)
         findAttr(wrapModes, pWrapS, sWrap);
-    const SGPropertyNode* pWrapT
-        = getEffectPropertyChild(effect, props, "wrap-t");
+    const SGPropertyNode* pWrapT = getEffectPropertyChild(effect, props, "wrap-t");
     Texture::WrapMode tWrap = Texture::CLAMP_TO_EDGE;
     if (pWrapT)
         findAttr(wrapModes, pWrapT, tWrap);
-    const SGPropertyNode* pWrapR
-        = getEffectPropertyChild(effect, props, "wrap-r");
+    const SGPropertyNode* pWrapR = getEffectPropertyChild(effect, props, "wrap-r");
     Texture::WrapMode rWrap = Texture::CLAMP_TO_EDGE;
     if (pWrapR)
         findAttr(wrapModes, pWrapR, rWrap);
-    const SGPropertyNode* pImage
-        = getEffectPropertyChild(effect, props, "image");
+    const SGPropertyNode* pImage = getEffectPropertyChild(effect, props, "image");
     string imageName;
     string absFileName;
-    if (pImage)
-    {
+    if (pImage) {
         imageName = pImage->getStringValue();
         absFileName = SGModelLib::findDataFile(imageName, options);
-        if (absFileName.empty())
-        {
-            SG_LOG(SG_INPUT, SG_ALERT, "Texture file not found: '"
-                   << imageName << "'");
+        if (absFileName.empty()) {
+            SG_LOG(SG_INPUT, SG_ALERT, "Texture file not found: '" << imageName << "'");
         }
     }
 
@@ -191,14 +163,13 @@ TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
         std::string internalFormat = pInternalFormat->getStringValue();
         if (internalFormat == "normalized") {
             iformat = ImageInternalFormat::Normalized;
-            SG_LOG(SG_INPUT, SG_ALERT, "internal-format normalized '" << imageName << "'");
+            SG_LOG(SG_INPUT, SG_INFO, "internal-format normalized '" << imageName << "'");
         }
     }
 
-    const SGPropertyNode* pMipmapControl
-        = getEffectPropertyChild(effect, props, "mipmap-control");
-    MipMapTuple mipmapFunctions( AUTOMATIC, AUTOMATIC, AUTOMATIC, AUTOMATIC );
-    if ( pMipmapControl )
+    const SGPropertyNode* pMipmapControl = getEffectPropertyChild(effect, props, "mipmap-control");
+    MipMapTuple mipmapFunctions(AUTOMATIC, AUTOMATIC, AUTOMATIC, AUTOMATIC);
+    if (pMipmapControl)
         mipmapFunctions = makeMipMapTuple(effect, pMipmapControl, options);
 
     return TexTuple(absFileName, minFilter, magFilter, sWrap, tWrap, rWrap,
@@ -234,9 +205,8 @@ bool setAttrs(const TexTuple& attrs, Texture* tex,
     osg::ref_ptr<osg::Image> image;
     if (result.success())
         image = result.getImage();
-    if (image.valid())
-    {
-        image = computeMipmap( image.get(), std::get<7>(attrs) );
+    if (image.valid()) {
+        image = computeMipmap(image.get(), std::get<7>(attrs));
         tex->setImage(GL_FRONT_AND_BACK, image.get());
         int s = image->s();
         int t = image->t();
@@ -263,22 +233,23 @@ bool setAttrs(const TexTuple& attrs, Texture* tex,
     return true;
 }
 
-} // of anonymous namespace
+} // namespace
 
-template<typename T>
+template <typename T>
 class TexBuilder : public TextureBuilder
 {
 public:
     TexBuilder(const string& texType) : _type(texType) {}
     Texture* build(Effect* effect, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
+
 protected:
-    typedef map<TexTuple, observer_ptr<T> > TexMap;
+    typedef map<TexTuple, observer_ptr<T>> TexMap;
     TexMap texMap;
     const string _type;
 };
 
-template<typename T>
+template <typename T>
 Texture* TexBuilder<T>::build(Effect* effect, const SGPropertyNode* props,
                               const SGReaderWriterOptions* options)
 {
@@ -286,9 +257,8 @@ Texture* TexBuilder<T>::build(Effect* effect, const SGPropertyNode* props,
     typename TexMap::iterator itr = texMap.find(attrs);
 
     ref_ptr<T> tex;
-    if ((itr != texMap.end())&&
-        (itr->second.lock(tex)))
-    {
+    if ((itr != texMap.end()) &&
+        (itr->second.lock(tex))) {
         return tex.release();
     }
 
@@ -304,12 +274,11 @@ Texture* TexBuilder<T>::build(Effect* effect, const SGPropertyNode* props,
 }
 
 
-namespace
-{
+namespace {
 TextureBuilder::Registrar install1D("1d", new TexBuilder<Texture1D>("1d"));
 TextureBuilder::Registrar install2D("2d", new TexBuilder<Texture2D>("2d"));
 //TextureBuilder::Registrar install3D("3d", new TexBuilder<Texture3D>("3d"));
-}
+} // namespace
 
 class WhiteTextureBuilder : public TextureBuilder
 {
@@ -324,8 +293,7 @@ Texture* WhiteTextureBuilder::build(Effect* effect, const SGPropertyNode*,
     return StateAttributeFactory::instance()->getWhiteTexture();
 }
 
-namespace
-{
+namespace {
 TextureBuilder::Registrar installWhite("white", new WhiteTextureBuilder);
 }
 
@@ -337,13 +305,12 @@ public:
 };
 
 Texture* TransparentTextureBuilder::build(Effect* effect, const SGPropertyNode*,
-                                    const SGReaderWriterOptions* options)
+                                          const SGReaderWriterOptions* options)
 {
     return StateAttributeFactory::instance()->getTransparentTexture();
 }
 
-namespace
-{
+namespace {
 TextureBuilder::Registrar installTransparent("transparent",
                                              new TransparentTextureBuilder);
 }
@@ -361,8 +328,7 @@ Texture* NullNormalmapTextureBuilder::build(Effect* effect, const SGPropertyNode
     return StateAttributeFactory::instance()->getNullNormalmapTexture();
 }
 
-namespace
-{
+namespace {
 TextureBuilder::Registrar installNullNormalmap("null-normalmap",
                                                new NullNormalmapTextureBuilder);
 }
@@ -372,9 +338,6 @@ class NoiseBuilder : public TextureBuilder
 public:
     Texture* build(Effect* effect, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
-protected:
-    typedef map<int, ref_ptr<Texture3D> > NoiseMap;
-    NoiseMap _noises;
 };
 
 Texture* NoiseBuilder::build(Effect* effect, const SGPropertyNode* props,
@@ -389,25 +352,104 @@ Texture* NoiseBuilder::build(Effect* effect, const SGPropertyNode* props,
     return StateAttributeFactory::instance()->getNoiseTexture(texSize);
 }
 
-namespace
-{
+namespace {
 TextureBuilder::Registrar installNoise("noise", new NoiseBuilder);
 }
+
+class CloudNoiseBuilder : public TextureBuilder
+{
+public:
+    Texture* build(Effect* effect, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
+};
+
+Texture* CloudNoiseBuilder::build(Effect* effect, const SGPropertyNode* props,
+                                  const SGReaderWriterOptions* options)
+{
+    int texSize = 128;
+    const SGPropertyNode* sizeProp = getEffectPropertyChild(effect, props,
+                                                            "size");
+    if (sizeProp)
+        texSize = sizeProp->getValue<int>();
+
+    return StateAttributeFactory::instance()->getCloudNoiseTexture(texSize);
+}
+
+namespace {
+TextureBuilder::Registrar installCloudNoise("cloudnoise", new CloudNoiseBuilder);
+}
+
+class CloudDetailedVoxelSpaceBuilder : public TextureBuilder
+{
+public:
+    Texture* build(Effect* effect, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
+};
+
+Texture* CloudDetailedVoxelSpaceBuilder::build(Effect* effect, const SGPropertyNode* props,
+                                               const SGReaderWriterOptions* options)
+{
+    SG_LOG(SG_GENERAL, SG_INFO, "Getting Cloud Voxel Data - CloudDetailedVoxelSpaceBuilder");
+    return StateAttributeFactory::instance()->getDetailedCloudVoxelTexture();
+}
+
+namespace {
+TextureBuilder::Registrar installCloudDetailedVoxelSpace("clouddetailedvoxelspace", new CloudDetailedVoxelSpaceBuilder);
+}
+
+class CloudRoughVoxelSpaceBuilder : public TextureBuilder
+{
+public:
+    Texture* build(Effect* effect, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
+};
+
+Texture* CloudRoughVoxelSpaceBuilder::build(Effect* effect, const SGPropertyNode* props,
+                                            const SGReaderWriterOptions* options)
+{
+    SG_LOG(SG_GENERAL, SG_INFO, "Getting Cloud Voxel Data - CloudRoughVoxelSpaceBuilder");
+    return StateAttributeFactory::instance()->getRoughCloudVoxelTexture();
+}
+
+namespace {
+TextureBuilder::Registrar installCloudRoughVoxelSpace("cloudroughvoxelspace", new CloudRoughVoxelSpaceBuilder);
+}
+
+
+class CloudVoxelShadeSpaceBuilder : public TextureBuilder
+{
+public:
+    Texture* build(Effect* effect, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
+};
+
+Texture* CloudVoxelShadeSpaceBuilder::build(Effect* effect, const SGPropertyNode* props,
+                                            const SGReaderWriterOptions* options)
+{
+    SG_LOG(SG_GENERAL, SG_INFO, "Getting Cloud Voxel Data - CloudVoxelShadeSpaceBuilder");
+    return StateAttributeFactory::instance()->getCloudVoxelShadeTexture();
+}
+
+namespace {
+TextureBuilder::Registrar installCloudVoxelShadeSpace("cloudvoxelshadespace", new CloudVoxelShadeSpaceBuilder);
+}
+
 
 class LightSpriteBuilder : public TextureBuilder
 {
 public:
     Texture* build(Effect* effect, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
+
 protected:
     Mutex lightMutex;
     void setPointSpriteImage(unsigned char* data, unsigned log2resolution,
-                    unsigned charsPerPixel);
+                             unsigned charsPerPixel);
     osg::Image* getPointSpriteImage(int logResolution);
 };
 
 Texture* LightSpriteBuilder::build(Effect* effect, const SGPropertyNode* props,
-                             const SGReaderWriterOptions* options)
+                                   const SGReaderWriterOptions* options)
 {
     ScopedLock<Mutex> lock(lightMutex);
 
@@ -415,7 +457,7 @@ Texture* LightSpriteBuilder::build(Effect* effect, const SGPropertyNode* props,
     static osg::ref_ptr<osg::Texture2D> texture;
 
     if (texture.valid())
-      return texture.get();
+        return texture.get();
 
     texture = new osg::Texture2D;
     texture->setImage(getPointSpriteImage(6));
@@ -425,70 +467,68 @@ Texture* LightSpriteBuilder::build(Effect* effect, const SGPropertyNode* props,
     return texture.get();
 }
 
-void
-LightSpriteBuilder::setPointSpriteImage(unsigned char* data, unsigned log2resolution,
-                    unsigned charsPerPixel)
+void LightSpriteBuilder::setPointSpriteImage(unsigned char* data, unsigned log2resolution,
+                                             unsigned charsPerPixel)
 {
-  int env_tex_res = (1 << log2resolution);
-  for (int i = 0; i < env_tex_res; ++i) {
-    for (int j = 0; j < env_tex_res; ++j) {
-      int xi = 2*i + 1 - env_tex_res;
-      int yi = 2*j + 1 - env_tex_res;
-      if (xi < 0)
-        xi = -xi;
-      if (yi < 0)
-        yi = -yi;
+    int env_tex_res = (1 << log2resolution);
+    for (int i = 0; i < env_tex_res; ++i) {
+        for (int j = 0; j < env_tex_res; ++j) {
+            int xi = 2 * i + 1 - env_tex_res;
+            int yi = 2 * j + 1 - env_tex_res;
+            if (xi < 0)
+                xi = -xi;
+            if (yi < 0)
+                yi = -yi;
 
-      xi -= 1;
-      yi -= 1;
+            xi -= 1;
+            yi -= 1;
 
-      if (xi < 0)
-        xi = 0;
-      if (yi < 0)
-        yi = 0;
+            if (xi < 0)
+                xi = 0;
+            if (yi < 0)
+                yi = 0;
 
-      float x = 1.5*xi/(float)(env_tex_res);
-      float y = 1.5*yi/(float)(env_tex_res);
-      //       float x = 2*xi/(float)(env_tex_res);
-      //       float y = 2*yi/(float)(env_tex_res);
-      float dist = sqrt(x*x + y*y);
-      float bright = SGMiscf::clip(255*(1-dist), 0, 255);
-      for (unsigned l = 0; l < charsPerPixel; ++l)
-        data[charsPerPixel*(i*env_tex_res + j) + l] = (unsigned char)bright;
+            float x = 1.5 * xi / (float)(env_tex_res);
+            float y = 1.5 * yi / (float)(env_tex_res);
+            //       float x = 2*xi/(float)(env_tex_res);
+            //       float y = 2*yi/(float)(env_tex_res);
+            float dist = sqrt(x * x + y * y);
+            float bright = SGMiscf::clip(255 * (1 - dist), 0, 255);
+            for (unsigned l = 0; l < charsPerPixel; ++l)
+                data[charsPerPixel * (i * env_tex_res + j) + l] = (unsigned char)bright;
+        }
     }
-  }
 }
 
 osg::Image*
 LightSpriteBuilder::getPointSpriteImage(int logResolution)
 {
-  osg::Image* image = new osg::Image;
+    osg::Image* image = new osg::Image;
 
-  osg::Image::MipmapDataType mipmapOffsets;
-  unsigned off = 0;
-  for (int i = logResolution; 0 <= i; --i) {
-    unsigned res = 1 << i;
-    off += res*res;
-    mipmapOffsets.push_back(off);
-  }
+    osg::Image::MipmapDataType mipmapOffsets;
+    unsigned off = 0;
+    for (int i = logResolution; 0 <= i; --i) {
+        unsigned res = 1 << i;
+        off += res * res;
+        mipmapOffsets.push_back(off);
+    }
 
-  int env_tex_res = (1 << logResolution);
+    int env_tex_res = (1 << logResolution);
 
-  unsigned char* imageData = new unsigned char[off];
-  image->setImage(env_tex_res, env_tex_res, 1,
-                  GL_ALPHA, GL_ALPHA, GL_UNSIGNED_BYTE, imageData,
-                  osg::Image::USE_NEW_DELETE);
-  image->setMipmapLevels(mipmapOffsets);
+    unsigned char* imageData = new unsigned char[off];
+    image->setImage(env_tex_res, env_tex_res, 1,
+                    GL_ALPHA, GL_ALPHA, GL_UNSIGNED_BYTE, imageData,
+                    osg::Image::USE_NEW_DELETE);
+    image->setMipmapLevels(mipmapOffsets);
 
-  for (int k = logResolution; 0 <= k; --k) {
-    setPointSpriteImage(image->getMipmapData(logResolution - k), k, 1);
-  }
+    for (int k = logResolution; 0 <= k; --k) {
+        setPointSpriteImage(image->getMipmapData(logResolution - k), k, 1);
+    }
 
-  return image;
+    return image;
 }
 
-namespace
-{
+namespace {
 TextureBuilder::Registrar installLightSprite("light-sprite", new LightSpriteBuilder);
 }
 
@@ -526,9 +566,10 @@ class CubeMapBuilder : public TextureBuilder
 public:
     Texture* build(Effect* effect, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
+
 protected:
-    typedef map<CubeMapTuple, observer_ptr<TextureCubeMap> > CubeMap;
-    typedef map<string, observer_ptr<TextureCubeMap> > CrossCubeMap;
+    typedef map<CubeMapTuple, observer_ptr<TextureCubeMap>> CubeMap;
+    typedef map<string, observer_ptr<TextureCubeMap>> CrossCubeMap;
     CubeMap _cubemaps;
     CrossCubeMap _crossmaps;
 };
@@ -536,13 +577,12 @@ protected:
 // I use this until osg::CopyImage is fixed
 // This one assumes images are the same format and sizes are correct
 void copySubImage(const osg::Image* srcImage, int src_s, int src_t, int width, int height,
-                 osg::Image* destImage, int dest_s, int dest_t)
+                  osg::Image* destImage, int dest_s, int dest_t)
 {
-    for(int row = 0; row<height; ++row)
-    {
-        const unsigned char* srcData = srcImage->data(src_s, src_t+row, 0);
-        unsigned char* destData = destImage->data(dest_s, dest_t+row, 0);
-        memcpy(destData, srcData, (width*destImage->getPixelSizeInBits())/8);
+    for (int row = 0; row < height; ++row) {
+        const unsigned char* srcData = srcImage->data(src_s, src_t + row, 0);
+        unsigned char* destData = destImage->data(dest_s, dest_t + row, 0);
+        memcpy(destData, srcData, (width * destImage->getPixelSizeInBits()) / 8);
     }
 }
 
@@ -559,12 +599,12 @@ Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
     }
 
     // Using 6 separate images
-    if(texturesProp) {
+    if (texturesProp) {
         CubeMapTuple _tuple = makeCubeMapTuple(effect, texturesProp);
 
         CubeMap::iterator itr = _cubemaps.find(_tuple);
         ref_ptr<TextureCubeMap> cubeTexture;
-        
+
         if (itr != _cubemaps.end() && itr->second.lock(cubeTexture))
             return cubeTexture.release();
 
@@ -583,33 +623,33 @@ Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
         wOpts->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS);
         result = osgDB::readRefImageFile(std::get<0>(_tuple), options);
 
-        if(result.success()) {
+        if (result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_X, image);
         }
         result = osgDB::readRefImageFile(std::get<1>(_tuple), options);
-        if(result.success()) {
+        if (result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, image);
         }
         result = osgDB::readRefImageFile(std::get<2>(_tuple), options);
-        if(result.success()) {
+        if (result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, image);
         }
         result = osgDB::readRefImageFile(std::get<3>(_tuple), options);
 
-        if(result.success()) {
+        if (result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, image);
         }
         result = osgDB::readRefImageFile(std::get<4>(_tuple), options);
-        if(result.success()) {
+        if (result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, image);
         }
         result = osgDB::readRefImageFile(std::get<5>(_tuple), options);
-        if(result.success()) {
+        if (result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_Z, image);
         }
@@ -623,7 +663,7 @@ Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
     }
 
     // Using 1 cross image
-    else if(crossProp) {
+    else if (crossProp) {
         std::string texname = crossProp->getStringValue();
 
         // Try to find existing cube map
@@ -635,9 +675,9 @@ Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
         osgDB::ReaderWriter::ReadResult result;
         result = osgDB::readRefImageFile(texname, options);
 
-        if(result.success()) {
+        if (result.success()) {
             osg::Image* image = result.getImage();
-            image->flipVertical();   // Seems like the image coordinates are somewhat funny, flip to get better ones
+            image->flipVertical(); // Seems like the image coordinates are somewhat funny, flip to get better ones
 
             //cubeTexture->setResizeNonPowerOfTwoHint(false);
 
@@ -649,59 +689,57 @@ Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
             cubeTexture = new osg::TextureCubeMap;
 
             // Copy the 6 sub-images and push them
-            for(int n=0; n<6; n++) {
-
-                SG_LOG(SG_INPUT, SG_DEBUG, "Copying the " << n << "th sub-images and pushing it" );
+            for (int n = 0; n < 6; n++) {
+                SG_LOG(SG_INPUT, SG_DEBUG, "Copying the " << n << "th sub-images and pushing it");
 
                 osg::ref_ptr<osg::Image> subimg = new osg::Image();
-                subimg->allocateImage(width, height, depth, image->getPixelFormat(), image->getDataType());  // Copy attributes
+                subimg->allocateImage(width, height, depth, image->getPixelFormat(), image->getDataType()); // Copy attributes
 
                 // Choose correct image
-                switch(n) {
-                case 0:  // Front
+                switch (n) {
+                case 0: // Front
                     copySubImage(image, width, 0, width, height, subimg.get(), 0, 0);
                     cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, subimg.get());
                     cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
                     cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
                     cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
                     break;
-                case 1:  // Left
+                case 1: // Left
                     copySubImage(image, 0, height, width, height, subimg.get(), 0, 0);
                     cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, subimg.get());
                     cubeTexture->setWrap(osg::Texture2D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
                     cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
                     cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
                     break;
-                case 2:  // Top
+                case 2: // Top
                     copySubImage(image, width, height, width, height, subimg.get(), 0, 0);
                     cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, subimg.get());
                     cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
                     cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
                     cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
                     break;
-                case 3:  // Right
-                    copySubImage(image, width*2, height, width, height, subimg.get(), 0, 0);
+                case 3: // Right
+                    copySubImage(image, width * 2, height, width, height, subimg.get(), 0, 0);
                     cubeTexture->setImage(TextureCubeMap::POSITIVE_X, subimg.get());
                     cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
                     cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
                     cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
                     break;
-                case 4:  // Back
-                    copySubImage(image, width, height*2, width, height, subimg.get(), 0, 0);
+                case 4: // Back
+                    copySubImage(image, width, height * 2, width, height, subimg.get(), 0, 0);
                     cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, subimg.get());
                     cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
                     cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
                     cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
                     break;
-                case 5:  // Bottom
-                    copySubImage(image, width, height*3, width, height, subimg.get(), 0, 0);
+                case 5: // Bottom
+                    copySubImage(image, width, height * 3, width, height, subimg.get(), 0, 0);
                     cubeTexture->setImage(TextureCubeMap::NEGATIVE_Z, subimg.get());
                     cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
                     cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
                     cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
                     break;
                 };
-
             }
 
             if (itr == _crossmaps.end())
@@ -728,13 +766,13 @@ TextureBuilder::Registrar installCubeMap("cubemap", new CubeMapBuilder);
 
 typedef map<int, string> Tex2DArraySignature;
 
-Tex2DArraySignature makeTex2DArraySignature(Effect *effect,
-                                            const SGPropertyNode *props)
+Tex2DArraySignature makeTex2DArraySignature(Effect* effect,
+                                            const SGPropertyNode* props)
 {
     Tex2DArraySignature signature;
     const PropertyList images = props->getChildren("image");
-    for (const auto &image : images) {
-        const SGPropertyNode *real_prop = getEffectPropertyNode(effect, image);
+    for (const auto& image : images) {
+        const SGPropertyNode* real_prop = getEffectPropertyNode(effect, image);
         signature[image->getIndex()] = real_prop->getStringValue();
     }
     return signature;
@@ -745,6 +783,7 @@ class Texture2DArrayBuilder : public TextureBuilder
 public:
     Texture* build(Effect* effect, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
+
 protected:
     typedef map<Tex2DArraySignature, observer_ptr<Texture2DArray>> TexMap;
     TexMap texMap;
@@ -769,7 +808,7 @@ Texture* Texture2DArrayBuilder::build(Effect* effect,
     SGReaderWriterOptions::LoadOriginHint origLOH = wOpts->getLoadOriginHint();
     wOpts->setLoadOriginHint(SGReaderWriterOptions::LoadOriginHint::ORIGIN_EFFECTS);
 
-    for (const auto &pair : signature) {
+    for (const auto& pair : signature) {
         osg::ref_ptr<osg::Image> image;
         result = osgDB::readRefImageFile(pair.second, options);
         if (result.success())
@@ -778,8 +817,7 @@ Texture* Texture2DArrayBuilder::build(Effect* effect,
         if (image.valid()) {
             tex->setImage(pair.first, image);
         } else {
-            SG_LOG(SG_INPUT, SG_ALERT, "failed to load effect texture file '"
-                   << pair.second << "'");
+            SG_LOG(SG_INPUT, SG_ALERT, "failed to load effect texture file '" << pair.second << "'");
             simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::LoadingTexture,
                                    "osgDB::readRefImageFile failed:" + result.message(),
                                    SGPath::fromUtf8(pair.second));
@@ -808,8 +846,9 @@ class Texture3DBuilder : public TextureBuilder
 public:
     Texture* build(Effect* effect, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
+
 protected:
-    typedef map<TexTuple, observer_ptr<Texture3D> > TexMap;
+    typedef map<TexTuple, observer_ptr<Texture3D>> TexMap;
     TexMap texMap;
 };
 
@@ -821,9 +860,8 @@ Texture* Texture3DBuilder::build(Effect* effect,
     typename TexMap::iterator itr = texMap.find(attrs);
 
     ref_ptr<Texture3D> tex;
-    if ((itr != texMap.end())&&
-        (itr->second.lock(tex)))
-    {
+    if ((itr != texMap.end()) &&
+        (itr->second.lock(tex))) {
         return tex.release();
     }
 
@@ -846,8 +884,7 @@ Texture* Texture3DBuilder::build(Effect* effect,
     osg::ref_ptr<osg::Image> image;
     if (result.success())
         image = result.getImage();
-    if (image.valid())
-    {
+    if (image.valid()) {
         osg::ref_ptr<osg::Image> image3d = new osg::Image;
         int size = image->t();
         int depth = image->s() / image->t();
@@ -915,7 +952,7 @@ bool makeTextureParameters(SGPropertyNode* paramRoot, const StateSet* ss)
     string filter = findName(filterModes,
                              texture->getFilter(Texture::MIN_FILTER));
     string magFilter = findName(filterModes,
-                             texture->getFilter(Texture::MAG_FILTER));
+                                texture->getFilter(Texture::MAG_FILTER));
     string wrapS = findName(wrapModes, texture->getWrap(Texture::WRAP_S));
     string wrapT = findName(wrapModes, texture->getWrap(Texture::WRAP_T));
     string wrapR = findName(wrapModes, texture->getWrap(Texture::WRAP_R));
@@ -928,4 +965,4 @@ bool makeTextureParameters(SGPropertyNode* paramRoot, const StateSet* ss)
     return true;
 }
 
-}
+} // namespace simgear
