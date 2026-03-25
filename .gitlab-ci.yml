@@ -95,7 +95,7 @@ pre-commit:
     # Shows how much of the configurable cache size is used
     - ccache --show-stats
 
-linux-build-and-test:
+linux-build:
   extends: .ccache-variables
   image: ${CI_REGISTRY}/flightgear/flightgear-ci-docker/flightgear:latest
   stage: build
@@ -113,11 +113,6 @@ linux-build-and-test:
 
     - cmake --build $BUILD_DIR
     - cmake --build $BUILD_DIR --target install
-    # Now run the tests. Set LD_LIBRARY_PATH because some of them need OSG
-    # libraries.
-    - cd $BUILD_DIR
-    - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CI_PROJECT_DIR/osg-dist/lib
-    - ctest --output-on-failure --output-junit result.xml
   after_script:
     - !reference [.ccache-stats, after_script]
   needs:
@@ -126,14 +121,21 @@ linux-build-and-test:
       ref: $OSG_REF
       artifacts: true
   artifacts:
-    # Note that the artifacts in artifacts:reports are _always_ uploaded,
-    # even for failed jobs (special rule).
     when: on_success
     paths:
       - $PREFIX_DIR
-      - $BUILD_DIR/result.xml
-    reports:
-      junit: $BUILD_DIR/result.xml
+      # This is needed for the 'test' job.
+      - $BUILD_DIR
+    exclude:
+      - $BUILD_DIR/3rdparty/
+      - $BUILD_DIR/CMakeFiles/
+      - $BUILD_DIR/**/*.h
+      - $BUILD_DIR/**/*.hxx
+      - $BUILD_DIR/**/*.o
+      - $BUILD_DIR/**/*.a
+      - $BUILD_DIR/**/*.cmake
+      - $BUILD_DIR/.ninja_*
+      - $BUILD_DIR/build.ninja
   cache:
     key: linux-amd64-$BRANCH_REF
     paths:
@@ -270,6 +272,31 @@ macos-build:
     key: macos-universal-$BRANCH_REF
     paths:
       - $CCACHE_DIR
+
+# Run tests using the binaries from the 'linux-build' job.
+test:
+  image: ${CI_REGISTRY}/flightgear/flightgear-ci-docker/flightgear:latest
+  stage: test
+  needs:
+    # Needed so we have the OSG libs
+    - project: flightgear/openscenegraph
+      job: linux-build
+      ref: $OSG_REF
+      artifacts: true
+    - job: linux-build
+      artifacts: true
+  script:
+    - cd $BUILD_DIR
+    # Some tests need the OSG libraries.
+    - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CI_PROJECT_DIR/osg-dist/lib
+    - ctest --output-on-failure --output-junit result.xml
+  artifacts:
+    # Note that the artifacts in artifacts:reports are _always_ uploaded,
+    # even for failed jobs (special rule).
+    paths:
+      - $BUILD_DIR/result.xml
+    reports:
+      junit: $BUILD_DIR/result.xml
 
 # if we're building a merge request, build the corresponding
 # target branch of FlightGear. This assumes that target
