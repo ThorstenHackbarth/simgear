@@ -17,7 +17,8 @@ variables:
   WIN_FG_DIR: $CI_BUILDS_DIR\flightgear
   MAC_IMAGE: macos-14-xcode-15
   OSG_REF: next
-  BRANCH_REF: next
+  # cache:key is not allowed to contain '/' characters
+  BRANCH_REF_SLUG: next
   HOMEBREW_NO_AUTO_UPDATE: 1
   PRE_COMMIT_HOME: ${CI_PROJECT_DIR}/.cache/pre-commit
 
@@ -141,7 +142,7 @@ linux-build:
       - $BUILD_DIR/.ninja_*
       - $BUILD_DIR/build.ninja
   cache:
-    key: linux-amd64-$BRANCH_REF
+    key: linux-amd64-$BRANCH_REF_SLUG
     paths:
       - $CCACHE_DIR
 
@@ -177,7 +178,7 @@ linux-qt5-build:
     paths:
       - $PREFIX_DIR
   cache:
-    key: linux-amd64-qt5-$BRANCH_REF
+    key: linux-amd64-qt5-$BRANCH_REF_SLUG
     paths:
       - $CCACHE_DIR
 
@@ -229,7 +230,7 @@ windows-build:
     paths:
       - $PREFIX_DIR
   cache:
-    key: windows-amd64-$BRANCH_REF
+    key: windows-amd64-$BRANCH_REF_SLUG
     paths:
       - $CCACHE_DIR
 
@@ -273,7 +274,7 @@ macos-build:
     paths:
       - $PREFIX_DIR
   cache:
-    key: macos-universal-$BRANCH_REF
+    key: macos-universal-$BRANCH_REF_SLUG
     paths:
       - $CCACHE_DIR
 
