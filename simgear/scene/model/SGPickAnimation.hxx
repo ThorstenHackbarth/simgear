@@ -75,10 +75,10 @@ public:
 
 
 protected:
-    virtual osg::Group* createMainGroup(osg::Group* pr);
+    osg::Group* createMainGroup(osg::Group* pr) override;
     SGSharedPtr<SGCondition const> _condition;
 
-    virtual void setupCallbacks(SGSceneUserData* ud, osg::Group* parent);
+    void setupCallbacks(SGSceneUserData* ud, osg::Group* parent) override;
 
     bool isRepeatable() const override;
 
@@ -97,9 +97,9 @@ public:
 
 
 protected:
-    virtual osg::Group* createMainGroup(osg::Group* pr);
+    osg::Group* createMainGroup(osg::Group* pr) override;
 
-    virtual void setupCallbacks(SGSceneUserData* ud, osg::Group* parent);
+    void setupCallbacks(SGSceneUserData* ud, osg::Group* parent) override;
 
     bool isRepeatable() const override;
 
@@ -117,9 +117,9 @@ public:
 
 
 protected:
-    virtual osg::Group* createMainGroup(osg::Group* pr);
+    osg::Group* createMainGroup(osg::Group* pr) override;
 
-    virtual void setupCallbacks(SGSceneUserData* ud, osg::Group* parent);
+    void setupCallbacks(SGSceneUserData* ud, osg::Group* parent) override;
 
 private:
 };
