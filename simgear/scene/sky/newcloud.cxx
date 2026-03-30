@@ -348,8 +348,8 @@ int SGVoxelLayerCloud::addCloudToVoxelField(ImageRef voxelField, float voxelSize
     int cloudBaseIdx = (int)std::floor(cloudBaseM / voxelSize);
     int cloudTopIdx = (int)std::ceil(cloudTopM / voxelSize);
 
-    // Ensure we are generating some clouds
-    cloudTopIdx = std::max(cloudTopIdx, cloudBaseIdx + 1);
+    // Ensure we are generating some clouds, which requires 3 layers to create a valid density gradient
+    cloudTopIdx = std::max(cloudTopIdx, cloudBaseIdx + 2);
 
     float cloudCenterM = float(cloudTopIdx + cloudBaseIdx) * 0.5f * voxelSize;
 

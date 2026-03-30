@@ -15,6 +15,7 @@ class BlendFunc;
 class CullFace;
 class Depth;
 class ShadeModel;
+class Texture1D;
 class Texture2D;
 class Texture3D;
 class TexEnv;
@@ -44,7 +45,9 @@ public:
     osg::Texture3D* getDetailedCloudVoxelTexture() { return _detailedVoxelTexture.get(); }
     osg::Texture3D* getRoughCloudVoxelTexture() { return _roughVoxelTexture.get(); }
     osg::Texture3D* getCloudVoxelShadeTexture() { return _cloudVoxelShadeTexture.get(); }
+    osg::Texture1D* getCloudWindOffsetTexture() { return _cloudWindOffsetTexture.get(); }
     void setCloudVoxelImages(osg::ref_ptr<osg::Image> detailedVoxelImage, osg::ref_ptr<osg::Image> retailedVoxelImage, osg::ref_ptr<osg::Image> voxelShadeImage, bool repeat);
+    void setCloudWindOffsetImage(osg::ref_ptr<osg::Image> cloudWindOffsetImage);
 
     // cull front and back facing polygons
     osg::CullFace* getCullFaceFront() { return _cullFaceFront.get(); }
@@ -71,6 +74,7 @@ protected:
     osg::ref_ptr<osg::Texture3D> _detailedVoxelTexture;
     osg::ref_ptr<osg::Texture3D> _roughVoxelTexture;
     osg::ref_ptr<osg::Texture3D> _cloudVoxelShadeTexture;
+    osg::ref_ptr<osg::Texture1D> _cloudWindOffsetTexture;
     osg::ref_ptr<osg::CullFace> _cullFaceFront;
     osg::ref_ptr<osg::CullFace> _cullFaceBack;
     osg::ref_ptr<osg::Depth> _standardDepth;

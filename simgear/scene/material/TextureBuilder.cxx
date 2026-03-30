@@ -413,7 +413,6 @@ public:
 Texture* CloudDetailedVoxelSpaceBuilder::build(Effect* effect, const SGPropertyNode* props,
                                                const SGReaderWriterOptions* options)
 {
-    SG_LOG(SG_GENERAL, SG_INFO, "Getting Cloud Voxel Data - CloudDetailedVoxelSpaceBuilder");
     return StateAttributeFactory::instance()->getDetailedCloudVoxelTexture();
 }
 
@@ -431,7 +430,6 @@ public:
 Texture* CloudRoughVoxelSpaceBuilder::build(Effect* effect, const SGPropertyNode* props,
                                             const SGReaderWriterOptions* options)
 {
-    SG_LOG(SG_GENERAL, SG_INFO, "Getting Cloud Voxel Data - CloudRoughVoxelSpaceBuilder");
     return StateAttributeFactory::instance()->getRoughCloudVoxelTexture();
 }
 
@@ -450,12 +448,28 @@ public:
 Texture* CloudVoxelShadeSpaceBuilder::build(Effect* effect, const SGPropertyNode* props,
                                             const SGReaderWriterOptions* options)
 {
-    SG_LOG(SG_GENERAL, SG_INFO, "Getting Cloud Voxel Data - CloudVoxelShadeSpaceBuilder");
     return StateAttributeFactory::instance()->getCloudVoxelShadeTexture();
 }
 
 namespace {
 TextureBuilder::Registrar installCloudVoxelShadeSpace("cloudvoxelshadespace", new CloudVoxelShadeSpaceBuilder);
+}
+
+class CloudWindOffsetBuilder : public TextureBuilder
+{
+public:
+    Texture* build(Effect* effect, const SGPropertyNode*,
+                   const SGReaderWriterOptions* options);
+};
+
+Texture* CloudWindOffsetBuilder::build(Effect* effect, const SGPropertyNode* props,
+                                       const SGReaderWriterOptions* options)
+{
+    return StateAttributeFactory::instance()->getCloudWindOffsetTexture();
+}
+
+namespace {
+TextureBuilder::Registrar installCloudWindOffset("cloudwindoffset", new CloudWindOffsetBuilder);
 }
 
 

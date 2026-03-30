@@ -106,7 +106,6 @@ StateAttributeFactory::StateAttributeFactory()
     _detailedVoxelTexture->setBorderColor(osg::Vec4f(0.0f, 0.0f, 0.0f, 1.0f));
     _detailedVoxelTexture->setDataVariance(osg::Object::DYNAMIC);
 
-
     osg::ref_ptr<osg::Image> roughVoxelImage = new osg::Image;
     roughVoxelImage->allocateImage(1, 1, 1, GL_RGBA, GL_FLOAT);
     roughVoxelImage->setColor(osg::Vec4f(0.0f, 0.0f, 0.0f, 1.0f), 0, 0, 0);
@@ -139,6 +138,19 @@ StateAttributeFactory::StateAttributeFactory()
     _cloudVoxelShadeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture3D::CLAMP_TO_BORDER);
     _cloudVoxelShadeTexture->setBorderColor(osg::Vec4f(0.0f, 0.0f, 0.0f, 0.0f));
     _cloudVoxelShadeTexture->setDataVariance(osg::Object::DYNAMIC);
+
+    // Cloud Wind Offset Texture.  This image is used to offset the voxel space to account for the wind
+    osg::ref_ptr<osg::Image> cloudWindOffsetImage = new osg::Image;
+    cloudWindOffsetImage->allocateImage(1, 1, 1, GL_RGBA, GL_FLOAT);
+    cloudWindOffsetImage->setColor(osg::Vec4f(0.0f, 0.0f, 0.0f, 0.0f), 0, 0, 0);
+    cloudWindOffsetImage->setName("Initial cloudWindOffsetImage - no data");
+
+    _cloudWindOffsetTexture = new osg::Texture1D;
+    _cloudWindOffsetTexture->setImage(cloudWindOffsetImage);
+    _cloudWindOffsetTexture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
+    _cloudWindOffsetTexture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
+    _cloudWindOffsetTexture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+    _cloudWindOffsetTexture->setDataVariance(osg::Object::DYNAMIC);
 
     // Cull front facing polygons
     _cullFaceFront = new CullFace(CullFace::FRONT);
@@ -270,6 +282,7 @@ void StateAttributeFactory::setCloudVoxelImages(osg::ref_ptr<osg::Image> detaile
     _detailedVoxelTexture->setInternalFormat(GL_RGBA32F);
     _detailedVoxelTexture->setImage(detailedVoxelImage);
     if (repeat) {
+        // Repeating texture is set to mirrored so that the SDF is correct across UV boundaries
         _detailedVoxelTexture->setWrap(osg::Texture::WRAP_S, osg::Texture::MIRROR);
         _detailedVoxelTexture->setWrap(osg::Texture::WRAP_T, osg::Texture::MIRROR);
         _detailedVoxelTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture3D::CLAMP_TO_BORDER);
@@ -324,6 +337,16 @@ void StateAttributeFactory::removeBufferTexture(const std::string& name)
 {
     std::lock_guard<std::mutex> lock(StateAttributeFactory::_buffer_mutex); // Lock the _buffers for this scope
     _buffers.erase(name);
+}
+
+void StateAttributeFactory::setCloudWindOffsetImage(osg::ref_ptr<osg::Image> cloudWindOffsetImage)
+{
+    if (cloudWindOffsetImage) {
+        _cloudWindOffsetTexture->setTextureWidth(cloudWindOffsetImage->s());
+        _cloudWindOffsetTexture->setInternalFormat(GL_RGBA32F);
+        _cloudWindOffsetTexture->setImage(cloudWindOffsetImage);
+        _cloudWindOffsetTexture->dirtyTextureObject();
+    }
 }
 
 // anchor the destructor into this file, to avoid ref_ptr warnings
