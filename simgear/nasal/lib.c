@@ -71,13 +71,20 @@ static naRef f_vec_remove(naContext c, naRef me, int argc, naRef* args)
 
 static naRef f_vec_removeat(naContext c, naRef me, int argc, naRef* args)
 {
-    if (argc < 2 || !naIsVector(args[0])) ARGERR();
+    if (argc < 2 || !naIsVector(args[0]) || naIsNil(args[1])) {
+        ARGERR();
+    }
+
     naRef vec = args[0];
     int index = (int)naNumValue(args[1]).num;
-    if (naIsNil(vec)) ARGERR();
+    if (naIsNil(vec)) {
+        ARGERR();
+    }
 
     int len = naVec_size(vec);
-    if ((index < 0) || (index >= len)) ARGERR();
+    if ((index < 0) || (index >= len)) {
+        ARGERR();
+    }
 
     return naVec_remove(vec, index);
 }
