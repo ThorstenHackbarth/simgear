@@ -25,7 +25,7 @@
 #include <sstream>
 #include <typeinfo>
 #include <shared_mutex>
-		
+
 #include <simgear/compiler.h>
 #if PROPS_STANDALONE
 # ifndef SG_LOG
@@ -202,7 +202,7 @@ public:
      */
     virtual simgear::props::Type getType() const = 0;
     virtual ~SGRaw() {}
-    
+
     /**
      * Create a new deep copy of this raw value.
      *
@@ -218,7 +218,7 @@ public:
 class SGRawExtended : public SGRaw
 {
 public:
-    /**    
+    /**
      * Make an SGRawValueContainer from the SGRawValue.
      *
      * This is a virtual function of SGRawExtended so that
@@ -565,7 +565,7 @@ public:
     {
         return new SGRawValueFunctionsIndexed(_index, _getter, _setter);
     }
-  
+
 private:
     int _index;
     getter_t _getter;
@@ -617,7 +617,7 @@ public:
     {
         return new SGRawValueMethods(_obj, _getter, _setter);
     }
-  
+
 private:
     C &_obj;
     getter_t _getter;
@@ -673,7 +673,7 @@ public:
     {
       return new SGStringValueMethods(_obj, _getter, _setter);
     }
-  
+
 private:
     C &_obj;
     getter_t _getter;
@@ -724,7 +724,7 @@ public:
     {
         return new SGRawValueMethodsIndexed(_obj, _index, _getter, _setter);
     }
-  
+
 private:
     C &_obj;
     int _index;
@@ -887,13 +887,13 @@ public:
         PRESERVE = 128,
         PROTECTED = 1 << 8,
         LISTENER_SAFE = 1 << 9,       // it's safe to listen to this property, even if it's tied
-        VALUE_CHANGED_UP = 1 << 10,   // If true, value changes are propogated to parent's listeners.
+        VALUE_CHANGED_UP = 1 << 10,   // If true, value changes are propagated to parent's listeners.
         VALUE_CHANGED_DOWN = 1 << 11, // If true, sets new child nodes' VALUE_CHANGED_DOWN and VALUE_CHANGED_UP.
-        
+
         /// advisory: treat string value as a translation key. This is not handled by the property code,
         /// but exists to allow syntactically convenient marking of some properties in XMLs as 'to be
         /// translated.
-        TRANSLATE = 1 << 12,           
+        TRANSLATE = 1 << 12,
 
         // beware: if you add another attribute here,
         // also update value of "LAST_USED_ATTRIBUTE".
@@ -1000,8 +1000,9 @@ public:
     /** Alias this node's leaf value to another's. */
     bool alias(SGPropertyNode* target, bool withListener);
 
-    /** Alias this node's leaf value to another's by relative path. */
+    /** Alias this node's leaf value to another one's by relative path. */
     bool alias(const char* path, bool withListener);
+    /** Alias this node's leaf value to another one's by relative path. */
     bool alias(const std::string& path, bool withListener);
 
     /** Remove any alias for this node. */
@@ -1074,7 +1075,7 @@ public:
     simgear::props::Type getType() const;
 
     /** Get a value of this node. We return <defaultValue> if node is not
-    readable or not the requested (or comaptible) type and its string value is
+    readable or not the requested (or compatible) type and its string value is
     not convertible to the requested type. */
     bool getBoolValue(bool defaultValue=false) const;
     int getIntValue(int defaultValue=0) const;
@@ -1363,14 +1364,14 @@ private:
     // very internal path parsing function
     template<typename SplitItr>
     friend SGPropertyNode* find_node_aux(SGPropertyNode* current, SplitItr& itr, bool create, int last_index);
-    
+
     // Template-style getValue when lock is already held.
     template<typename T>
     T getValue(
             SGPropertyLock& lock,
             typename std::enable_if<simgear::props::PropertyTraits<T>::Internal>::type* dummy = 0
             ) const;
-    
+
     // For SGVec3d and SGVec4d.
     template<typename T>
     T getValue(
@@ -1386,17 +1387,17 @@ private:
     friend SGPropertyLock;
     friend SGPropertyLockShared;
     friend SGPropertyLockExclusive;
-    
+
     // Misc implementation access.
     friend SGPropertyNodeImpl;
 
     // Class data.
     //
-    
+
     // Support for thread-safety.
     //
     mutable std::shared_mutex _mutex;
-    
+
     // Core data.
     //
     const int _index;
@@ -1410,7 +1411,7 @@ private:
     /**
      * @brief when a property is an alias, we record information about it in
      * this struct
-     * 
+     *
      */
     struct AliasData {
         AliasData(SGPropertyNode* t) : target(t) {}
@@ -1664,12 +1665,12 @@ public:
     {
         _property->removeChangeListener(this);
     }
-    
+
     void valueChanged(SGPropertyNode* node)
     {
         (_obj->*_callback)(node);
     }
-    
+
 private:
     T* _obj;
     void (T::*_callback)(SGPropertyNode*);

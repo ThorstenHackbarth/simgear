@@ -2198,9 +2198,7 @@ SGPropertyNode::SGPropertyNode()
 }
 
 
-/**
- * Copy constructor.
- */
+// Copy constructor
 SGPropertyNode::SGPropertyNode(const SGPropertyNode& node)
     : //SGWeakReferenced(node),
       SGReferenced(node),
@@ -2267,9 +2265,7 @@ SGPropertyNode::SGPropertyNode(const SGPropertyNode& node)
 }
 
 
-/**
- * Convenience constructor.
- */
+// Convenience constructor
 template <typename Itr>
 SGPropertyNode::SGPropertyNode(Itr begin, Itr end,
                                int index,
@@ -2306,9 +2302,7 @@ SGPropertyNode::SGPropertyNode(const std::string& name,
       throw std::invalid_argument(std::string{"plain name expected instead of '"} + _name + '\'');
 }
 
-/**
- * Destructor.
- */
+// Destructor
 SGPropertyNode::~SGPropertyNode ()
 {
   // clean up this from nodeOrigins map
@@ -2327,9 +2321,7 @@ SGPropertyNode::~SGPropertyNode ()
 }
 
 
-/**
- * Alias to another node.
- */
+// Alias to another node.
 bool SGPropertyNode::alias(SGPropertyNode* target, bool withListener)
 {
   SGPropertyLockExclusive exclusive(*this);
@@ -2386,9 +2378,7 @@ bool SGPropertyNode::alias(SGPropertyNode* target, bool withListener)
 }
 
 
-/**
- * Alias to another node by path.
- */
+// Alias to another node by path.
 bool SGPropertyNode::alias(const char* path, bool withListener)
 {
   return alias(getNode(path, true), withListener);
@@ -2399,9 +2389,7 @@ bool SGPropertyNode::alias(const std::string& path, bool withListener)
   return alias(getNode(path, true), withListener);
 }
 
-/**
- * Remove an alias.
- */
+// Remove an alias.
 bool
 SGPropertyNode::unalias ()
 {
@@ -2421,9 +2409,7 @@ bool SGPropertyNode::isAlias () const
     return _type == simgear::props::ALIAS;
 }
 
-/**
- * Get the target of an alias.
- */
+// Get the target of an alias.
 SGPropertyNode *
 SGPropertyNode::getAliasTarget ()
 {
@@ -2439,9 +2425,7 @@ SGPropertyNode::getAliasTarget () const
   return (_type == props::ALIAS ? _value.alias->target.get() : nullptr);
 }
 
-/**
- * create a non-const child by name after the last node with the same name.
- */
+// Create a non-const child by name after the last node with the same name.
 SGPropertyNode *
 SGPropertyNode::addChild(const char * name, int min_index, bool append)
 {
@@ -2464,9 +2448,7 @@ SGPropertyNode::addChild(const std::string& name, int min_index, bool append)
     return addChild(name.c_str(), min_index, append);
 }
 
-/**
- * Create multiple children with unused indices
- */
+// Create multiple children with unused indices.
 simgear::PropertyList
 SGPropertyNode::addChildren( const std::string& name,
                              size_t count,
@@ -2512,9 +2494,7 @@ SGPropertyNode::addChildren( const std::string& name,
   return nodes;
 }
 
-/**
- * Get a non-const child by position.
- */
+// Get a non-const child by position.
 SGPropertyNode *
 SGPropertyNode::getChild (int position)
 {
@@ -2526,9 +2506,7 @@ SGPropertyNode::getChild (int position)
 }
 
 
-/**
- * Get a const child by position.
- */
+// Get a const child by position.
 const SGPropertyNode *
 SGPropertyNode::getChild (int position) const
 {
@@ -2595,10 +2573,7 @@ bool SGPropertyNode::hasChild (const std::string& name, int index) const
     return getChild(name, index) != nullptr;
 }
 
-/**
- * Get a non-const child by name and index, creating if necessary.
- */
-
+// Get a non-const child by name and index, creating if necessary.
 SGPropertyNode *
 SGPropertyNode::getChild (const char * name, int index, bool create)
 {
@@ -2659,9 +2634,7 @@ SGPropertyNode::getChild (const std::string& name, int index, bool create)
 #endif
 }
 
-/**
- * Get a const child by name and index.
- */
+// Get a const child by name and index.
 const SGPropertyNode *
 SGPropertyNode::getChild (const char * name, int index) const
 {
@@ -2734,9 +2707,7 @@ SGPropertyNode_ptr SGPropertyNode::removeChild(int pos)
   return child;
 }
 
-/**
- * Remove a child node
- */
+// Remove a child node.
 SGPropertyNode_ptr
 SGPropertyNode::removeChild(const char * name, int index)
 {
@@ -2757,9 +2728,7 @@ SGPropertyNode_ptr SGPropertyNode::removeChild(const std::string& name, int inde
 }
 
 
-/**
-  * Remove all children with the specified name.
-  */
+// Remove all children with the specified name.
 PropertyList
 SGPropertyNode::removeChildren(const std::string& name)
 {
@@ -3328,10 +3297,7 @@ const SGPropertyNode * SGPropertyNode::getNode (const std::string& relative_path
 // Convenience methods using relative paths.
 ////////////////////////////////////////////////////////////////////////
 
-
-/**
- * Test whether another node has a value attached.
- */
+// Test whether another node has a value attached.
 bool
 SGPropertyNode::hasValue (const char * relative_path) const
 {
@@ -3344,9 +3310,7 @@ bool SGPropertyNode::hasValue (const std::string& relative_path) const
     return hasValue(relative_path.c_str());
 }
 
-/**
- * Get the value type for another node.
- */
+// Get the value type for another node.
 props::Type
 SGPropertyNode::getType (const char * relative_path) const
 {
@@ -3359,9 +3323,7 @@ simgear::props::Type SGPropertyNode::getType (const std::string& relative_path) 
   return getType(relative_path.c_str());
 }
 
-/**
- * Get a bool value for another node.
- */
+// Get a bool value for another node.
 bool
 SGPropertyNode::getBoolValue (const char * relative_path, bool defaultValue) const
 {
@@ -3374,9 +3336,7 @@ bool SGPropertyNode::getBoolValue (const std::string& relative_path, bool defaul
     return getBoolValue(relative_path.c_str(), defaultValue);
 }
 
-/**
- * Get an int value for another node.
- */
+// Get an int value for another node.
 int
 SGPropertyNode::getIntValue (const char * relative_path, int defaultValue) const
 {
@@ -3389,9 +3349,7 @@ int SGPropertyNode::getIntValue (const std::string& relative_path, int defaultVa
     return getIntValue(relative_path.c_str(), defaultValue);
 }
 
-/**
- * Get a long value for another node.
- */
+// Get a long value for another node.
 long
 SGPropertyNode::getLongValue (const char * relative_path,
 			      long defaultValue) const
@@ -3405,9 +3363,7 @@ long SGPropertyNode::getLongValue (const std::string& relative_path, long defaul
     return getLongValue(relative_path.c_str(), defaultValue);
 }
 
-/**
- * Get a float value for another node.
- */
+// Get a float value for another node.
 float
 SGPropertyNode::getFloatValue (const char * relative_path,
 			       float defaultValue) const
@@ -3421,9 +3377,7 @@ float SGPropertyNode::getFloatValue (const std::string& relative_path, float def
     return getFloatValue(relative_path.c_str(), defaultValue);
 }
 
-/**
- * Get a double value for another node.
- */
+// Get a double value for another node.
 double
 SGPropertyNode::getDoubleValue (const char * relative_path,
 				double defaultValue) const
@@ -3437,9 +3391,7 @@ double SGPropertyNode::getDoubleValue (const std::string& relative_path, double 
     return getDoubleValue(relative_path.c_str(), defaultValue);
 }
 
-/**
- * Get a string value for another node.
- */
+// Get a string value for another node.
 std::string
 SGPropertyNode::getStringValue (const char * relative_path,
 				const char * defaultValue) const
@@ -3469,9 +3421,7 @@ SGPropertyNode::getStringValue(const std::string& relative_path,
     return getStringValue(relative_path, defaultValue.c_str());
 }
 
-/**
- * Set a bool value for another node.
- */
+// Set a bool value for another node.
 bool
 SGPropertyNode::setBoolValue (const char * relative_path, bool value)
 {
@@ -3483,9 +3433,7 @@ bool SGPropertyNode::setBoolValue (const std::string& relative_path, bool value)
     return setBoolValue(relative_path.c_str(), value);
 }
 
-/**
- * Set an int value for another node.
- */
+// Set an int value for another node.
 bool
 SGPropertyNode::setIntValue (const char * relative_path, int value)
 {
@@ -3497,9 +3445,7 @@ bool SGPropertyNode::setIntValue (const std::string& relative_path, int value)
     return setIntValue(relative_path.c_str(), value);
 }
 
-/**
- * Set a long value for another node.
- */
+// Set a long value for another node.
 bool
 SGPropertyNode::setLongValue (const char * relative_path, long value)
 {
@@ -3511,9 +3457,7 @@ bool SGPropertyNode::setLongValue (const std::string& relative_path, long value)
     return setLongValue(relative_path.c_str(), value);
 }
 
-/**
- * Set a float value for another node.
- */
+// Set a float value for another node.
 bool
 SGPropertyNode::setFloatValue (const char * relative_path, float value)
 {
@@ -3525,9 +3469,7 @@ bool SGPropertyNode::setFloatValue (const std::string& relative_path, float valu
     return setFloatValue(relative_path.c_str(), value);
 }
 
-/**
- * Set a double value for another node.
- */
+// Set a double value for another node.
 bool
 SGPropertyNode::setDoubleValue (const char * relative_path, double value)
 {
@@ -3539,9 +3481,7 @@ bool SGPropertyNode::setDoubleValue (const std::string& relative_path, double va
     return setDoubleValue(relative_path.c_str(), value);
 }
 
-/**
- * Set a string value for another node.
- */
+// Set a string value for another node.
 bool
 SGPropertyNode::setStringValue (const char * relative_path, const char * value)
 {
@@ -3563,9 +3503,7 @@ bool SGPropertyNode::setStringValue (const std::string& relative_path, const std
     return setStringValue(relative_path.c_str(), value.c_str());
 }
 
-/**
- * Set an unknown value for another node.
- */
+// Set an unknown value for another node.
 bool
 SGPropertyNode::setUnspecifiedValue (const char * relative_path, const char * value)
 {
@@ -3573,9 +3511,7 @@ SGPropertyNode::setUnspecifiedValue (const char * relative_path, const char * va
 }
 
 
-/**
- * Test whether another node is tied.
- */
+// Test whether another node is tied.
 bool
 SGPropertyNode::isTied (const char * relative_path) const
 {
@@ -3588,9 +3524,7 @@ bool SGPropertyNode::isTied (const std::string& relative_path) const
     return isTied(relative_path.c_str());
 }
 
-/**
- * Tie a node reached by a relative path, creating it if necessary.
- */
+// Tie a node reached by a relative path, creating it if necessary.
 bool
 SGPropertyNode::tie(
         const char* relative_path,
@@ -3606,9 +3540,7 @@ bool SGPropertyNode::tie (const std::string& relative_path, const SGRawValue<boo
     return tie(relative_path.c_str(), rawValue, useDefault);
 }
 
-/**
- * Tie a node reached by a relative path, creating it if necessary.
- */
+// Tie a node reached by a relative path, creating it if necessary.
 bool
 SGPropertyNode::tie(
         const char * relative_path,
@@ -3624,9 +3556,7 @@ bool SGPropertyNode::tie (const std::string& relative_path, const SGRawValue<int
     return tie(relative_path.c_str(), rawValue, useDefault);
 }
 
-/**
- * Tie a node reached by a relative path, creating it if necessary.
- */
+// Tie a node reached by a relative path, creating it if necessary.
 bool
 SGPropertyNode::tie(
         const char * relative_path,
@@ -3642,9 +3572,7 @@ bool SGPropertyNode::tie (const std::string& relative_path, const SGRawValue<lon
     return tie(relative_path.c_str(), rawValue, useDefault);
 }
 
-/**
- * Tie a node reached by a relative path, creating it if necessary.
- */
+// Tie a node reached by a relative path, creating it if necessary.
 bool
 SGPropertyNode::tie(
         const char* relative_path,
@@ -3660,9 +3588,7 @@ bool SGPropertyNode::tie (const std::string& relative_path, const SGRawValue<flo
     return tie(relative_path.c_str(), rawValue, useDefault);
 }
 
-/**
- * Tie a node reached by a relative path, creating it if necessary.
- */
+// Tie a node reached by a relative path, creating it if necessary.
 bool
 SGPropertyNode::tie(
         const char* relative_path,
@@ -3678,9 +3604,7 @@ bool SGPropertyNode::tie (const std::string& relative_path, const SGRawValue<dou
     return tie(relative_path.c_str(), rawValue, useDefault);
 }
 
-/**
- * Tie a node reached by a relative path, creating it if necessary.
- */
+// Tie a node reached by a relative path, creating it if necessary.
 bool
 SGPropertyNode::tie(
         const char * relative_path,
@@ -3696,9 +3620,7 @@ bool SGPropertyNode::tie (const std::string& relative_path, const SGRawValue<con
     return tie(relative_path.c_str(), rawValue, useDefault);
 }
 
-/**
- * Attempt to untie another node reached by a relative path.
- */
+// Attempt to untie another node reached by a relative path.
 bool
 SGPropertyNode::untie(const char * relative_path)
 {
