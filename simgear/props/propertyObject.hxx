@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // SPDX-FileCopyrightText: 2010 James Turner <james@flightgear.com>
 
-#ifndef SG_PROPERTY_OBJECT
-#define SG_PROPERTY_OBJECT
+#pragma once
 
 #include <simgear/props/props.hxx>
 
@@ -13,15 +12,15 @@ class PropertyObjectBase
 {
 public:
   static void setDefaultRoot(SGPropertyNode* aRoot);
-  
+
   PropertyObjectBase();
-  
-  PropertyObjectBase(const PropertyObjectBase& aOther);
-    
+
+  PropertyObjectBase(const PropertyObjectBase& other);
+
   PropertyObjectBase(const char* aChild);
-  
+
   PropertyObjectBase(SGPropertyNode* aNode, const char* aChild = NULL);
-  
+
   SGPropertyNode* node(bool aCreate) const;
 
   /**
@@ -29,6 +28,7 @@ public:
    * be resolved.
    */
   SGPropertyNode* getOrThrow() const;
+
 protected:
   mutable const char* _path;
 
@@ -36,7 +36,7 @@ protected:
    * Important - if _path is NULL, this is the actual prop.
    * If path is non-NULL, this is the parent which path should be resolved
    * against (or NULL, if _path is absolute). Use node() instead of accessing
-   * this directly, and the above is handled automatically. 
+   * this directly, and the above is handled automatically.
    */
   mutable SGPropertyNode* _prop;
 };
@@ -47,26 +47,24 @@ class PropertyObject : PropertyObjectBase
 public:
   PropertyObject()
   {}
-  
+
   /**
    * Create from path relative to the default root, and option default value
    */
   explicit PropertyObject(const char* aChild) :
     PropertyObjectBase(aChild)
   { }
-  
+
   /**
    * Create from a node, with optional relative path
    */
   explicit PropertyObject(SGPropertyNode* aNode, const char* aChild = NULL) :
     PropertyObjectBase(aNode, aChild)
   {
-  
   }
-  
+
 // copy-constructor
-  PropertyObject(const PropertyObject<T>& aOther) :
-    PropertyObjectBase(aOther)
+  PropertyObject(const PropertyObject<T>& other) : PropertyObjectBase(other)
   {
   }
 
@@ -77,7 +75,7 @@ public:
     p = aValue;
     return p;
   }
-  
+
   static PropertyObject<T> create(SGPropertyNode_ptr aNode)
   {
     PropertyObject<T> p(aNode);
@@ -97,7 +95,7 @@ public:
     p = aValue;
     return p;
   }
-  
+
 // conversion operators
   operator T () const
   {
@@ -140,6 +138,16 @@ public:
   {
     return PropertyObjectBase::node(aCreate);
   }
+
+  PropertyObject<T>& setDefault(const T& defaultValue)
+  {
+      SGPropertyNode* n = node(true);
+      if (n && !n->hasValue()) {
+          n->setValue<T>(defaultValue);
+      }
+
+      return *this;
+  }
 }; // of template PropertyObject
 
 
@@ -153,19 +161,17 @@ public:
 
   explicit PropertyObject(const char* aChild) :
     PropertyObjectBase(aChild)
-  { }
-  
+  {
+  }
 
-  
+
   explicit PropertyObject(SGPropertyNode* aNode, const char* aChild = NULL) :
     PropertyObjectBase(aNode, aChild)
   {
-  
   }
-  
+
 // copy-constructor
-  PropertyObject(const PropertyObject<std::string>& aOther) :
-    PropertyObjectBase(aOther)
+  PropertyObject(const PropertyObject<std::string>& other) : PropertyObjectBase(other)
   {
   }
 
@@ -176,7 +182,7 @@ public:
     p = aValue;
     return p;
   }
-  
+
   static PropertyObject<std::string> create(SGPropertyNode_ptr aNode)
   {
     PropertyObject<std::string> p(aNode);
@@ -196,51 +202,62 @@ public:
     p = aValue;
     return p;
   }
-  
-  
+
+
   operator std::string () const
   {
     return getOrThrow()->getStringValue();
   }
-  
+
   const char* operator=(const char* aValue)
   {
     SGPropertyNode* n = PropertyObjectBase::node(true);
     if (!n) {
       return aValue;
     }
-    
+
     n->setStringValue(aValue);
     return aValue;
   }
-  
+
   std::string operator=(const std::string& aValue)
   {
     SGPropertyNode* n = PropertyObjectBase::node(true);
     if (!n) {
       return aValue;
     }
-    
+
     n->setStringValue(aValue);
     return aValue;
   }
-  
+
   bool operator==(const char* value) const
   {
     std::string s(*this);
-    return (s == value);    
+    return (s == value);
   }
 
   bool operator==(const std::string& value) const
   {
     std::string s(*this);
-    return (s == value);    
+    return (s == value);
   }
 
   SGPropertyNode* node(bool aCreate = false) const
   {
     return PropertyObjectBase::node(aCreate);
   }
+
+  PropertyObject<std::string>& setDefault(const std::string& defaultValue)
+  {
+      SGPropertyNode* n = node(true);
+      if (n && !n->hasValue()) {
+          n->setStringValue(defaultValue);
+      }
+
+      return *this;
+  }
+
 private:
 };
 
@@ -250,5 +267,3 @@ typedef simgear::PropertyObject<double> SGPropObjDouble;
 typedef simgear::PropertyObject<bool> SGPropObjBool;
 typedef simgear::PropertyObject<std::string> SGPropObjString;
 typedef simgear::PropertyObject<long> SGPropObjInt;
-
-#endif

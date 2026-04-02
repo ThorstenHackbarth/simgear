@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2010 James Turner <james@flightgear.com>
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #ifdef NDEBUG
-// Always enable DEBUG mode in test application, otherwise "assert" test
-// statements have no effect and don't actually test anything (catch 17 ;-) ).
-#undef NDEBUG
+    // Always enable DEBUG mode in test application, otherwise "assert" test
+    // statements have no effect and don't actually test anything (catch 17 ;-) ).
+    #undef NDEBUG
 #endif
 
 #include <simgear/compiler.h>
@@ -51,12 +50,34 @@ bool testBasic()
   double ff(aFoo);
   assert(ff == 12.0); // comparison with literal
   if (ff != 12.0) cout << "Error: a/foo != 12!" << endl;
-  
+
   const float fff(12.0f);
-  assert(fff == aFoo); // comparion with float value
+  assert(fff == aFoo); // comparison with float value
   if (fff != aFoo) cout << "Error: 12 != a/foo" << endl;
 
   return true;
+}
+
+void testDefaulting()
+{
+    testRoot->setIntValue("default/bar", 1234);
+    testRoot->setStringValue("default/alice", "aaaa");
+
+    PropertyObject<int> bar("default/bar");
+    bar.setDefault(5678);
+    assert(bar == 1234);
+
+    PropertyObject<int> foo("default/foo");
+    foo.setDefault(5678);
+    assert(foo == 5678);
+
+    PropertyObject<std::string> alice("default/alice");
+    alice.setDefault("xxxx");
+    assert(alice == "aaaa");
+
+    PropertyObject<std::string> bob("default/bob");
+    bob.setDefault("xxxx");
+    assert(bob == "xxxx");
 }
 
 void testRelative()
@@ -141,10 +162,10 @@ void testSTLContainer()
   std::vector<PropertyObject<int> > vec;
 // enlarging the vec causes the copy-constructor to be called,
 // when the storage is re-sized
-  vec.push_back(PropertyObject<int>("a/thing[0]")); 
-  vec.push_back(PropertyObject<int>("a/thing[1]")); 
-  vec.push_back(PropertyObject<int>("a/thing[2]")); 
-  vec.push_back(PropertyObject<int>("a/thing[3]")); 
+  vec.push_back(PropertyObject<int>("a/thing[0]"));
+  vec.push_back(PropertyObject<int>("a/thing[1]"));
+  vec.push_back(PropertyObject<int>("a/thing[2]"));
+  vec.push_back(PropertyObject<int>("a/thing[3]"));
 
   vec[0] = 1234;
   vec[1] = 2345;
@@ -191,11 +212,11 @@ void testCreate()
   PropertyObject<bool> a = PropertyObject<bool>::create("a/lemon", true);
   assert(a == true);
   assert(testRoot->getBoolValue("a/lemon") == true);
-  
+
 
   PropertyObject<int> b(PropertyObject<int>::create("a/pear", 3142));
   assert(b == 3142);
-  
+
   PropertyObject<std::string> c(PropertyObject<std::string>::create("a/lime", "fofofo"));
   assert(c == "fofofo");
 
@@ -203,7 +224,7 @@ void testCreate()
   SGPropertyNode* n = testRoot->getNode("b", true);
   PropertyObject<std::string> d(PropertyObject<std::string>::create(n, "grape", "xyz"));
   assert(testRoot->getStringValue("b/grape") == "xyz");
-  
+
   SG_UNUSED(d);
 }
 
@@ -248,8 +269,8 @@ int main(int argc, char* argv[])
 
 // basic reading / setting
 	if (!testBasic()) {
-		return EXIT_FAILURE;		
-	}
+        return EXIT_FAILURE;
+    }
 
   testRelative();
   testReadMissing();
@@ -259,7 +280,7 @@ int main(int argc, char* argv[])
   testCreate();
   testDeclare();
   testDeclareThenDefine();
+  testDefaulting();
 
   return EXIT_SUCCESS;
 }
-
