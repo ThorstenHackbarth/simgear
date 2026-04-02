@@ -28,9 +28,8 @@ public:
     unsigned int m_maxLength;
 };
 
-BufferedLogCallback::BufferedLogCallback(sgDebugClass c, sgDebugPriority p) :
-	simgear::LogCallback(c,p),
-    d(new BufferedLogCallbackPrivate)
+BufferedLogCallback::BufferedLogCallback(const std::string& tag) : simgear::LogCallback(tag),
+                                                                   d(new BufferedLogCallbackPrivate)
 {
     d->m_stamp = 0;
     d->m_maxLength = 0xffff;

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 20202 Julian Smith
 
 #include "debug_types.h"
 
+#include <algorithm>
 #include <iostream>
 #include <map>
 #include <mutex>
@@ -69,7 +71,7 @@ struct logDelta
                 << "\n";
         update(items);
     }
-    
+
     void update(const char* items)
     {
         // We output diagnostics to std::cerr.
@@ -77,17 +79,17 @@ struct logDelta
         std::lock_guard<std::mutex> lock( m_mutex);
         m_cache.clear();
         m_items.clear();
-        
+
         std::string text = items;
         for(;;) {
             if (text.empty()) break;
-            
+
             std::string item = next_subitem(text, " ,");
             std::string item_orig = item;
-            
+
             std::string ffl = next_subitem(item, "=");
             std::string delta = item;
-            
+
             if (delta.empty()
                     || delta.find_first_not_of("0123456789-+") != std::string::npos
                     ) {
@@ -98,18 +100,18 @@ struct logDelta
                 continue;
             }
             int delta2 = std::stoi(delta);
-            
+
             std::string file = next_subitem(ffl, ":");
             std::string function = next_subitem(ffl, ":");
             std::string line = next_subitem(ffl, ":");
-            
+
             if (line.empty()) {
                 /* If <function> is all digits, treat as line number. */
                 if (function.find_first_not_of("0123456789-+") == std::string::npos) {
                     std::swap(function, line);
                 }
             }
-            
+
             int line2 = -1;
             if (!line.empty()) {
                 if (line.find_first_not_of("0123456789-+") != std::string::npos) {
@@ -131,7 +133,7 @@ struct logDelta
             m_items.push_back(logDeltaItem(file, line2, function, delta2));
         }
     }
-    
+
     /* Returns delta logging level for (file,line,function), using m_items and
     caching results in m_cache. */
     int operator()(const char* file, int line, const char* function)
@@ -143,11 +145,11 @@ struct logDelta
         if (!file)      file = "";
         if (!function)  function = "";
         logDeltaCacheItem flf(file, line, function);
-        
+
         std::lock_guard<std::mutex> lock( m_mutex);
-        
+
         auto it = m_cache.find(flf);
-        
+
         if (it == m_cache.end()) {
             auto best = m_items.end();
             for (auto item=m_items.begin(); item!=m_items.end(); ++item) {
@@ -165,7 +167,7 @@ struct logDelta
             int delta = (best == m_items.end()) ? 0 : best->delta;
             m_cache[flf] = delta;
             it = m_cache.find(flf);
-            
+
             assert(m_cache.find(flf)->second == delta);
             if (0 && delta != 0) {
                 std::cerr << __FILE__ << ":" << __LINE__ << ": "
@@ -174,7 +176,7 @@ struct logDelta
                         << "\n";
             }
         }
-        
+
         int delta = it->second;
         if (0) {
             std::cerr << __FILE__ << ":" << __LINE__ << ": "
@@ -184,12 +186,12 @@ struct logDelta
         }
         return delta;
     }
-    
+
     static bool startswith(const std::string s, const std::string& prefix)
     {
         return s.rfind(prefix, 0) == 0;
     }
-    
+
     /* Implements comparison of matching logDeltaItem's. We prefer longer
     filename prefixes and longer function name prefixes. */
     static int cmp(const logDeltaItem& a, const logDeltaItem& b)
@@ -202,7 +204,7 @@ struct logDelta
         }
         return 0;
     }
-    
+
     /* Splits <io_item> at first char in <separators>. Changes io_item to be
     the remainder and returns the first portion. */
     static std::string next_subitem(std::string& io_item, const char* separators)
@@ -219,7 +221,7 @@ struct logDelta
         }
         return ret;
     }
-    
+
     private:
         std::mutex                          m_mutex;
         std::map<logDeltaCacheItem, int>    m_cache;
@@ -240,18 +242,13 @@ sgDebugPriority logDeltaAdd(sgDebugPriority priority,
         return priority;
     }
     int priority_new = (int) priority + s_log_delta(file, line, function);
-    
+
     // Don't cause new popups.
     if (priority < SG_POPUP && priority_new >= SG_POPUP) {
         priority_new = SG_POPUP - 1;
     }
-    // Keep new priority within range of sgDebugPriority enum.
-    if (priority_new < SG_BULK) {
-        priority_new = SG_BULK;
-    }
-    if (priority_new > SG_MANDATORY_INFO) {
-        priority_new = SG_MANDATORY_INFO;
-    }
+
+    priority_new = std::clamp(priority_new, static_cast<int>(SG_BULK), static_cast<int>(SG_LOG_PRIORITY_DISABLED));
     return (sgDebugPriority) priority_new;
 }
 

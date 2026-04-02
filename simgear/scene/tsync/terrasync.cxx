@@ -8,6 +8,7 @@
 // SPDX-FileCopyrightText: 2011 Thorsten Brehm <brehmt@gmail.com>
 
 #include "simgear/debug/ErrorReportingCallback.hxx"
+#include "simgear/debug/debug_types.h"
 #include <simgear/compiler.h>
 #include <simgear_config.h>
 
@@ -948,8 +949,11 @@ SGTerraSync::SGTerraSync() :
     _inited(false)
 {
     _workerThread = new WorkerThread();
-    _log = new BufferedLogCallback(SG_TERRASYNC, SG_INFO);
+    _log = new BufferedLogCallback("terrasync");
     _log->truncateAt(255);
+    simgear::LogLevels levels;
+    levels.set(SG_TERRASYNC, SG_INFO);
+    _log->setLogLevels(levels);
 
     sglog().addCallback(_log);
 }

@@ -6,16 +6,15 @@
  * @brief Stream based logging mechanism.
  */
 
+#include <cstdlib>
 #include <simgear_config.h>
 
 #include "logdelta.hxx"
 #include "logstream.hxx"
 
+#include <algorithm>
 #include <cstring>
 #include <iostream>
-#include <fstream>
-#include <sstream>
-#include <algorithm>
 #include <mutex>
 
 #include <simgear/sg_inlines.h>
@@ -24,10 +23,12 @@
 #include <simgear/threads/SGThread.hxx>
 
 #include "LogCallback.hxx"
+#include "simgear/debug/debug_types.h"
 #include <simgear/io/iostreams/sgstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/timing/timestamp.hxx>
+#include <string>
 
 #if defined (SG_WINDOWS)
 // for AllocConsole, OutputDebugString
@@ -38,222 +39,6 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
-namespace {
-
-static const std::vector<std::string> global_priorityNames = {
-    "UNKN",
-    "BULK",
-    "DBUG",
-    "INFO",
-    "WARN",
-    "ALRT",
-    "POPU",
-    "WARN",
-    "ALRT",
-    "INFO"};
-
-struct LogClassMapping {
-    const sgDebugClass c;
-    const std::string name;
-    const std::vector<std::string> aliases;
-
-    LogClassMapping(sgDebugClass cc, const std::string& n, const std::vector<std::string>& al = {}) : c(cc),
-                                                                                                      name(n),
-                                                                                                      aliases(al){};
-};
-
-const std::initializer_list<LogClassMapping> log_class_mappings = {
-    LogClassMapping(SG_NONE, "none"),
-    LogClassMapping(SG_TERRAIN, "terrain"),
-    LogClassMapping(SG_ASTRO, "astro"),
-    LogClassMapping(SG_FLIGHT, "flight"),
-    LogClassMapping(SG_INPUT, "input"),
-    LogClassMapping(SG_GL, "gl", {"opengl"}),
-    LogClassMapping(SG_VIEW, "view"),
-    LogClassMapping(SG_COCKPIT, "cockpit"),
-    LogClassMapping(SG_GENERAL, "general"),
-    LogClassMapping(SG_MATH, "math"),
-    LogClassMapping(SG_EVENT, "event"),
-    LogClassMapping(SG_AIRCRAFT, "aircraft"),
-    LogClassMapping(SG_AUTOPILOT, "autopilot"),
-    LogClassMapping(SG_IO, "io"),
-    LogClassMapping(SG_CLIPPER, "clipper"),
-    LogClassMapping(SG_NETWORK, "network"),
-    LogClassMapping(SG_INSTR, "instrumentation", {"instruments"}),
-    LogClassMapping(SG_ATC, "atc"),
-    LogClassMapping(SG_NASAL, "nasal"),
-    LogClassMapping(SG_SYSTEMS, "systems"),
-    LogClassMapping(SG_AI, "ai"),
-    LogClassMapping(SG_ENVIRONMENT, "environment"),
-    LogClassMapping(SG_SOUND, "sound"),
-    LogClassMapping(SG_NAVAID, "navaid"),
-    LogClassMapping(SG_GUI, "gui"),
-    LogClassMapping(SG_TERRASYNC, "terrasync"),
-    LogClassMapping(SG_PARTICLES, "particles"),
-    LogClassMapping(SG_HEADLESS, "headless"),
-    LogClassMapping(SG_OSG, "osg", {"openscenegraph"}),
-    LogClassMapping(SG_UNDEFD, "")};
-
-} // namespace
-
-
-const std::string& debugClassToString(sgDebugClass c)
-{
-    auto it = std::find_if(log_class_mappings.begin(), log_class_mappings.end(), [c](const LogClassMapping& lm) {
-        return lm.c == c;
-    });
-
-    // return 'none'
-    if (it == log_class_mappings.end()) {
-        return log_class_mappings.begin()->name;
-    }
-
-    return it->name;
-}
-
-const std::string& debugPriorityToString(sgDebugPriority p)
-{
-    if (static_cast<int>(p) >= global_priorityNames.size()) {
-        return global_priorityNames.at(0);
-    }
-
-    return global_priorityNames.at(static_cast<int>(p));
-}
-
-const sgDebugClass debugClassFromString(const std::string& s)
-{
-    using namespace simgear::strutils;
-
-    auto cleaned = lowercase(strip(s));
-    auto it = std::find_if(log_class_mappings.begin(), log_class_mappings.end(), [cleaned](const LogClassMapping& lm) {
-        if (lm.name == cleaned)
-            return true;
-
-        // check aliases as well
-        auto it2 = std::find(lm.aliases.begin(), lm.aliases.end(), cleaned);
-        if (it2 != lm.aliases.end()) {
-            return true;
-        }
-
-        return false;
-    });
-
-    if (it == log_class_mappings.end()) {
-        throw sg_format_exception("Couldn't parse '" + s + "' as debug-class", s, "debugClassFromString", false);
-    }
-
-    return it->c;
-}
-
-class FileLogCallback : public simgear::LogCallback
-{
-public:
-    SGTimeStamp logTimer;
-    FileLogCallback(const SGPath& aPath, sgDebugClass c, sgDebugPriority p) :
-	    simgear::LogCallback(c, p)
-    {
-        m_file.open(aPath, std::ios_base::out | std::ios_base::trunc);
-        logTimer.stamp();
-    }
-
-    void operator()(sgDebugClass c, sgDebugPriority p,
-                    const char* file, int line, const std::string& message) override
-    {
-        if (!shouldLog(c, p)) return;
-
-
-//        fprintf(stderr, "%7.2f [%.8s]:%-10s %s\n", logTimer.elapsedMSec() / 1000.0, debugPriorityToString(p), debugClassToString(c), aMessage.c_str());
-        m_file
-            << std::fixed
-            << std::setprecision(2)
-            << std::setw(8)
-            << std::right
-            << (logTimer.elapsedMSec() / 1000.0)
-            << std::setw(8)
-            << std::left
-            << " [" + debugPriorityToString(p) + "]:"
-            << std::setw(10)
-            << std::left
-            << debugClassToString(c);
-        if (file) {
-            /* <line> can be -ve to indicate that m_fileLine was false, but we
-            want to show file:line information regardless of m_fileLine. */
-            m_file
-                << file
-                << ":"
-                << abs(line)
-                << ": "
-                ;
-            }
-        m_file
-            << message << std::endl;
-        //m_file << debugClassToString(c) << ":" << (int)p
-        //    << ":" << file << ":" << line << ":" << message << std::endl;
-    }
-private:
-    sg_ofstream m_file;
-};
-
-class StderrLogCallback : public simgear::LogCallback
-{
-public:
-    SGTimeStamp logTimer;
-
-    StderrLogCallback(sgDebugClass c, sgDebugPriority p) :
-		simgear::LogCallback(c, p)
-    {
-        logTimer.stamp();
-    }
-
-#if defined (SG_WINDOWS)
-    ~StderrLogCallback()
-    {
-        FreeConsole();
-    }
-#endif
-
-    void operator()(sgDebugClass c, sgDebugPriority p,
-                    const char* file, int line, const std::string& aMessage) override
-    {
-        if (!shouldLog(c, p)) return;
-        //fprintf(stderr, "%s\n", aMessage.c_str());
-
-        if (file && line > 0) {
-            fprintf(stderr, "%8.2f %s:%i: [%.8s]:%-10s %s\n", logTimer.elapsedMSec() / 1000.0, file, line, debugPriorityToString(p).c_str(), debugClassToString(c).c_str(), aMessage.c_str());
-        }
-        else {
-            fprintf(stderr, "%8.2f [%.8s]:%-10s %s\n", logTimer.elapsedMSec() / 1000.0, debugPriorityToString(p).c_str(), debugClassToString(c).c_str(), aMessage.c_str());
-        }
-        //    file, line, aMessage.c_str());
-        //fprintf(stderr, "%s:%d:%s:%d:%s\n", debugClassToString(c), p,
-        //    file, line, aMessage.c_str());
-        fflush(stderr);
-    }
-};
-
-
-#ifdef SG_WINDOWS
-
-class WinDebugLogCallback : public simgear::LogCallback
-{
-public:
-    WinDebugLogCallback(sgDebugClass c, sgDebugPriority p) :
-		simgear::LogCallback(c, p)
-    {
-    }
-
-    void operator()(sgDebugClass c, sgDebugPriority p,
-                    const char* file, int line, const std::string& aMessage) override
-    {
-        if (!shouldLog(c, p)) return;
-
-        std::ostringstream os;
-		os << debugClassToString(c) << ":" << aMessage << std::endl;
-		OutputDebugStringA(os.str().c_str());
-    }
-};
-
-#endif
 
 // this is a global since we want to set it before LogStreamPrivate exists
 static bool global_disableStderrLogging = false;
@@ -286,11 +71,19 @@ private:
     };
 
 public:
-    LogStreamPrivate() :
-        m_logClass(SG_ALL),
-        m_logPriority(SG_ALERT)
+    LogStreamPrivate()
     {
         bool doLogToStderr = !global_disableStderrLogging;
+        _consoleLevels.set(SG_ALL, SG_ALERT);
+        const auto logEnv = getenv("SG_LOGGING");
+        if (logEnv) {
+            auto levels = simgear::parseLogSpecFromString(logEnv);
+            if (levels) {
+                _consoleLevels = levels.value();
+            } else {
+                SG_LOG(SG_GENERAL, SG_ALERT, "Error parsing SG_LOGGING environment variable '" << logEnv << "'");
+            }
+        }
 
 #if defined (SG_WINDOWS)
         /*
@@ -388,22 +181,18 @@ public:
 #endif
 
         if (doLogToStderr) {
-            m_callbacks.push_back(new StderrLogCallback(m_logClass, m_logPriority));
-            m_consoleCallbacks.push_back(m_callbacks.back());
+            m_callbacks.push_back(new simgear::StderrLogCallback());
         }
 
 #if defined (SG_WINDOWS)
         const char* winDebugEnv = ::getenv("SG_WINDEBUG");
         const bool b = winDebugEnv ? simgear::strutils::to_bool(std::string{winDebugEnv}) : false;
         if (b) {
-            m_callbacks.push_back(new WinDebugLogCallback(m_logClass, m_logPriority));
-            m_consoleCallbacks.push_back(m_callbacks.back());
+            m_callbacks.push_back(new simgear::WinDebugLogCallback());
         }
 #endif
         const char* fl = getenv("SG_LOG_FILE_LINE");
-        if (fl && !strcmp(fl, "1")) {
-            m_fileLine = true;
-        }
+        m_fileLine = fl ? simgear::strutils::to_bool(std::string{fl}) : false;
     }
 
     ~LogStreamPrivate()
@@ -431,8 +220,13 @@ public:
 	/// and hence should dynamically reflect console logging settings
 	CallbackVec m_consoleCallbacks;
 
-    sgDebugClass m_logClass;
-    sgDebugPriority m_logPriority;
+    // combined log levels for all callbacks, for fast testing in would_log()
+    simgear::LogLevels _combinedLogLevels;
+
+    // this is the 'main' logging levels, set by the command line options
+    // or GUI. Individual callbacks can set custom levels
+    simgear::LogLevels _consoleLevels;
+
     bool m_isRunning = false;
 #if defined (SG_WINDOWS)
     // track whether the console was redirected on launch (in the constructor, which is called early on)
@@ -479,7 +273,7 @@ public:
             simgear::LogEntry entry(m_entries.pop());
             // special marker entry detected, terminate the thread since we are
             // making a configuration change or quitting the app
-            if ((entry.debugClass == SG_NONE) && entry.file && !strcmp(entry.file, "done")) {
+            if ((entry.debugPriority == SG_MANDATORY_INFO) && entry.file && !strcmp(entry.file, "done")) {
                 return;
             }
             {
@@ -507,7 +301,7 @@ public:
 
             // log a special marker value, which will cause the thread to wakeup,
             // and then exit
-            log(SG_NONE, SG_ALERT, "done", -1, "", "", false);
+            log(SG_ALL, SG_MANDATORY_INFO, "done", -1, "", "", false);
         }
         join();
 
@@ -519,6 +313,7 @@ public:
     {
         PauseThread pause(this);
         m_callbacks.push_back(cb);
+        _combinedLogLevels += cb->logLevels();
 
         // we clear startup entries not using this, so always safe to run
         // this code, container will simply be empty
@@ -530,7 +325,7 @@ public:
     void removeCallback(simgear::LogCallback* cb)
     {
         PauseThread pause(this);
-        CallbackVec::iterator it = std::find(m_callbacks.begin(), m_callbacks.end(), cb);
+        auto it = std::find(m_callbacks.begin(), m_callbacks.end(), cb);
         if (it != m_callbacks.end()) {
             m_callbacks.erase(it);
         }
@@ -543,18 +338,56 @@ public:
             delete cb;
         }
         m_callbacks.clear();
-        m_consoleCallbacks.clear();
     }
 
-    void setLogLevels( sgDebugClass c, sgDebugPriority p )
+    void setLogLevels(sgDebugClass c, sgDebugPriority p, const std::string& tag)
     {
         PauseThread pause(this);
-        m_logPriority = p;
-        m_logClass = c;
-        for (auto cb : m_consoleCallbacks) {
-            cb->setLogLevels(c, p);
+        // we *could* re-generate the combined log levels here,
+        // but probably not worth it
+        for (auto cb : m_callbacks) {
+            if (cb->tag() != tag) {
+                continue;
+            }
+
+            auto levels = cb->logLevels();
+            levels.set(c, p);
+            cb->setLogLevels(levels);
+            _combinedLogLevels += levels;
+        }
+
+        if (tag == "console") {
+            _consoleLevels.set(c, p);
         }
     }
+
+    void setLogLevels(const simgear::LogLevels& levels, const std::string& tag)
+    {
+        if (tag == "console") {
+            if (levels == _consoleLevels) {
+                // no change, so skip the work. Because we have a tied property on
+                // /sim/logigng/classes, this is quite important
+                return;
+            }
+        }
+
+        PauseThread pause(this);
+        // we *could* re-generate the combined log levels here,
+        // but probably not worth it
+        for (auto cb : m_callbacks) {
+            if (cb->tag() != tag) {
+                continue;
+            }
+
+            cb->setLogLevels(levels);
+        }
+
+        _combinedLogLevels += levels;
+        if (tag == "console") {
+            _consoleLevels = levels;
+        }
+    }
+
 
     bool would_log( sgDebugClass c, sgDebugPriority p,
             const char* file, int line, const char* function,
@@ -565,11 +398,10 @@ public:
 
         // SG_OSG (OSG notify) - will always be displayed regardless of FG log settings as OSG log level is configured
         // separately and thus it makes more sense to allow these message through.
-        if (static_cast<unsigned>(p) == static_cast<unsigned>(SG_OSG)) return true;
+        if (c == SG_OSG) return true;
 
         p = translatePriority(p, file, line, function, freeFilename);
-        if (p >= SG_INFO) return true;
-        return ((c & m_logClass) != 0 && p >= m_logPriority);
+        return simgear::shouldLog(c, p, _combinedLogLevels);
     }
 
     void log( sgDebugClass c, sgDebugPriority p,
@@ -620,10 +452,19 @@ logstream::~logstream()
     d.reset();
 }
 
-void
-logstream::setLogLevels( sgDebugClass c, sgDebugPriority p )
+void logstream::setLogLevels(sgDebugClass c, sgDebugPriority p, const std::string& tag)
 {
-    d->setLogLevels(c, p);
+    d->setLogLevels(c, p, tag);
+}
+
+void logstream::setLogLevels(const simgear::LogLevels& levels, const std::string& tag)
+{
+    d->setLogLevels(levels, tag);
+}
+
+simgear::LogLevels logstream::consoleLogLevels() const
+{
+    return d->_consoleLevels;
 }
 
 void logstream::setDeveloperMode(bool devMode)
@@ -761,99 +602,25 @@ logstream::would_log( sgDebugClass c, sgDebugPriority p,
     return d->would_log(c, p, file, line, function, freeFilename);
 }
 
-sgDebugClass
-logstream::get_log_classes() const
-{
-    return d->m_logClass;
-}
-
 sgDebugPriority
-logstream::get_log_priority() const
+logstream::get_all_log_priority() const
 {
-    return d->m_logPriority;
+    return d->_consoleLevels.levels[SG_ALL];
 }
 
-void
-logstream::set_log_priority( sgDebugPriority p)
+sgDebugPriority logstream::get_log_priority(sgDebugClass c) const
 {
-    d->setLogLevels(d->m_logClass, p);
+    return d->_consoleLevels.levels[c];
 }
 
-void
-logstream::set_log_classes( sgDebugClass c)
+void logstream::set_log_priority(sgDebugPriority p)
 {
-    d->setLogLevels(c, d->m_logPriority);
-}
-
-sgDebugPriority logstream::priorityFromString(const std::string& s)
-{
-    if (s == "bulk") return SG_BULK;
-    if (s == "debug") return SG_DEBUG;
-    if (s == "info") return SG_INFO;
-    if (s == "warn") return SG_WARN;
-    if (s == "alert") return SG_ALERT;
-
-    throw std::invalid_argument("Couldn't parse log priority:" + s);
-}
-
-void logstream::parseLogClasses(const std::string& logClassesSpecification)
-{
-    using namespace simgear::strutils;
-    int classes = SG_NONE;
-    const auto lowerCaseSpec = lowercase(logClassesSpecification);
-
-    try {
-        if (logClassesSpecification.empty() || (lowerCaseSpec) == "all") {
-            classes = SG_ALL;
-        } else if (lowerCaseSpec == "none") {
-            classes = SG_NONE;
-        } else {
-            const auto pieces = split_on_any_of(lowerCaseSpec, "|,");
-            for (auto p : pieces) {
-                classes |= debugClassFromString(p);
-            }
-        }
-
-        d->setLogLevels(static_cast<sgDebugClass>(classes), d->m_logPriority);
-    } catch (std::exception& e) {
-        SG_LOG(SG_GENERAL, SG_WARN, "error parsing log classes '" << logClassesSpecification << "':" << e.what());
-    }
-}
-
-void logstream::addLogClass(const std::string& s)
-{
-    try {
-        const auto c = debugClassFromString(s);
-        d->setLogLevels(static_cast<sgDebugClass>(d->m_logClass | c), d->m_logPriority);
-    } catch (std::exception& e) {
-        SG_LOG(SG_GENERAL, SG_WARN, "error adding log class '" << s + "':" << e.what());
-    }
+    d->setLogLevels(SG_ALL, p, "console");
 }
 
 std::string logstream::getLogClassesAsString() const
 {
-    const auto classes = get_log_classes();
-    if (classes == SG_ALL) {
-        return "all";
-    }
-
-    if (classes == SG_NONE) {
-        return "none";
-    }
-
-    std::string result;
-    for (auto mapping : log_class_mappings) {
-        if ((classes & mapping.c) == 0) {
-            continue;
-        }
-
-        if (!result.empty()) {
-            result.append(",");
-        }
-
-        result.append(mapping.name);
-    }
-    return result;
+    return d->_consoleLevels.to_string();
 }
 
 
@@ -874,9 +641,9 @@ sglog()
 }
 
 simgear::LogCallback*
-logstream::logToFile(const SGPath& aPath, sgDebugClass c, sgDebugPriority p)
+logstream::logToFile(const std::string& tag, const SGPath& aPath)
 {
-    auto cb = new FileLogCallback(aPath, c, p);
+    auto cb = new simgear::FileLogCallback(tag, aPath);
     d->addCallback(cb);
     return cb;
 }

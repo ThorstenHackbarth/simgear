@@ -51,36 +51,25 @@ public:
     void requestConsole(bool ignoreErrors);
 
     /**
-     * Set the global log class and priority level.
+     * Set the log class and priority level.
      * @param c debug class
      * @param p priority
+     * @param tag optional tag to identify the target of the log level change, for example "console" or "file"
      */
-    void setLogLevels( sgDebugClass c, sgDebugPriority p );
+    void setLogLevels(sgDebugClass c, sgDebugPriority p, const std::string& tag = "console");
 
-    /**
-     * @brief parse a string of the style given to --log-class= argument of
-     * FlightGear, i.e with potentially several classes separated by vertical
-     * bars eg 'input|io|aircraft'
-     *
-     * Parsing is case- and white-space insensitive.
-     *
-     * @param logClassesSpecification
-     */
-    void parseLogClasses(const std::string& logClassesSpecification);
+    void setLogLevels(const simgear::LogLevels& levels, const std::string& tag = "console");
+
+    simgear::LogLevels consoleLogLevels() const;
 
     bool would_log(  sgDebugClass c, sgDebugPriority p,
             const char* file, int line, const char* function,
             bool freeFilename=false ) const;
 
-    simgear::LogCallback* logToFile(const SGPath& aPath, sgDebugClass c, sgDebugPriority p);
+    simgear::LogCallback* logToFile(const std::string& tag, const SGPath& aPath);
 
     void set_log_priority( sgDebugPriority p);
 
-    void set_log_classes( sgDebugClass c);
-
-    void addLogClass(const std::string& c);
-
-    sgDebugClass get_log_classes() const;
 
     /**
      * @brief Get the Log Classes as a string, in the format which could be passed
@@ -89,13 +78,10 @@ public:
      */
     std::string getLogClassesAsString() const;
 
-    sgDebugPriority get_log_priority() const;
+    sgDebugPriority get_all_log_priority() const;
 
-    /**
-        @brief convert a string value to a log priority.
-        throws std::invalid_argument if the string is not valid
-     */
-    static sgDebugPriority priorityFromString(const std::string& s);
+    sgDebugPriority get_log_priority(sgDebugClass c) const;
+
     /**
      * set developer mode on/off. In developer mode, SG_DEV_WARN messages
      * are treated as warnings. In normal (non-developer) mode they are

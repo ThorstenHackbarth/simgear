@@ -556,7 +556,7 @@ std::string SGMaterial::get_one_texture(int setIndex, int texIndex)
 {
     if (_status.empty()) {
         SG_LOG( SG_GENERAL, SG_WARN, "No material available.");
-        return 0;
+        return {};
     }
 
     unsigned int i = setIndex % _status.size();
