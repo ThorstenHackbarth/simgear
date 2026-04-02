@@ -1010,7 +1010,7 @@ void SGTerraSync::reinit()
         _workerThread->setHTTPServer(
             _terraRoot->getStringValue("http-server", "automatic"),
             _terraRoot->getStringValue("osm2city-server", ""));
-        _workerThread->setSceneryVersion( _terraRoot->getStringValue("scenery-version","ws20") );
+        _workerThread->setSceneryVersion(_terraRoot->getStringValue("scenery-version", "ws30"));
         _workerThread->setOSMCityVersion(_terraRoot->getStringValue("osm2city-version", "o2c"));
         _workerThread->setProtocol( _terraRoot->getStringValue("protocol","") );
 
