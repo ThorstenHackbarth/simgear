@@ -2,26 +2,11 @@
 //
 // Written by Curtis Olson, started May 1998.
 //
-// Copyright (C) 1998 - 2001  Curtis L. Olson  - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 1998 Curtis L. Olson
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
+
 #include <algorithm>
 #include "ReaderWriterSTG.hxx"
 
@@ -270,7 +255,7 @@ struct ReaderWriterSTG::_ModelBin {
             STGObjectsQuadtree quadtree((GetModelLODCoord()), (AddModelLOD()));
             quadtree.buildQuadTree(_objectStaticList.begin(), _objectStaticList.end());
             osg::ref_ptr<osg::Group> group = quadtree.getRoot();
-            string group_name = string("STG-group-A ").append(_bucket.gen_index_str());
+            std::string group_name = std::string("STG-group-A ").append(_bucket.gen_index_str());
             group->setName(group_name);
             group->setDataVariance(osg::Object::STATIC);
 
@@ -705,9 +690,10 @@ struct ReaderWriterSTG::_ModelBin {
                         range = _object_range_detailed;
                         double lrand = pc_rand();
                         if      (lrand < 0.1) range = range * 2.0;
-                        else if (lrand < 0.4) range = range * 1.5;                                        
+                        else if (lrand < 0.4)
+                            range = range * 1.5;
                     }
-                    
+
                     obj._range = range;
 
                     obj._options = opt;
@@ -806,7 +792,7 @@ struct ReaderWriterSTG::_ModelBin {
 
         osg::ref_ptr<osg::Group> terrainGroup = new osg::Group;
         terrainGroup->setDataVariance(osg::Object::STATIC);
-        std::string terrain_name = string("terrain ").append(bucket.gen_index_str());
+        std::string terrain_name = std::string("terrain ").append(bucket.gen_index_str());
         terrainGroup->setName(terrain_name);
 
         simgear::ErrorReportContext ec{"terrain-bucket", bucket.gen_index_str()};
@@ -897,7 +883,7 @@ struct ReaderWriterSTG::_ModelBin {
         }
 
         osg::PagedLOD* pagedLOD = new osg::PagedLOD;
-        std::string name = string("pagedObjectLOD ").append(bucket.gen_index_str());
+        std::string name = std::string("pagedObjectLOD ").append(bucket.gen_index_str());
         pagedLOD->setName(name);
 
         // This should be visible in any case.
@@ -1018,9 +1004,8 @@ ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* opt
         // check for non-suffixed file, and warn.
         SGPath pathWithoutSuffix = base / basePath / fileName;
         if (pathWithoutSuffix.exists()) {
-            SG_LOG(SG_TERRAIN, SG_ALERT, "Found scenery file " << pathWithoutSuffix << " in scenery path " << path
-                   << ".\nScenery paths without type subdirectories are no longer supported, please move thse files\n"
-                   << "into a an appropriate subdirectory, for example:" << base / "Objects" / basePath / fileName);
+            SG_LOG(SG_TERRAIN, SG_ALERT, "Found scenery file " << pathWithoutSuffix << " in scenery path " << path << ".\nScenery paths without type subdirectories are no longer supported, please move these files\n"
+                                                               << "into a an appropriate subdirectory, for example:" << base / "Objects" / basePath / fileName);
         }
 
         for (auto suffix : sgOpts->getSceneryPathSuffixes()) {

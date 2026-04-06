@@ -5,15 +5,10 @@
 
 #pragma once
 
-#include <osg/ref_ptr>
-#include <osg/Node>
+#include <simgear/scene/SGSceneFwd.hxx>
 
 #include <simgear/math/SGVec3.hxx>
 #include <simgear/structure/SGReferenced.hxx>
-
-namespace simgear {
-class SGReaderWriterOptions;
-}
 
 class SGPlanets : public SGReferenced {
 public:

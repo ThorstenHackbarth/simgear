@@ -3,22 +3,15 @@
  * SPDX-FileComment: model the celestial sphere brightness by unresolved sources
  * SPDX-FileContributor: Chris Ringeval. Started November 2021.
  * SPDX-License-Identifier: LGPL-2.0-or-later
+ * SPDX-FileCopyrightText: 2021 Chris Ringeval
  */
 
 #pragma once
 
-namespace osg
-{
-class Node;
-}
-#include <osg/ref_ptr>
+#include <simgear/scene/SGSceneFwd.hxx>
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/structure/SGReferenced.hxx>
-
-namespace simgear {
-class SGReaderWriterOptions;
-}
 
 class SGGalaxy : public SGReferenced {
 public:

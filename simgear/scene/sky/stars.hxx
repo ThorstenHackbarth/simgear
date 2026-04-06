@@ -5,20 +5,16 @@
  * SPDX-FileContributor: Based upon algorithms and data kindly provided by Mr. Paul Schlyter (pausch@saaf.se).
  * SPDX-FileContributor: Separated out rendering pieces and converted to ssg by Curt Olson, March 2000.
  * SPDX-FileContributor: Ported to the OpenGL core profile by Fernando García Liñán, 2024.
- * SPDX-License-Identifier: LGPL-2.0-or-later
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ * SPDX-FileCopyrightText: 1997 Durk Talsma
  */
 
 #pragma once
 
-#include <osg/ref_ptr>
-#include <osg/Node>
+#include <simgear/scene/SGSceneFwd.hxx>
 
 #include <simgear/ephemeris/stardata.hxx>
 #include <simgear/structure/SGReferenced.hxx>
-
-namespace simgear {
-class SGReaderWriterOptions;
-}
 
 class SGStars : public SGReferenced {
 public:

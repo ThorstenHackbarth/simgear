@@ -3,28 +3,10 @@
 //
 // Written by Curtis Olson, started October 1997.
 //
-// Copyright (C) 1997  Curtis L. Olson  - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 1997 Curtis L. Olson
 
-
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
+#include <simgear_config.h>
 
 #include <osgDB/FileNameUtils>
 #include <osgDB/FileUtils>
@@ -81,13 +63,13 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
 
     if (usePhotoscenery) {
       try {
-        const long index = lexical_cast<long>(osgDB::getSimpleFileName(osgDB::getNameLessExtension(path)));
-        orthophoto = OrthophotoManager::instance()->getOrthophoto(index);
-      } catch (bad_lexical_cast&) {
-        orthophoto = OrthophotoManager::instance()->getOrthophoto(nodes, center);
+          const long index = std::stol(osgDB::getSimpleFileName(osgDB::getNameLessExtension(path)));
+          orthophoto = OrthophotoManager::instance()->getOrthophoto(index);
+      } catch (std::exception&) {
+          orthophoto = OrthophotoManager::instance()->getOrthophoto(nodes, center);
       }
     }
-    
+
 
     // rotate the tiles so that the bounding boxes get nearly axis aligned.
     // this will help the collision tree's bounding boxes a bit ...
@@ -113,7 +95,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       normals[i] = hlOrf.transform(normals[i]);
     tile.set_normals(normals);
 
-    // tile surface    
+    // tile surface
     osg::ref_ptr<SGTileGeometryBin> tileGeometryBin = new SGTileGeometryBin();
 
     if (!tileGeometryBin->insertSurfaceGeometry(tile, matcache))
@@ -147,7 +129,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       // tile points
       SGTileDetailsCallback* tileDetailsCallback = new SGTileDetailsCallback;
       tileDetailsCallback->insertPtGeometry( tile, matcache );
-    
+
       // PagedLOD for the random objects so we don't need to generate
       // them all on tile loading.
       osg::PagedLOD* pagedLOD = new osg::PagedLOD;
@@ -169,7 +151,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       tileDetailsCallback->_rootNode = node;
       tileDetailsCallback->_randomSurfaceLightsComputed = false;
       tileDetailsCallback->_tileRandomObjectsComputed = false;
-    
+
       osg::ref_ptr<osgDB::Options> callbackOptions = new osgDB::Options;
       callbackOptions->setObjectCacheHint(osgDB::Options::CACHE_ALL);
       callbackOptions->setReadFileCallback(tileDetailsCallback);

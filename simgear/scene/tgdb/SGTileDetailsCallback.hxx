@@ -3,23 +3,8 @@
 //
 // Written by Curtis Olson, started October 1997.
 //
-// Copyright (C) 1997  Curtis L. Olson  - http://www.flightgear.org/~curt
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 1997 Curtis L. Olson
 
 #include <osg/LOD>
 
@@ -78,17 +63,17 @@ typedef QuadTreeBuilder<osg::LOD*, ModelLOD, MakeQuadLeaf, AddModelLOD,
 static unsigned int num_tdcb = 0;
 class SGTileDetailsCallback : public OptionsReadFileCallback {
 public:
-    SGTileDetailsCallback() 
+    SGTileDetailsCallback()
     {
         num_tdcb++;
     }
 
-    virtual ~SGTileDetailsCallback() 
+    virtual ~SGTileDetailsCallback()
     {
         num_tdcb--;
         SG_LOG( SG_TERRAIN, SG_DEBUG, "SGTileDetailsCallback::~SGTileDetailsCallback() num cbs left " << num_tdcb  );
     }
-    
+
     ReadResult readNode(const std::string&, const osgDB::Options*) override
     {
         osg::ref_ptr<osg::Group> group;
@@ -97,8 +82,8 @@ public:
         try {
             group = new osg::Group;
             SGMaterialLibPtr matlib;
-            osg::ref_ptr<SGMaterialCache> matcache; 
-            
+            osg::ref_ptr<SGMaterialCache> matcache;
+
             group->setName("TileDetails_Group_" + _path);
             group->setDataVariance(osg::Object::STATIC);
 
@@ -110,10 +95,10 @@ public:
             // build matcache
             matlib = _options->getMaterialLib();
             if (matlib) {
-                SGGeod geodPos = SGGeod::fromCart(_gbs_center);            
+                SGGeod geodPos = SGGeod::fromCart(_gbs_center);
                 matcache = matlib->generateMatCache(geodPos, _options);
             }
-            
+
     #if 0
             // TEST : See if we can regenerate landclass shapes from node
             for ( unsigned int i=0; i<matTris.size(); i++ ) {
@@ -140,7 +125,7 @@ public:
                                 "Out of memory loading tile details", sg_location{_path});
             return ReadResult::INSUFFICIENT_MEMORY_TO_LOAD;
         }
-        
+
         return group.release();
     }
 
@@ -149,10 +134,10 @@ public:
         if (!material) {
             return SGVec4f(1, 1, 1, 0.8);
         }
-        
+
         return material->get_light_color();
     }
-    
+
     static void
     addPointGeometry(SGLightBin& lights,
                      const std::vector<SGVec3d>& vertices,
@@ -162,7 +147,7 @@ public:
         for (unsigned i = 0; i < pts_v.size(); ++i)
             lights.insert(toVec3f(vertices[pts_v[i]]), color);
     }
-    
+
     static void
     addPointGeometry(SGDirectionalLightBin& lights,
                      const std::vector<SGVec3d>& vertices,
@@ -181,7 +166,7 @@ public:
                 lights.insert(toVec3f(vertices[pts_v[i]]), normals[pts_v[i]], color);
         }
     }
-    
+
     bool insertPtGeometry(const SGBinObject& obj, SGMaterialCache* matcache)
     {
         if (obj.get_pts_v().size() != obj.get_pts_n().size()) {
@@ -189,12 +174,12 @@ public:
                    "Group list sizes for points do not match!");
             return false;
         }
-        
+
         for (unsigned grp = 0; grp < obj.get_pts_v().size(); ++grp) {
             std::string materialName = obj.get_pt_materials()[grp];
             SGMaterial* material = matcache->find(materialName);
             SGVec4f color = getMaterialLightColor(material);
-            
+
             if (3 <= materialName.size() && materialName.substr(0, 3) != "RWY") {
                 // Just plain lights. Not something for the runway.
                 addPointGeometry(tileLights, obj.get_wgs84_nodes(), color,
@@ -239,10 +224,10 @@ public:
                                      obj.get_pts_n()[grp]);
                 }
         }
-        
+
         return true;
     }
-    
+
     float min_dist_to_seg_squared( const SGVec3f p, const SGVec3d& a, const SGVec3d& b )
     {
         const float l2 = distSqr(a, b);
@@ -250,12 +235,12 @@ public:
         if (l2 == 0.0) {
             return distSqr(pd, a); // if a == b, just return distance to A
         }
-        
+
         // Consider the line extending the segment, parameterized as a + t (b - a).
-        // We find projection of pt onto the line. 
+        // We find projection of pt onto the line.
         // It falls where t = [(p-a) . (b-a)] / |b-a|^2
         const float t = dot(pd-a, b-a) / l2;
-        
+
         if (t < 0.0) {
             return distSqr(pd, a);
         } else if (t > 1.0) {
@@ -265,10 +250,10 @@ public:
             return distSqr(pd, proj);
         }
     }
-    
+
     float min_dist_from_borders( SGVec3f p, const std::vector<SGBorderContour>& bsegs )
     {
-        // calc min dist to each line 
+        // calc min dist to each line
         // calc distance squared to keep this as fast as we can
         // first, we must be able to project the point onto the segment
         std::vector<float> distances;
@@ -276,70 +261,70 @@ public:
         {
             distances.push_back( min_dist_to_seg_squared( p, bsegs[b].start, bsegs[b].end ) );
         }
-        
-        float min_dist_sq = *std::min_element( distances.begin(), distances.end() );        
+
+        float min_dist_sq = *std::min_element(distances.begin(), distances.end());
         return sqrt( min_dist_sq );
     }
-    
+
     // let's break random objects from randomBuildings
     void computeRandomObjectsAndBuildings(
-        std::vector<SGTriangleInfo>& matTris, 
+        std::vector<SGTriangleInfo>& matTris,
         float building_density,
         bool use_random_objects,
         bool use_random_buildings,
-        SGMatModelBin&     randomModels,
-        SGBuildingBinList& randomBuildings )
+        SGMatModelBin& randomModels,
+        SGBuildingBinList& randomBuildings)
     {
         unsigned int m;
-        
+
         // Only compute the random objects if we haven't already done so
         if (_tileRandomObjectsComputed) {
             return;
         }
         _tileRandomObjectsComputed = true;
-        
+
         // generate a repeatable random seed
         mt seed;
         mt_init(&seed, unsigned(123));
-        
+
         for ( m=0; m<matTris.size(); m++ ) {
             SGMaterial *mat = matTris[m].getMaterial();
             if (!mat)
                 continue;
-                        
+
             osg::Texture2D* object_mask  = mat->get_one_object_mask(matTris[m].getTextureIndex());
-            
+
             int   group_count            = mat->get_object_group_count();
             float building_coverage      = mat->get_building_coverage();
             float cos_zero_density_angle = mat->get_cos_object_zero_density_slope_angle();
             float cos_max_density_angle  = mat->get_cos_object_max_density_slope_angle();
-            
+
             if ((building_coverage == 0) && (group_count ==0))
                 continue;
-            
+
             SGBuildingBin* bin = NULL;
-            
+
             if (building_coverage > 0) {
                 // REVIEW: Memory Leak - 317,405 (544 direct, 316,861 indirect) bytes in 4 blocks are definitely lost
                 bin = new SGBuildingBin(mat);
                 randomBuildings.push_back(bin);
             }
-            
+
             unsigned num = matTris[m].getNumTriangles();
             int random_dropped = 0;
             int mask_dropped = 0;
             int building_dropped = 0;
             int triangle_dropped = 0;
-            
+
             // get the polygon border segments
 //            std::vector<SGBorderContour> borderSegs;
 //            matTris[m].getBorderContours( borderSegs );
-            
+
             for (unsigned i = 0; i < num; ++i) {
                 std::vector<SGVec3f> triVerts;
                 std::vector<SGVec2f> triTCs;
                 matTris[m].getTriangle(i, triVerts, triTCs);
-                
+
                 SGVec3f vorigin = triVerts[0];
                 SGVec3f v0 = triVerts[1] - vorigin;
                 SGVec3f v1 = triVerts[2] - vorigin;
@@ -347,7 +332,7 @@ public:
                 SGVec2f t0 = triTCs[1] - torigin;
                 SGVec2f t1 = triTCs[2] - torigin;
                 SGVec3f normal = cross(v0, v1);
-                
+
                 // Ensure the slope isn't too steep by checking the
                 // cos of the angle between the slope normal and the
                 // vertical (conveniently the z-component of the normalized
@@ -360,19 +345,19 @@ public:
                     (cos - cos_zero_density_angle) /
                     (cos_max_density_angle - cos_zero_density_angle);
                 }
-                
+
                 // Containers to hold the random buildings and objects generated
                 // for this triangle for collision detection purposes.
                 std::vector< std::pair< SGVec3f, float> > triangleObjectsList;
                 std::vector< std::pair< SGVec3f, float> > triangleBuildingList;
-                
+
                 // Compute the area : todo - we only want to stop if the area of the POLY
                 // is too small
                 // so we need to know area of each poly....
                 float area = 0.5f*length(normal);
                 if (area <= SGLimitsf::min())
                     continue;
-                
+
                 // Generate any random objects
                 if (use_random_objects && (group_count > 0))
                 {
@@ -380,85 +365,85 @@ public:
                     {
                         SGMatModelGroup *object_group =  mat->get_object_group(j);
                         int nObjects = object_group->get_object_count();
-                        
+
                         if (nObjects == 0) continue;
-                        
+
                         // For each of the random models in the group, determine an appropriate
                         // number of random placements and insert them.
                         for (int k = 0; k < nObjects; k++) {
                             SGMatModel * object = object_group->get_object(k);
-                            
+
                             // Determine the number of objecst to place, taking into account
                             // the slope density factor.
                             double n = slope_density * area / object->get_coverage_m2();
-                            
+
                             // Use the zombie door method to determine fractional object placement.
                             n = n + mt_rand(&seed);
-                            
+
                             // place an object each unit of area
                             while ( n > 1.0 ) {
                                 n -= 1.0;
-                                
+
                                 float a = mt_rand(&seed);
                                 float b = mt_rand(&seed);
                                 if ( a + b > 1 ) {
                                     a = 1 - a;
                                     b = 1 - b;
                                 }
-                                
+
                                 SGVec3f randomPoint = vorigin + a*v0 + b*v1;
                                 float rotation = static_cast<float>(mt_rand(&seed));
-                                
+
                                 // Check that the point is sufficiently far from
                                 // the edge of the triangle by measuring the distance
                                 // from the three lines that make up the triangle.
                                 float spacing = object->get_spacing_m();
-                                
+
                                 SGVec3f p = randomPoint - vorigin;
 #if 1
-                                float edges[] = { 
-                                    length(cross(p     , p - v0)) / length(v0),
+                                float edges[] = {
+                                    length(cross(p, p - v0)) / length(v0),
                                     length(cross(p - v0, p - v1)) / length(v1 - v0),
-                                    length(cross(p - v1, p     )) / length(v1)      };
-                                    float edge_dist = *std::min_element(edges, edges + 3);
+                                    length(cross(p - v1, p)) / length(v1)};
+                                float edge_dist = *std::min_element(edges, edges + 3);
 #else
                                     float edge_dist = min_dist_from_borders( randomPoint, borderSegs );
 #endif
                                     if (edge_dist < spacing) {
                                         continue;
                                     }
-                                    
+
                                     if (object_mask != NULL) {
                                         SGVec2f texCoord = torigin + a*t0 + b*t1;
-                                        
+
                                         // Check this random point against the object mask
                                         // blue (for buildings) channel.
                                         osg::Image* img = object_mask->getImage();
                                         unsigned int x = (int) (img->s() * texCoord.x()) % img->s();
                                         unsigned int y = (int) (img->t() * texCoord.y()) % img->t();
-                                        
+
                                         if (mt_rand(&seed) > img->getColor(x, y).b()) {
                                             // Failed object mask check
                                             continue;
                                         }
-                                        
+
                                         rotation = img->getColor(x,y).r();
                                     }
-                                    
+
                                     bool close = false;
-                                    
+
                                     // Check it isn't too close to any other random objects in the triangle
                                     std::vector<std::pair<SGVec3f, float> >::iterator l;
                                     for (l = triangleObjectsList.begin(); l != triangleObjectsList.end(); ++l) {
                                         float min_dist2 = (l->second + object->get_spacing_m()) *
                                         (l->second + object->get_spacing_m());
-                                        
+
                                         if (distSqr(l->first, randomPoint) < min_dist2) {
                                             close = true;
                                             continue;
                                         }
                                     }
-                                    
+
                                     if (!close) {
                                         triangleObjectsList.push_back(std::make_pair(randomPoint, object->get_spacing_m()));
                                         randomModels.insert(randomPoint,
@@ -470,78 +455,77 @@ public:
                         }
                     }
                 }
-                
+
                 // Random objects now generated.  Now generate the random buildings (if any);
                 if (use_random_buildings && (building_coverage > 0) && (building_density > 0)) {
-                    
                     // Calculate the number of buildings, taking into account building density (which is linear)
                     // and the slope density factor.
                     double num = building_density * building_density * slope_density * area / building_coverage;
-                    
+
                     // For partial units of area, use a zombie door method to
                     // create the proper random chance of an object being created
                     // for this triangle.
                     num = num + mt_rand(&seed);
-                    
+
                     if (num < 1.0f) {
                         continue;
                     }
-                    
+
                     // Cosine of the angle between the two vectors.
                     float cosine = (dot(v0, v1) / (length(v0) * length(v1)));
-                    
+
                     // Determine a grid spacing in each vector such that the correct
                     // coverage will result.
                     float stepv0 = (sqrtf(building_coverage) / building_density) / length(v0) / sqrtf(1 - cosine * cosine);
                     float stepv1 = (sqrtf(building_coverage) / building_density) / length(v1);
-                    
+
                     stepv0 = std::min(stepv0, 1.0f);
                     stepv1 = std::min(stepv1, 1.0f);
-                    
+
                     // Start at a random point. a will be immediately incremented below.
                     float a = -mt_rand(&seed) * stepv0;
                     float b = mt_rand(&seed) * stepv1;
-                    
+
                     // Place an object each unit of area
                     while (num > 1.0) {
                         num -= 1.0;
-                        
+
                         // Set the next location to place a building
                         a += stepv0;
-                        
+
                         if ((a + b) > 1.0f) {
                             // Reached the end of the scan-line on v0. Reset and increment
                             // scan-line on v1
                             a = mt_rand(&seed) * stepv0;
                             b += stepv1;
                         }
-                        
+
                         if (b > 1.0f) {
                             // In a degenerate case of a single point, we might be outside the
                             // scanline.  Note that we need to still ensure that a+b < 1.
                             b = mt_rand(&seed) * stepv1 * (1.0f - a);
                         }
-                        
+
                         if ((a + b) > 1.0f ) {
                             // Truly degenerate case - simply choose a random point guaranteed
-                            // to fulfil the constraing of a+b < 1.
+                            // to fulfil the constraining of a+b < 1.
                             a = mt_rand(&seed);
                             b = mt_rand(&seed) * (1.0f - a);
                         }
-                        
+
                         SGVec3f randomPoint = vorigin + a*v0 + b*v1;
                         float rotation = mt_rand(&seed);
-                        
+
                         if (object_mask != NULL) {
                             SGVec2f texCoord = torigin + a*t0 + b*t1;
                             osg::Image* img = object_mask->getImage();
                             int x = (int) (img->s() * texCoord.x()) % img->s();
                             int y = (int) (img->t() * texCoord.y()) % img->t();
-                            
+
                             // In some degenerate cases x or y can be < 1, in which case the mod operand fails
                             while (x < 0) x += img->s();
                             while (y < 0) y += img->t();
-                            
+
                             if (mt_rand(&seed) < img->getColor(x, y).b()) {
                                 // Object passes mask. Rotation is taken from the red channel
                                 rotation = img->getColor(x,y).r();
@@ -551,18 +535,18 @@ public:
                                 continue;
                             }
                         }
-                        
+
                         // Check building isn't too close to the triangle edge.
                         float type_roll = mt_rand(&seed);
                         SGBuildingBin::BuildingType buildingtype = bin->getBuildingType(type_roll);
                         float radius = bin->getBuildingMaxRadius(buildingtype);
-                        
+
                         // Determine the actual center of the building, by shifting from the
                         // center of the front face to the true center.
                         osg::Matrix rotationMat = osg::Matrix::rotate(- rotation * M_PI * 2,
                                                                       osg::Vec3f(0.0, 0.0, 1.0));
                         SGVec3f buildingCenter = randomPoint + toSG(osg::Vec3f(-0.5 * bin->getBuildingMaxDepth(buildingtype), 0.0, 0.0) * rotationMat);
-                        
+
                         SGVec3f p = buildingCenter - vorigin;
 #if 1
                         float edges[] = { length(cross(p     , p - v0)) / length(v0),
@@ -576,11 +560,11 @@ public:
                                 triangle_dropped++;
                                 continue;
                             }
-                            
+
                             // Check building isn't too close to random objects and other buildings.
                             bool close = false;
                             std::vector<std::pair<SGVec3f, float> >::iterator iter;
-                            
+
                             for (iter = triangleBuildingList.begin(); iter != triangleBuildingList.end(); ++iter) {
                                 float min_dist = iter->second + radius;
                                 if (distSqr(iter->first, buildingCenter) < min_dist * min_dist) {
@@ -588,12 +572,12 @@ public:
                                     continue;
                                 }
                             }
-                            
+
                             if (close) {
                                 building_dropped++;
                                 continue;
                             }
-                            
+
                             for (iter = triangleObjectsList.begin(); iter != triangleObjectsList.end(); ++iter) {
                                 float min_dist = iter->second + radius;
                                 if (distSqr(iter->first, buildingCenter) < min_dist * min_dist) {
@@ -601,22 +585,22 @@ public:
                                     continue;
                                 }
                             }
-                            
+
                             if (close) {
                                 random_dropped++;
                                 continue;
                             }
-                            
+
                             std::pair<SGVec3f, float> pt = std::make_pair(buildingCenter, radius);
                             triangleBuildingList.push_back(pt);
                             bin->insert(randomPoint, rotation, buildingtype);
                     }
                 }
-                
+
                 triangleObjectsList.clear();
                 triangleBuildingList.clear();
             }
-            
+
             const int numBuildings = (bin) ? bin->getNumBuildings() : 0;
             if (numBuildings > 0) {
                 SG_LOG(SG_TERRAIN, SG_DEBUG, "computed Random Buildings: " << numBuildings);
@@ -626,28 +610,28 @@ public:
             }
         }
     }
-    
+
     void computeRandomForest(std::vector<SGTriangleInfo>& matTris, float vegetation_density, SGTreeBinList& randomForest)
-    {        
+    {
         unsigned int i;
-        
+
         // generate a repeatable random seed
         mt seed;
         mt_init(&seed, unsigned(586));
-        
+
         for ( i=0; i<matTris.size(); i++ ) {
             SGMaterial *mat = matTris[i].getMaterial();
             if (!mat)
                 continue;
-            
+
             float wood_coverage = mat->get_wood_coverage();
             if ((wood_coverage <= 0) || (vegetation_density <= 0))
                 continue;
-            
+
             // Attributes that don't vary by tree but do vary by material
             bool found = false;
             TreeBin* bin = NULL;
-            
+
             BOOST_FOREACH(bin, randomForest)
             {
                 if ((bin->texture           == mat->get_tree_texture()  ) &&
@@ -660,7 +644,7 @@ public:
                 break;
                     }
             }
-            
+
             if (!found) {
                 bin = new TreeBin();
                 bin->texture = mat->get_tree_texture();
@@ -674,7 +658,7 @@ public:
                 bin->texture_varieties = mat->get_tree_varieties();
                 randomForest.push_back(bin);
             }
-            
+
             std::vector<SGVec3f> randomPoints;
             matTris[i].addRandomTreePoints(wood_coverage,
                                            mat->get_one_object_mask(matTris[i].getTextureIndex()),
@@ -690,20 +674,19 @@ public:
             }
         }
     }
-    
+
     void computeRandomSurfaceLights(std::vector<SGTriangleInfo>& matTris, SGLightBin& randomTileLights )
     {
         unsigned int i;
-        
+
         // Only compute the lights if we haven't already done so.
         // For example, the light data will still exist if the
         // PagedLOD expires.
-        if ( _randomSurfaceLightsComputed ) 
-        {
+        if (_randomSurfaceLightsComputed) {
             return;
-        } 
+        }
         _randomSurfaceLightsComputed = true;
-        
+
         // generate a repeatable random seed
         mt seed;
         mt_init(&seed, unsigned(123));
@@ -712,13 +695,13 @@ public:
             SGMaterial *mat = matTris[i].getMaterial();
             if (!mat)
                 continue;
-            
+
             float coverage = mat->get_light_coverage();
             if (coverage <= 0)
                 continue;
-                        
+
             int texIndex = matTris[i].getTextureIndex();
-            
+
             std::vector<SGVec3f> randomPoints;
             matTris[i].addRandomSurfacePoints(coverage, 3, mat->get_one_object_mask(texIndex), randomPoints);
             std::vector<SGVec3f>::iterator j;
@@ -727,7 +710,7 @@ public:
                 // factor = sg_random() ^ 2, range = 0 .. 1 concentrated towards 0
                 float factor = mt_rand(&seed);
                 factor *= factor;
-                
+
                 float bright = 1;
                 SGVec4f color;
                 if ( zombie > 0.5 ) {
@@ -747,13 +730,13 @@ public:
             }
         }
     }
-    
+
     // Generate all the lighting objects for the tile.
     osg::LOD* generateLightingTileObjects(std::vector<SGTriangleInfo>& matTris, const SGMaterialCache* matcache)
     {
       SGLightBin randomTileLights;
       computeRandomSurfaceLights(matTris, randomTileLights);
-      
+
       osg::ref_ptr<osg::Group> lightGroup = new SGOffsetTransform(0.94);
       SGVec3f up(0, 0, 1);
 
@@ -761,10 +744,10 @@ public:
         osg::ref_ptr<osg::Group> groundLights0 = new osg::Group;
         groundLights0->setNodeMask(GROUNDLIGHTS0_BIT);
 
-        osg::ref_ptr<EffectGeode> geode = new EffectGeode;        
+        osg::ref_ptr<EffectGeode> geode = new EffectGeode;
         osg::ref_ptr<Effect> lightEffect = getLightEffect(24, osg::Vec3(1, 0.001, 0.00001), 1, 8, false, _options);
-        
-        geode->setEffect(lightEffect);                
+
+        geode->setEffect(lightEffect);
         geode->addDrawable(SGLightFactory::getLights(tileLights));
         geode->addDrawable(SGLightFactory::getLights(randomTileLights, 4, -0.3f));
         groundLights0->addChild(geode);
@@ -774,20 +757,20 @@ public:
       if (randomTileLights.getNumLights() > 0) {
         osg::ref_ptr<osg::Group> groundLights1 = new osg::Group;
         groundLights1->setNodeMask(GROUNDLIGHTS1_BIT);
-        
+
         osg::ref_ptr<osg::Group> groundLights2 = new osg::Group;
         groundLights2->setNodeMask(GROUNDLIGHTS2_BIT);
 
         osg::ref_ptr<EffectGeode> geode1 = new EffectGeode;
-        
-        osg::ref_ptr<Effect> lightEffect = getLightEffect(24, osg::Vec3(1, 0.001, 0.00001), 1, 8, false, _options);        
-        geode1->setEffect(lightEffect);        
+
+        osg::ref_ptr<Effect> lightEffect = getLightEffect(24, osg::Vec3(1, 0.001, 0.00001), 1, 8, false, _options);
+        geode1->setEffect(lightEffect);
         geode1->addDrawable(SGLightFactory::getLights(randomTileLights, 2, -0.15f));
         groundLights1->addChild(geode1);
         lightGroup->addChild(groundLights1);
-        
+
         osg::ref_ptr<EffectGeode> geode2 = new EffectGeode;
-        
+
         geode2->setEffect(lightEffect);
         geode2->addDrawable(SGLightFactory::getLights(randomTileLights));
         groundLights2->addChild(geode2);
@@ -795,17 +778,17 @@ public:
       }
 
       if (! vasiLights.empty()) {
-        EffectGeode* vasiGeode = new EffectGeode;        
-        Effect* vasiEffect = getLightEffect(24, osg::Vec3(1, 0.0001, 0.000001), 1, 24, true, _options);
-        vasiGeode->setEffect(vasiEffect);
-        SGVec4f red(1, 0, 0, 1);
-        SGMaterial* mat = 0;
-        if (matcache)
-          mat = matcache->find("RWY_RED_LIGHTS");
-        if (mat) {
-          red = mat->get_light_color();
-        }
-        
+          EffectGeode* vasiGeode = new EffectGeode;
+          Effect* vasiEffect = getLightEffect(24, osg::Vec3(1, 0.0001, 0.000001), 1, 24, true, _options);
+          vasiGeode->setEffect(vasiEffect);
+          SGVec4f red(1, 0, 0, 1);
+          SGMaterial* mat = 0;
+          if (matcache)
+              mat = matcache->find("RWY_RED_LIGHTS");
+          if (mat) {
+              red = mat->get_light_color();
+          }
+
         SGVec4f white(1, 1, 1, 1);
         mat = 0;
         if (matcache)
@@ -929,17 +912,16 @@ public:
       }
 
       SGMatModelBin     randomModels;
-      
+
       SGBuildingBinList randomBuildings;
-      
+
       if (matlib && (use_random_objects || use_random_buildings)) {
-          computeRandomObjectsAndBuildings( matTris, 
-                                            building_density,
-                                            use_random_objects,
-                                            use_random_buildings,
-                                            randomModels,
-                                            randomBuildings
-                                          );
+          computeRandomObjectsAndBuildings(matTris,
+                                           building_density,
+                                           use_random_objects,
+                                           use_random_buildings,
+                                           randomModels,
+                                           randomBuildings);
       }
 
       if (randomModels.getNumModels() > 0) {
@@ -1036,13 +1018,13 @@ public:
 
     /// The original options to use for this bunch of models
     osg::ref_ptr<SGReaderWriterOptions>     _options;
-    string                                  _path;
+    std::string _path;
     osg::ref_ptr<osg::Node>                 _rootNode;
     SGVec3d                                 _gbs_center;
     bool                                    _randomSurfaceLightsComputed;
     bool                                    _tileRandomObjectsComputed;
-    
-    // most of these are just point and color arrays - extracted from the 
+
+    // most of these are just point and color arrays - extracted from the
     // .BTG PointGeometry at tile load time.
     // It shouldn't be too much to keep this in memory even if we don't use it.
     SGLightBin                              tileLights;
@@ -1053,5 +1035,5 @@ public:
     SGLightListBin                          odalLights;
     SGDirectionalLightListBin               holdshortLights;
     SGDirectionalLightListBin               guardLights;
-    SGDirectionalLightListBin               reilLights;    
+    SGDirectionalLightListBin reilLights;
 };
