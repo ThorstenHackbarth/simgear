@@ -6,7 +6,7 @@
 exclude: |
   (?x)^(3rdparty/|
         simgear/canvas/ShaderVG/|
-        \.gitignore$)
+        (.*/)? \.gitignore$)
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
