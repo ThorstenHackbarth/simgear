@@ -1,12 +1,15 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2014 Thomas Geymayer
 #define BOOST_TEST_MODULE cppbind
 #include <BoostTestTargetConfig.h>
 
 #include "TestContext.hxx"
 
+#include <simgear/math/SGMath.hxx>
 #include <simgear/nasal/cppbind/Ghost.hxx>
+#include <simgear/nasal/cppbind/NasalCode.hxx>
 #include <simgear/nasal/cppbind/NasalHash.hxx>
 #include <simgear/nasal/cppbind/NasalString.hxx>
-#include <simgear/math/SGMath.hxx>
 #include <simgear/structure/map.hxx>
 
 #include <cstring>
@@ -454,7 +457,7 @@ BOOST_AUTO_TEST_CASE( cppbind_misc_testing )
   BOOST_CHECK_EQUAL( string.c_str(), std::string("Test") );
   BOOST_CHECK( string.starts_with(string) );
   BOOST_CHECK( string.starts_with(String(c, "T")) );
-  BOOST_CHECK( string.starts_with(String(c, "Te")) );
+  BOOST_CHECK(string.starts_with(String(c, "Te"))); // codespell:ignore te
   BOOST_CHECK( string.starts_with(String(c, "Tes")) );
   BOOST_CHECK( string.starts_with(String(c, "Test")) );
   BOOST_CHECK( !string.starts_with(String(c, "Test1")) );
@@ -488,4 +491,91 @@ BOOST_AUTO_TEST_CASE( cppbind_context )
   BOOST_CHECK_EQUAL(ctx.from_nasal<int>(naVec_get(vec, 1)), 2);
   BOOST_CHECK_EQUAL(ctx.from_nasal<double>(naVec_get(vec, 2)), 3.4);
   BOOST_CHECK_EQUAL(ctx.from_nasal<std::string>(naVec_get(vec, 3)), "test");
+}
+
+BOOST_AUTO_TEST_CASE(nasal_code)
+{
+    using namespace nasal;
+
+    // Malformed Nasal: parse error → not valid, errors recorded
+    {
+        NasalCode bad(naNil(), "var x = { unclosed hash", "bad.nas");
+        BOOST_CHECK(!bad.isValid());
+        BOOST_REQUIRE(!bad.getErrors().empty());
+        BOOST_CHECK(bad.getErrors()[0].find("bad.nas") != std::string::npos);
+    }
+
+    // Default-constructed NasalCode is not valid and has no errors
+    {
+        NasalCode empty;
+        BOOST_CHECK(!empty.isValid());
+        BOOST_CHECK(empty.getErrors().empty());
+    }
+
+    // call<Ret>() with no arguments: unambiguously uses the typed-return overload
+    {
+        NasalCode code(naNil(), "3 + 4");
+        BOOST_REQUIRE(code.isValid());
+        BOOST_CHECK(code.getErrors().empty());
+        BOOST_CHECK_EQUAL(code.call<double>(), 7.0);
+        BOOST_CHECK_EQUAL(code.call<int>(), 7);
+    }
+
+    // call(args...) returns naRef — convert with from_nasal for different types
+    {
+        NasalCode code(naNil(), "arg[0] + arg[1]");
+        BOOST_REQUIRE(code.isValid());
+        TestContext ctx;
+        BOOST_CHECK_EQUAL(ctx.from_nasal<double>(code.call(10.0, 5.0)), 15.0);
+        BOOST_CHECK_EQUAL(ctx.from_nasal<int>(code.call(3, 4)), 7);
+    }
+
+    // call<Ret, Arg1, Arg2>(a, b): providing all template args avoids ambiguity
+    // and exercises the typed-return overload together with arguments
+    {
+        NasalCode code(naNil(), "arg[0] + arg[1]");
+        BOOST_REQUIRE(code.isValid());
+        BOOST_CHECK_EQUAL((code.call<double, double, double>(10.0, 5.0)), 15.0);
+    }
+
+    // String arguments: Nasal concatenation operator ~
+    {
+        NasalCode code(naNil(), "arg[0] ~ arg[1]");
+        BOOST_REQUIRE(code.isValid());
+        TestContext ctx;
+        BOOST_CHECK_EQUAL(
+            ctx.from_nasal<std::string>(code.call(std::string("hello"), std::string(" world"))),
+            "hello world");
+    }
+
+    // Boolean result: Nasal comparison returns 1 (true) or 0 (false)
+    {
+        NasalCode code(naNil(), "arg[0] > arg[1]");
+        BOOST_REQUIRE(code.isValid());
+        TestContext ctx;
+        BOOST_CHECK_EQUAL(ctx.from_nasal<bool>(code.call(5.0, 3.0)), true);
+        BOOST_CHECK_EQUAL(ctx.from_nasal<bool>(code.call(1.0, 9.0)), false);
+    }
+
+    // callWithLocals: variables from the locals hash are visible inside the code
+    {
+        TestContext ctx;
+        Hash locals(ctx);
+        locals.set("x", 6);
+        locals.set("y", 7);
+
+        NasalCode code(naNil(), "x * y");
+        BOOST_REQUIRE(code.isValid());
+        naRef result = code.callWithLocals(locals.get_naRef());
+        BOOST_CHECK_EQUAL(ctx.from_nasal<double>(result), 42.0);
+    }
+
+    // Runtime error: calling nil as a function records an error
+    {
+        NasalCode code(naNil(), "var f = nil; f()");
+        BOOST_REQUIRE(code.isValid()); // parses OK
+        naRef result = code.call();
+        BOOST_CHECK(naIsNil(result));
+        BOOST_CHECK(!code.getErrors().empty());
+    }
 }

@@ -15,8 +15,9 @@
 #include "simgear/props/props.hxx"
 
 #include <simgear/props/props_io.hxx>
-#include <simgear/structure/ExpressionBinding.hxx>
 #include <simgear/structure/exception.hxx>
+
+static std::map<std::string, SGAbstractBinding::BindingFactory> sg_bindingFactories;
 
 SGAbstractBinding::SGAbstractBinding()
     : _arg(new SGPropertyNode)
@@ -84,22 +85,23 @@ SGSharedPtr<SGAbstractBinding> SGAbstractBinding::createFromProps(SGPropertyNode
     const auto cmdName = config->getStringValue("command");
     SGAbstractBinding_ptr binding;
 
-    if (cmdName == "expression") {
-        binding = new simgear::ExpressionBinding();
-    } else {
-        // this code would give nicer error feedback, but requires us to handle
-        // delayed command registration, and reorder the fg_init.cxx code
-#if 0
-        auto cmd = SGCommandMgr::instance()->getCommand(cmdName);
-        if (!cmd) {
-            throw sg_exception("Binding references undefined command:" + cmdName, {}, sg_location{config->getLocation()});
-        }
-#endif
+    // Check registered factories first
+    auto it = sg_bindingFactories.find(cmdName);
+    if (it != sg_bindingFactories.end()) {
+        binding = it->second(config, SGPropertyNode_ptr{root});
+    }
+
+    if (!binding) {
         binding = new SGBinding{cmdName};
     }
 
     binding->read(config, root);
     return binding;
+}
+
+void SGAbstractBinding::registerFactory(const std::string& commandName, BindingFactory factory)
+{
+    sg_bindingFactories[commandName] = std::move(factory);
 }
 
 

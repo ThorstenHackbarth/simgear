@@ -28,6 +28,17 @@ Expression* bindingSettingParser(const SGPropertyNode* exp,
 expression::ExpParserRegistrar bindingSettingRegistrar("binding-setting",
                                                        bindingSettingParser);
 
+static SGSharedPtr<SGAbstractBinding>
+expressionBindingFactory(SGPropertyNode_ptr config, SGPropertyNode_ptr root)
+{
+    return new simgear::ExpressionBinding();
+}
+
+static bool expressionBindingRegistered = [] {
+    SGAbstractBinding::registerFactory("expression", expressionBindingFactory);
+    return true;
+}();
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void ExpressionBinding::read(const SGPropertyNode* node, SGPropertyNode* root)

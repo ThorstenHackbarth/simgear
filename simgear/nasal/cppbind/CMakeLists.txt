@@ -1,9 +1,13 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# SPDX-FileCopyrightText: 2010 James Turner <james@flightgear.org>
+
 include (SimGearComponent)
 
 set(HEADERS
   cppbind_fwd.hxx
   Ghost.hxx
   NasalCallContext.hxx
+  NasalCode.hxx
   NasalContext.hxx
   NasalHash.hxx
   NasalMe.hxx
@@ -23,6 +27,7 @@ set(DETAIL_HEADERS
 
 set(SOURCES
   Ghost.cxx
+  NasalCode.cxx
   NasalContext.cxx
   NasalHash.cxx
   NasalString.cxx

@@ -18,6 +18,7 @@ namespace nasal
   class Context;
   class ContextWrapper;
   class Hash;
+  class NasalCode;
   struct Me;
   class Object;
   class String;

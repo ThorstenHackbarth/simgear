@@ -10,8 +10,9 @@
 
 #include <simgear/compiler.h>
 
-#include <string>
+#include <functional>
 #include <map>
+#include <string>
 #include <vector>
 
 #include <simgear/props/props.hxx>
@@ -33,6 +34,26 @@ public:
      * @param root
      */
     static SGSharedPtr<SGAbstractBinding> createFromProps(SGPropertyNode_ptr config, SGPropertyNode* root = nullptr);
+
+    /**
+     * @brief Factory callback type for creating custom binding subclasses.
+     *
+     * Called with the configuration node and the root node; returns a new
+     * binding instance, or nullptr to fall through to the default handler.
+     */
+    using BindingFactory = std::function<SGSharedPtr<SGAbstractBinding>(SGPropertyNode_ptr, SGPropertyNode_ptr)>;
+
+    /**
+     * @brief Register a factory callback for a given command name.
+     *
+     * When createFromProps encounters a binding whose command matches
+     * @p commandName, the registered @p factory is invoked instead of
+     * constructing a plain SGBinding.
+     *
+     * @param commandName  The command name to match (e.g. "my-custom-cmd")
+     * @param factory      Factory callback returning a new binding instance
+     */
+    static void registerFactory(const std::string& commandName, BindingFactory factory);
 
     virtual void clear();
 
