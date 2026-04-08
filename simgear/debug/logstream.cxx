@@ -85,6 +85,8 @@ public:
             }
         }
 
+        _combinedLogLevels += _consoleLevels;
+
 #if defined (SG_WINDOWS)
         /*
          * 2016-09-20(RJH) - Reworked console handling
@@ -181,7 +183,9 @@ public:
 #endif
 
         if (doLogToStderr) {
-            m_callbacks.push_back(new simgear::StderrLogCallback());
+            auto stdErrCallback = new simgear::StderrLogCallback();
+            stdErrCallback->setLogLevels(_consoleLevels);
+            m_callbacks.push_back(stdErrCallback);
         }
 
 #if defined (SG_WINDOWS)
