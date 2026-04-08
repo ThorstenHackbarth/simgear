@@ -15,9 +15,17 @@
 #include "simgear/props/props.hxx"
 
 #include <simgear/props/props_io.hxx>
+#include <simgear/structure/ExpressionBinding.hxx>
 #include <simgear/structure/exception.hxx>
 
-static std::map<std::string, SGAbstractBinding::BindingFactory> sg_bindingFactories;
+using BindingRegistrationMap = std::map<std::string, SGAbstractBinding::BindingFactory>;
+
+// use a function-static instead of a global variable to avoid static initialization order issues
+BindingRegistrationMap& getGlobalRegistrations()
+{
+    static BindingRegistrationMap global_registrations;
+    return global_registrations;
+}
 
 SGAbstractBinding::SGAbstractBinding()
     : _arg(new SGPropertyNode)
@@ -86,9 +94,14 @@ SGSharedPtr<SGAbstractBinding> SGAbstractBinding::createFromProps(SGPropertyNode
     SGAbstractBinding_ptr binding;
 
     // Check registered factories first
-    auto it = sg_bindingFactories.find(cmdName);
-    if (it != sg_bindingFactories.end()) {
+    auto it = getGlobalRegistrations().find(cmdName);
+    if (it != getGlobalRegistrations().end()) {
         binding = it->second(config, SGPropertyNode_ptr{root});
+    }
+
+    if (cmdName == "expression") {
+        binding = new simgear::ExpressionBinding();
+        binding->read(config, root);
     }
 
     if (!binding) {
@@ -101,7 +114,7 @@ SGSharedPtr<SGAbstractBinding> SGAbstractBinding::createFromProps(SGPropertyNode
 
 void SGAbstractBinding::registerFactory(const std::string& commandName, BindingFactory factory)
 {
-    sg_bindingFactories[commandName] = std::move(factory);
+    getGlobalRegistrations()[commandName] = std::move(factory);
 }
 
 

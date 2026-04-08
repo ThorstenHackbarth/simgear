@@ -55,6 +55,18 @@ public:
      */
     static void registerFactory(const std::string& commandName, BindingFactory factory);
 
+    template <class T>
+    class Registrant
+    {
+    public:
+        Registrant(const std::string& commandName, BindingFactory f)
+        {
+            SGAbstractBinding::registerFactory(commandName, f);
+        }
+
+        // could implement a dtor to unregister but not needed at the moment
+    };
+
     virtual void clear();
 
     /**

@@ -31,13 +31,12 @@ expression::ExpParserRegistrar bindingSettingRegistrar("binding-setting",
 static SGSharedPtr<SGAbstractBinding>
 expressionBindingFactory(SGPropertyNode_ptr config, SGPropertyNode_ptr root)
 {
+    SG_UNUSED(config);
+    SG_UNUSED(root);
     return new simgear::ExpressionBinding();
 }
 
-static bool expressionBindingRegistered = [] {
-    SGAbstractBinding::registerFactory("expression", expressionBindingFactory);
-    return true;
-}();
+SGAbstractBinding::Registrant<simgear::ExpressionBinding> expressionBindingRegistrant("expression", expressionBindingFactory);
 
 ///////////////////////////////////////////////////////////////////////////////
 
