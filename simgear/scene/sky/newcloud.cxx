@@ -50,6 +50,8 @@ SGVoxelTextureCloud::SGVoxelTextureCloud(const string name, const SGPropertyNode
 {
     _reflectX = mt_rand(_seed) > 0.5;
     _reflectY = mt_rand(_seed) > 0.5;
+    _densityVariation = cld_def->getFloatValue("cloud-density-variation", 0.2f);
+    _typeVariation = cld_def->getFloatValue("cloud-type-variation", 0.2f);
 
     simgear::PropertyList detailedTextures = cld_def->getChildren("voxel-texture");
 
@@ -283,12 +285,17 @@ int SGVoxelTextureCloud::addCloudToVoxelField(ImageRef voxelField, ImageRef clou
                 const osg::Vec4f cloudV = cloudVoxels->getColor(ii, jj, k);
                 if (cloudV[2] > 0.0f) {
                     const osg::Vec4f currentV = voxelField->getColor(px, py, pz);
+
+                    // Apply some random variation to the type and density for this specific cloud instance.
+                    const float type = std::clamp(cloudV[1] + float(mt_rand(_seed) - 0.5f) * _typeVariation, 0.0f, 1.0f);
+                    const float density = std::clamp(cloudV[2] + float(mt_rand(_seed) - 0.5f) * _densityVariation, 0.0f, 1.0f);
+
                     // When merging with the existing voxel data we want to take the
                     // maximum Dimension, maximum Type, maximum density.
                     // We set the standard in-cloud SDF minimum as it is standard across all cloud interiors.
                     const osg::Vec4f newV = osg::Vec4f(std::max(cloudV[0], currentV[0]),
-                                                       std::max(cloudV[1], currentV[1]),
-                                                       std::max(cloudV[2], currentV[2]),
+                                                       std::max(type, currentV[1]),
+                                                       std::max(density, currentV[2]),
                                                        -SDFMin);
                     voxelField->setColor(newV, px, py, pz);
                 }

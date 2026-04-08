@@ -62,6 +62,10 @@ private:
     bool _reflectX;
     bool _reflectY;
 
+    // Simple per-cloud variation to density and type, applied per-voxel.
+    float _densityVariation;
+    float _typeVariation;
+
     void copySubImage(const osg::Image* srcImage, int src_s, int src_t, int width, int height, osg::Image* destImage, int dest_s, int dest_t) const;
 
     // Generate a Cloud
