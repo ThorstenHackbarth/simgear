@@ -47,6 +47,14 @@ public:
     const std::vector<std::string>& getErrors() const;
 
     /**
+       * Call the compiled code with no arguments. Creates a new
+       * naContext for the invocation.
+       *
+       * @return The naRef result of calling the code
+       */
+    naRef call() const;
+
+    /**
        * Call the compiled code with variadic arguments. Creates a new
        * naContext for each invocation.
        *
@@ -55,7 +63,7 @@ public:
        * @return The naRef result of calling the code
        */
     template <class... Args>
-    naRef call(Args... args);
+    naRef call(Args... args) const;
 
     /**
        * Call the compiled code and convert the result to the requested type.
@@ -66,7 +74,7 @@ public:
        * @return The result converted to type Ret
        */
     template <class Ret, class... Args>
-    Ret call(Args... args);
+    Ret call(Args... args) const;
 
     /**
        * Call the compiled code with an explicit locals hash. Creates a new
@@ -75,10 +83,10 @@ public:
        * @param locals  Hash to use as the local variable namespace (may be nil)
        * @return The naRef result of calling the code
        */
-    naRef callWithLocals(naRef locals);
+    naRef callWithLocals(naRef locals) const;
 
 private:
-    naRef doCall(Context& ctx, std::initializer_list<naRef> args);
+    naRef doCall(Context& ctx, std::initializer_list<naRef> args) const;
 
     ObjectHolder<> _codeRef;
     std::vector<std::string> _errors;
@@ -86,7 +94,7 @@ private:
 
 //----------------------------------------------------------------------------
 template <class... Args>
-naRef NasalCode::call(Args... args)
+naRef NasalCode::call(Args... args) const
 {
     Context ctx;
     return doCall(ctx, {ctx.to_nasal(args)...});
@@ -94,7 +102,7 @@ naRef NasalCode::call(Args... args)
 
 //----------------------------------------------------------------------------
 template <class Ret, class... Args>
-Ret NasalCode::call(Args... args)
+Ret NasalCode::call(Args... args) const
 {
     Context ctx;
     naRef result = doCall(ctx, {ctx.to_nasal(args)...});

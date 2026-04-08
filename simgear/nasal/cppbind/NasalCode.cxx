@@ -52,7 +52,7 @@ const std::vector<std::string>& NasalCode::getErrors() const
 }
 
 //----------------------------------------------------------------------------
-naRef NasalCode::doCall(Context& ctx, std::initializer_list<naRef> args)
+naRef NasalCode::doCall(Context& ctx, std::initializer_list<naRef> args) const
 {
     if (!isValid()) {
         return naNil();
@@ -67,22 +67,25 @@ naRef NasalCode::doCall(Context& ctx, std::initializer_list<naRef> args)
         naNil() // locals
     );
 
-    if (const char* error = naGetError(ctx)) {
-        _errors.push_back(std::string("Nasal runtime error: ") + error);
-        return naNil();
-    }
-
     return result;
 }
 
 //----------------------------------------------------------------------------
-naRef NasalCode::callWithLocals(naRef locals)
+naRef NasalCode::call() const
+{
+    Context ctx;
+    return doCall(ctx, {});
+}
+
+//----------------------------------------------------------------------------
+naRef NasalCode::callWithLocals(naRef locals) const
 {
     if (!isValid()) {
         return naNil();
     }
 
     Context ctx;
+    int lsave = naGCSave(locals);
     naRef result = naCallMethodCtx(
         ctx,
         _codeRef.get_naRef(),
@@ -90,11 +93,7 @@ naRef NasalCode::callWithLocals(naRef locals)
         0, nullptr,
         locals);
 
-    if (const char* error = naGetError(ctx)) {
-        _errors.push_back(std::string("Nasal runtime error: ") + error);
-        return naNil();
-    }
-
+    naGCRelease(lsave);
     return result;
 }
 

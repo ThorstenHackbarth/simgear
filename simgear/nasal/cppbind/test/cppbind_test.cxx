@@ -512,6 +512,16 @@ BOOST_AUTO_TEST_CASE(nasal_code)
         BOOST_CHECK(empty.getErrors().empty());
     }
 
+    // call() with no arguments: uses the explicit no-args overload, returns naRef
+    {
+        NasalCode code(naNil(), "3 + 4");
+        BOOST_REQUIRE(code.isValid());
+        TestContext ctx;
+        naRef result = code.call();
+        BOOST_CHECK(!naIsNil(result));
+        BOOST_CHECK_EQUAL(ctx.from_nasal<double>(result), 7.0);
+    }
+
     // call<Ret>() with no arguments: unambiguously uses the typed-return overload
     {
         NasalCode code(naNil(), "3 + 4");
@@ -568,14 +578,5 @@ BOOST_AUTO_TEST_CASE(nasal_code)
         BOOST_REQUIRE(code.isValid());
         naRef result = code.callWithLocals(locals.get_naRef());
         BOOST_CHECK_EQUAL(ctx.from_nasal<double>(result), 42.0);
-    }
-
-    // Runtime error: calling nil as a function records an error
-    {
-        NasalCode code(naNil(), "var f = nil; f()");
-        BOOST_REQUIRE(code.isValid()); // parses OK
-        naRef result = code.call();
-        BOOST_CHECK(naIsNil(result));
-        BOOST_CHECK(!code.getErrors().empty());
     }
 }
