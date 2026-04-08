@@ -187,7 +187,7 @@ osg::Image* make3DNoiseImage(int texSize)
     GLubyte* ptr;
     double amp = 0.5;
 
-    SG_LOG(SG_TERRAIN, SG_BULK, "creating 3D noise texture... ");
+    SG_BULK_LOG(SG_TERRAIN, "creating 3D noise texture... ");
 
     for (f = 0, inc = 0; f < numOctaves; ++f, frequency *= 2, ++inc, amp *= 0.5) {
         SetNoiseFrequency(frequency);

@@ -217,4 +217,12 @@ logstream& sglog();
         sglog().hexdump(C, P, __FILE__, __LINE__, __FUNCTION__, MEM, LEN)
 #endif
 
+#if defined(ENABLE_BULK_LOGGING)
+    #define SG_BULK_LOG(C, M) SG_LOG(C, SG_BULK, M)
+#else
+    #define SG_BULK_LOG(C, M) \
+        do {                  \
+        } while (0)
+#endif
+
 #define SG_ORIGIN __FILE__ ":" SG_STRINGIZE(__LINE__)

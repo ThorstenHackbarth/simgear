@@ -291,10 +291,9 @@ void addTooltipAnimations(const SGPath& path, SGPropertyNode_ptr props, osg::ref
     set-tooltip. We use the object-name as the tooltip-id, and we use the
     animation's objectname and property name/value(s) in the tooltip label. */
     PropertyList animations = props->getChildren("animation");
-    SG_LOG(SG_INPUT, SG_BULK, "animations.size()=" << animations.size()
-            << " path=" << path
-            << " props=" << (props ? props->getPath() : "")
-            );
+    SG_BULK_LOG(SG_INPUT, "animations.size()=" << animations.size()
+                                               << " path=" << path
+                                               << " props=" << (props ? props->getPath() : ""));
 
     /* We want to add to any existing tooltip for a particular object-name
     (e.g. joysticks might have separate animations for elevator and aileron
@@ -412,12 +411,11 @@ void addTooltipAnimations(const SGPath& path, SGPropertyNode_ptr props, osg::ref
         }
         hovered_binding->setStringValue("label", label);
 
-        SG_LOG(SG_INPUT, SG_BULK,
-                "have added/updated auto-tooltip."
-                << " num_new_animations=" << num_new_animations
-                << " new_animation=" << new_animation << ":\n"
-                << DumpSGPropertyNode(new_animation, "    ")
-                );
+        SG_BULK_LOG(SG_INPUT,
+                    "have added/updated auto-tooltip."
+                        << " num_new_animations=" << num_new_animations
+                        << " new_animation=" << new_animation << ":\n"
+                        << DumpSGPropertyNode(new_animation, "    "));
     }
 
     /* This is very verbose, so disabled even at level SG_BULK. */

@@ -114,6 +114,8 @@ option(ENABLE_CCACHE    "Build SimGear with the ccache compiler cache (note: pre
 option(ENABLE_PRECOMPILED_HEADERS "Enable use of precompiled headers." ON)
 option(ENABLE_VIDEO_RECORD "Set to ON to build SimGear with video recording" ON)
 
+option(ENABLE_BULK_LOGGING "Set to OFF to disable bulk logging messages in SimGear" ON)
+
 include (DetectArch)
 include (ExportDebugSymbols)
 

@@ -380,7 +380,7 @@ void Request::setFailure(int code, const std::string& reason)
 //------------------------------------------------------------------------------
 void Request::setReadyState(ReadyState state)
 {
-    SG_LOG(SG_IO, SG_BULK, "Request::setReadyState:" << state << " (old state was:" << _ready_state << ")");
+    SG_BULK_LOG(SG_IO, "Request::setReadyState:" << state << " (old state was:" << _ready_state << ")");
 
     _ready_state = state;
     if (state == DONE) {
