@@ -426,16 +426,7 @@ namespace simgear {
 
     int to_int(const std::string& s, int base)
     {
-        stringstream ss(s);
-        switch (base) {
-        case 8:      ss >> std::oct; break;
-        case 16:     ss >> std::hex; break;
-        default: break;
-        }
-
-        int result;
-        ss >> result;
-        return result;
+        return std::stoi(s, nullptr, base);
     }
 
     template<>

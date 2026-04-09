@@ -147,6 +147,8 @@ std::string simplify(const std::string& s);
 
 /**
       * convert a string representing a decimal number, to an int
+      *
+      * if base is -1, the base is auto-detected from the string format (0x for hex, 0 for octal, otherwise decimal)
       */
 int to_int(const std::string& s, int base = 10);
 
