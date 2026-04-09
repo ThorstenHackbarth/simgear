@@ -732,7 +732,9 @@ sgLoad3DModel_internal(const SGPath& path,
     } // end of submodel loading
 
     auto particlesManager = ParticlesGlobalManager::instance();
-    if (particlesManager->isEnabled()) { //dbOptions->getPluginStringData("SimGear::PARTICLESYSTEM") != "OFF") {
+    if (particlesManager->isEnabled() && props->hasChild("particlesystem")) { //dbOptions->getPluginStringData("SimGear::PARTICLESYSTEM") != "OFF") {
+        SG_LOG(SG_ENVIRONMENT, SG_DEV_ALERT, "Particles disabled as they are not supported by the PBR/HDR pipeline");
+#if 0
         std::vector<SGPropertyNode_ptr> particle_nodes;
         particle_nodes = props->getChildren("particlesystem");
         for (unsigned i = 0; i < particle_nodes.size(); ++i) {
@@ -751,6 +753,7 @@ sgLoad3DModel_internal(const SGPath& path,
                                                          options2.get());
             findAndAttach(group, particle, particle_nodes[i], path);
         }
+#endif
     }
 
     std::vector<SGPropertyNode_ptr> text_nodes;

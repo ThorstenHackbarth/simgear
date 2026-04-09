@@ -333,7 +333,7 @@ SGReadExpression(SGPropertyNode* inputRoot, const SGPropertyNode* expression, si
             return 0;
         }
         else
-            SG_LOG(SG_IO, SG_DEV_WARN, "Table input node " << inputNode->getPath() << " = '" << inputNode->getStringValue()  << "'  Root: " << inputRoot->getPath());
+            SG_LOG(SG_IO, SG_BULK, "Table input node " << inputNode->getPath() << " = '" << inputNode->getStringValue() << "'  Root: " << inputRoot->getPath());
 
         SGSharedPtr<SGExpression<T> > inputExpression;
         inputExpression = SGReadExpression<T>(inputRoot, inputNode, parser);
