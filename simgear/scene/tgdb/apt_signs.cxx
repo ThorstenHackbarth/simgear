@@ -308,7 +308,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
     SGMaterial *material = 0;
 
     if (size < -1 || size > 5){
-        SG_LOG(SG_TERRAIN, SG_INFO, SIGN "Found illegal sign size value of '" << size << "' for " << content << ".");
+        SG_LOG(SG_TERRAIN, SG_DEV_WARN, SIGN "Found illegal sign size value of '" << size << "' for " << content << ".");
         size = -1;
     }
 
@@ -319,13 +319,13 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
 
         if (*s == '{') {
             if (cmd)
-                SG_LOG(SG_TERRAIN, SG_INFO, SIGN "Illegal taxiway sign syntax. Unexpected '{' in '" << content << "'.");
+                SG_LOG(SG_TERRAIN, SG_DEV_WARN, SIGN "Illegal taxiway sign syntax. Unexpected '{' in '" << content << "'.");
             cmd = true;
             continue;
 
         } else if (*s == '}') {
             if (!cmd)
-                SG_LOG(SG_TERRAIN, SG_INFO, SIGN "Illegal taxiway sign syntax. Unexpected '}' in '" << content << "'.");
+                SG_LOG(SG_TERRAIN, SG_DEV_WARN, SIGN "Illegal taxiway sign syntax. Unexpected '}' in '" << content << "'.");
             cmd = false;
             continue;
 
@@ -343,7 +343,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
             }
 
             if (!*s) {
-                SG_LOG(SG_TERRAIN, SG_INFO, SIGN "unclosed { in sign '" << content << "'.");
+                SG_LOG(SG_TERRAIN, SG_DEV_WARN, SIGN "unclosed { in sign '" << content << "'.");
             } else if (s[1] == '=') {
                 for (s += 2; *s; s++) {
                     value += *s;
@@ -351,7 +351,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
                         break;
                 }
                 if (!*s)
-                    SG_LOG(SG_TERRAIN, SG_INFO, SIGN "unclosed { in sign '" << content << "'.");
+                    SG_LOG(SG_TERRAIN, SG_DEV_WARN, SIGN "unclosed { in sign '" << content << "'.");
             }
 
             if (name == "no-entry") {
@@ -392,7 +392,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
                 if (n == "@Y") {
                     if (size > 3) {
                         size = -1;
-                        SG_LOG(SG_TERRAIN, SG_INFO, SIGN << content << " has wrong size. Allowed values are 1 to 3");
+                        SG_LOG(SG_TERRAIN, SG_DEV_WARN, SIGN << content << " has wrong size. Allowed values are 1 to 3");
                     }
                     sign_height = HT[size < 0 ? 3 : size];
                     newmat = "YellowSign";
@@ -402,7 +402,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
                 } else if (n == "@R") {
                     if (size > 3) {
                         size = -1;
-                        SG_LOG(SG_TERRAIN, SG_INFO, SIGN << content << " has wrong size. Allowed values are 1 to 3");
+                        SG_LOG(SG_TERRAIN, SG_DEV_WARN, SIGN << content << " has wrong size. Allowed values are 1 to 3");
                     }
                     sign_height = HT[size < 0 ? 3 : size];
                     newmat = "RedSign";
@@ -412,7 +412,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
                 } else if (n == "@L") {
                     if (size > 3) {
                         size = -1;
-                        SG_LOG(SG_TERRAIN, SG_INFO, SIGN << content << " has wrong size. Allowed values are 1 to 3");
+                        SG_LOG(SG_TERRAIN, SG_DEV_WARN, SIGN << content << " has wrong size. Allowed values are 1 to 3");
                     }
                     sign_height = HT[size < 0 ? 3 : size];
                     newmat = "FramedSign";
@@ -422,7 +422,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
                 } else if (n == "@B") {
                     if ( (size != -1) && (size != 4) && (size != 5) ) {
                         size = -1;
-                        SG_LOG(SG_TERRAIN, SG_INFO, SIGN << content << " has wrong size. Allowed values are 4 or 5");
+                        SG_LOG(SG_TERRAIN, SG_DEV_WARN, SIGN << content << " has wrong size. Allowed values are 4 or 5");
                     }
                     sign_height = HT[size < 0 ? 4 : size];
                     newmat = "BlackSign";

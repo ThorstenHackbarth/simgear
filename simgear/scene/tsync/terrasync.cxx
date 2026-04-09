@@ -676,7 +676,7 @@ void SGTerraSync::WorkerThread::updateSyncSlot(SyncSlot &slot)
         slot.pendingKBytes = slot.repository->bytesToDownload() >> 10;
         slot.pendingExtractKBytes = slot.repository->bytesToExtract() >> 10;
 
-        SG_LOG(SG_TERRASYNC, SG_INFO, "sync of " << slot.repository->baseUrl() << ":" << slot.currentItem._dir << " started, queue size is " << slot.queue.size());
+        SG_LOG(SG_TERRASYNC, SG_DEBUG, "sync of " << slot.repository->baseUrl() << ":" << slot.currentItem._dir << " started, queue size is " << slot.queue.size());
     }
 }
 

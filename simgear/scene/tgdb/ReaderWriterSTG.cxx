@@ -530,7 +530,7 @@ struct ReaderWriterSTG::_ModelBin {
         _object_range_bare = _object_range_detailed + bareRangeDelta;
         _object_range_rough = _object_range_detailed + roughRangeDelta;
 
-        SG_LOG(SG_TERRAIN, SG_INFO, "Loading stg file " << absoluteFileName);
+        SG_LOG(SG_TERRAIN, SG_DEBUG, "Loading stg file " << absoluteFileName);
 
         std::string filePath = osgDB::getFilePath(absoluteFileName.utf8Str());
 
@@ -986,7 +986,7 @@ ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* opt
         return ReadResult::FILE_NOT_FOUND;
     }
 
-    SG_LOG(SG_TERRAIN, SG_INFO, "Loading tile " << fileName);
+    SG_LOG(SG_TERRAIN, SG_DEBUG, "Loading tile " << fileName);
 
     std::string basePath = bucket.gen_base_path();
 

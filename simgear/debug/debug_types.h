@@ -88,10 +88,18 @@ const std::string& debugClassToString(sgDebugClass c);
 const std::string& debugPriorityToString(sgDebugPriority p);
 
 namespace simgear {
-// value struct for storing levels
+
+/**
+ * Stores a set of log levels per each logging class, including the
+ * SG_ALL class.
+ *
+ * Internally uses an array, so pretty efficient to access and update.
+ */
 struct LogLevels {
+    /// @brief creates a LogLevels with all priorities set to SG_UNSET_LOG_PRIORITY
     LogLevels();
 
+    /// @brief create a standard string representation of the log levels, in the format which could be parsed by parseLogSpecFromString
     std::string to_string() const;
 
     std::array<sgDebugPriority, SG_MAX_LOG_CLASS> levels;
@@ -101,6 +109,7 @@ struct LogLevels {
         levels[static_cast<int>(c)] = p;
     }
 
+    /// @brief get the debug priority for a level, falling back to SG_ALL if the specific class is not set
     sgDebugPriority get(sgDebugClass c) const;
 };
 
@@ -130,5 +139,8 @@ sgDebugPriority priorityFromString(const std::string& s);
 
 sgDebugClass debugClassFromString(const std::string& s);
 
+/**
+ * @brief parse a string in the format "class=priority,class=priority,..." to a LogLevels struct. Class can be SG_ALL or any of the specific classes. Priority can be any of the defined priorities.
+ */
 std::optional<LogLevels> parseLogSpecFromString(const std::string& spec);
 } // namespace simgear

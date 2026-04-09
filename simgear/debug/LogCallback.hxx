@@ -17,6 +17,15 @@
 
 namespace simgear {
 
+/**
+ * @brief Base class for log callbacks.
+ *
+ * Derived classes should override `doProcessEntry` to handle log entries, returning true
+ * if they logged the message or false if they skipped it for whatever reason.
+ *
+ * Log Callbacks all run on a shared, dedicated worker thread, so must be thread safe,
+ * but will be synchronized with each other.
+ */
 class LogCallback
 {
 public:
@@ -46,6 +55,9 @@ private:
     simgear::LogLevels _logLevels;
 };
 
+/**
+ * Log to a file on disk.
+ */
 class FileLogCallback : public simgear::LogCallback
 {
 public:
@@ -72,6 +84,9 @@ public:
 
 #ifdef SG_WINDOWS
 
+/**
+ * @brief Windows-specific log callback which outputs to the Windows debug output stream
+ */
 class WinDebugLogCallback : public simgear::LogCallback
 {
 public:
