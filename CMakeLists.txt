@@ -492,6 +492,18 @@ configure_file(
 enable_testing()
 include(AddSimGearTest) # helper to setup a test
 
+if(ENABLE_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(
+        httplib
+        GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+        GIT_TAG        v0.18.7
+        GIT_SHALLOW    TRUE
+    )
+    set(HTTPLIB_COMPILE OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(httplib)
+endif()
+
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
 
 find_package(c-ares 1.17 REQUIRED)

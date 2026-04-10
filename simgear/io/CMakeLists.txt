@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2010 James Turner
+
 add_subdirectory(iostreams)
 
 include (SimGearComponent)
@@ -76,6 +79,7 @@ if(ENABLE_TESTS)
 
 add_simgear_test(test_sock socktest.cxx)
 add_simgear_autotest(test_http test_HTTP.cxx)
+target_link_libraries(test_http httplib::httplib)
 if(c-ares_FOUND)
     add_simgear_autotest(test_dns test_DNS.cxx)
 endif()
@@ -84,6 +88,7 @@ add_simgear_test(http_repo_sync http_repo_sync.cxx)
 add_simgear_test(decode_binobj decode_binobj.cxx)
 add_simgear_autotest(test_binobj test_binobj.cxx)
 add_simgear_autotest(test_repository test_repository.cxx)
+target_link_libraries(test_repository httplib::httplib)
 
 
 add_simgear_autotest(test_untar test_untar.cxx)

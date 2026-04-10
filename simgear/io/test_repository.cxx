@@ -8,6 +8,7 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <mutex>
 #include <sstream>
 
 #include <simgear/simgear_config.h>
@@ -248,85 +249,7 @@ void TestRepoEntry::clearFailFlags()
 }
 
 TestRepoEntry* global_repo = NULL;
-
-class TestRepositoryChannel : public TestServerChannel
-{
-public:
-
-    virtual void processRequestHeaders()
-    {
-        state = STATE_IDLE;
-        if (path.find("/repo/") == 0) {
-//            std::cerr << "get for:" << path << std::endl;
-
-            std::string repoPath = path.substr(6);
-            bool lookingForDir = false;
-            std::string::size_type suffix = repoPath.find(".dirindex");
-            if (suffix != std::string::npos) {
-                lookingForDir = true;
-                if (suffix > 0) {
-                    // trim the preceding '/' as well, for non-root dirs
-                    suffix--;
-                }
-
-                repoPath = repoPath.substr(0, suffix);
-            }
-
-            if (repoPath.find("/") == 0) { // trim leading /
-                repoPath = repoPath.substr(1);
-            }
-
-            TestRepoEntry* entry = global_repo->findEntry(repoPath);
-            if (!entry) {
-                sendErrorResponse(404, false, "unknown repo path:" + repoPath);
-                return;
-            }
-
-            if (entry->isDir != lookingForDir) {
-                sendErrorResponse(404, false, "mismatched path type:" + repoPath);
-                return;
-            }
-
-            if (entry->accessCallback) {
-              entry->accessCallback(*entry);
-            }
-
-            if (entry->getWillFail) {
-                sendErrorResponse(404, false, "entry marked to fail explicitly:" + repoPath);
-                return;
-            }
-
-            entry->requestCount++;
-
-            std::string content;
-            bool closeSocket = false;
-            size_t contentSize = 0;
-
-            if (entry->returnCorruptData) {
-                content = dataForFile("!$£$!" + entry->parent->name,
-                                      "corrupt_" + entry->name,
-                                      entry->revision);
-                contentSize = content.size();
-            } else {
-              content = entry->data();
-              contentSize = content.size();
-            }
-
-            std::stringstream d;
-            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
-            d << "Content-Length:" << contentSize << "\r\n";
-            d << "\r\n"; // final CRLF to terminate the headers
-            d << content;
-            push(d.str().c_str());
-
-            if (closeSocket) {
-              closeWhenDone();
-            }
-        } else {
-            sendErrorResponse(404, false, "");
-        }
-    }
-};
+std::mutex global_repo_mutex;
 
 std::string test_computeHashForPath(const SGPath& p)
 {
@@ -409,14 +332,71 @@ void createFile(const SGPath& basePath, const std::string& relPath, int revision
     }
 }
 
-TestServer<TestRepositoryChannel> testServer;
+TestServer testServer;
+
+void setupRepoRoutes()
+{
+    testServer.svr.Get(R"(/repo/(.*))", [](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(global_repo_mutex);
+
+        std::string repoPath = req.matches[1];
+        bool lookingForDir = false;
+        std::string::size_type suffix = repoPath.find(".dirindex");
+        if (suffix != std::string::npos) {
+            lookingForDir = true;
+            if (suffix > 0) {
+                suffix--; // trim the preceding '/'
+            }
+            repoPath = repoPath.substr(0, suffix);
+        }
+
+        if (repoPath.find("/") == 0) {
+            repoPath = repoPath.substr(1);
+        }
+
+        TestRepoEntry* entry = global_repo->findEntry(repoPath);
+        if (!entry) {
+            res.status = 404;
+            res.set_content("unknown repo path:" + repoPath, "text/plain");
+            return;
+        }
+
+        if (entry->isDir != lookingForDir) {
+            res.status = 404;
+            res.set_content("mismatched path type:" + repoPath, "text/plain");
+            return;
+        }
+
+        if (entry->accessCallback) {
+            entry->accessCallback(*entry);
+        }
+
+        if (entry->getWillFail) {
+            res.status = 404;
+            res.set_content("entry marked to fail explicitly:" + repoPath, "text/plain");
+            return;
+        }
+
+        entry->requestCount++;
+
+        std::string content;
+        if (entry->returnCorruptData) {
+            content = dataForFile("!$\xc2\xa3$!" + entry->parent->name,
+                                  "corrupt_" + entry->name,
+                                  entry->revision);
+        } else {
+            content = entry->data();
+        }
+
+        res.set_content(content, "application/octet-stream");
+    });
+}
 
 void waitForUpdateComplete(HTTP::Client* cl, HTTPRepository* repo)
 {
     SGTimeStamp start(SGTimeStamp::now());
     while (start.elapsedMSec() <  20000) {
         cl->update();
-        testServer.poll();
 
         repo->process();
         if (!repo->isDoingSync()) {
@@ -431,10 +411,9 @@ void waitForUpdateComplete(HTTP::Client* cl, HTTPRepository* repo)
 void runForTime(HTTP::Client *cl, HTTPRepository *repo, int msec = 15) {
   SGTimeStamp start(SGTimeStamp::now());
   while (start.elapsedMSec() < msec) {
-    cl->update();
-    testServer.poll();
-    repo->process();
-    SGTimeStamp::sleepForMSec(1);
+      cl->update();
+      repo->process();
+      SGTimeStamp::sleepForMSec(1);
   }
 }
 
@@ -447,7 +426,7 @@ void testBasicClone(HTTP::Client* cl)
     pd.removeChildren();
 
     repo.reset(new HTTPRepository(p, cl));
-    repo->setBaseUrl("http://localhost:2000/repo");
+    repo->setBaseUrl(testServer.url("/repo"));
     repo->setRecheckTimeoutEnabled(false);
     repo->update();
 
@@ -485,7 +464,7 @@ void testUpdateNoChanges(HTTP::Client* cl)
 	global_repo->clearRequestCounts();
 
 	repo.reset(new HTTPRepository(p, cl));
-	repo->setBaseUrl("http://localhost:2000/repo");
+    repo->setBaseUrl(testServer.url("/repo"));
     repo->setRecheckTimeoutEnabled(false);
     repo->update();
 
@@ -516,7 +495,7 @@ void testModifyLocalFiles(HTTP::Client* cl)
     }
 
     repo.reset(new HTTPRepository(p, cl));
-    repo->setBaseUrl("http://localhost:2000/repo");
+    repo->setBaseUrl(testServer.url("/repo"));
     repo->update();
     repo->setRecheckTimeoutEnabled(false);
 
@@ -554,7 +533,7 @@ void testMergeExistingFileWithoutDownload(HTTP::Client* cl)
     }
 
     repo.reset(new HTTPRepository(p, cl));
-    repo->setBaseUrl("http://localhost:2000/repo");
+    repo->setBaseUrl(testServer.url("/repo"));
 
     createFile(p, "dirC/fileCB", 4); // should match
     createFile(p, "dirC/fileCC", 3); // mismatch
@@ -596,7 +575,7 @@ void testLossOfLocalFiles(HTTP::Client* cl)
     }
 
     repo.reset(new HTTPRepository(p, cl));
-    repo->setBaseUrl("http://localhost:2000/repo");
+    repo->setBaseUrl(testServer.url("/repo"));
     repo->update();
     repo->setRecheckTimeoutEnabled(false);
 
@@ -635,7 +614,7 @@ void testAbandonMissingFiles(HTTP::Client* cl)
     global_repo->findEntry("dirA/subdirE/fileAEA")->setGetWillFail(true);
 
     repo.reset(new HTTPRepository(p, cl));
-    repo->setBaseUrl("http://localhost:2000/repo");
+    repo->setBaseUrl(testServer.url("/repo"));
     repo->update();
     waitForUpdateComplete(cl, repo.get());
     if (repo->failure() != HTTPRepository::REPO_PARTIAL_UPDATE) {
@@ -659,7 +638,7 @@ void testAbandonCorruptFiles(HTTP::Client* cl)
     global_repo->findEntry("dirB/subdirG/fileBGA")->setReturnCorruptData(true);
 
     repo.reset(new HTTPRepository(p, cl));
-    repo->setBaseUrl("http://localhost:2000/repo");
+    repo->setBaseUrl(testServer.url("/repo"));
     repo->update();
     waitForUpdateComplete(cl, repo.get());
     if (repo->failure() != HTTPRepository::REPO_PARTIAL_UPDATE) {
@@ -709,7 +688,7 @@ void testServerModifyDuringSync(HTTP::Client* cl)
     global_repo->clearFailFlags();
 
     repo.reset(new HTTPRepository(p, cl));
-    repo->setBaseUrl("http://localhost:2000/repo");
+    repo->setBaseUrl(testServer.url("/repo"));
 
     global_repo->findEntry("dirA/fileAA")->accessCallback =
         [](const TestRepoEntry &r) {
@@ -746,7 +725,7 @@ void testDestroyDuringSync(HTTP::Client* cl)
     global_repo->clearFailFlags();
 
     repo.reset(new HTTPRepository(p, cl));
-    repo->setBaseUrl("http://localhost:2000/repo");
+    repo->setBaseUrl(testServer.url("/repo"));
 
     repo->update();
 
@@ -795,7 +774,7 @@ void testCopyInstalledChildren(HTTP::Client* cl)
     global_repo->clearFailFlags();
 
     repo.reset(new HTTPRepository(p, cl));
-    repo->setBaseUrl("http://localhost:2000/repo");
+    repo->setBaseUrl(testServer.url("/repo"));
     repo->setInstalledCopyPath(p2);
     repo->update();
 
@@ -828,31 +807,32 @@ void testRetryAfterSocketFailure(HTTP::Client *cl) {
   }
 
   repo.reset(new HTTPRepository(p, cl));
-  repo->setBaseUrl("http://localhost:2000/repo");
+  repo->setBaseUrl(testServer.url("/repo"));
 
   int aaFailsRemaining = 2;
   int subdirBAFailsRemaining = 2;
+  const std::string fileAA_url = testServer.url("/repo/dirA/fileAA");
+  const std::string subdirBA_url = testServer.url("/repo/dirB/subdirA/.dirindex");
   TestApi::setResponseDoneCallback(
-      cl, [&aaFailsRemaining, &subdirBAFailsRemaining](int curlResult,
-                                                       HTTP::Request_ptr req) {
-        if (req->url() == "http://localhost:2000/repo/dirA/fileAA") {
-          if (aaFailsRemaining == 0)
-            return false;
+      cl, [&aaFailsRemaining, &subdirBAFailsRemaining, fileAA_url, subdirBA_url](int curlResult,
+                                                                                 HTTP::Request_ptr req) {
+          if (req->url() == fileAA_url) {
+              if (aaFailsRemaining == 0)
+                  return false;
 
-          --aaFailsRemaining;
-          TestApi::markRequestAsFailed(req, 56, "Simulated socket failure");
-          return true;
-        } else if (req->url() ==
-                   "http://localhost:2000/repo/dirB/subdirA/.dirindex") {
-          if (subdirBAFailsRemaining == 0)
-            return false;
+              --aaFailsRemaining;
+              TestApi::markRequestAsFailed(req, 56, "Simulated socket failure");
+              return true;
+          } else if (req->url() == subdirBA_url) {
+              if (subdirBAFailsRemaining == 0)
+                  return false;
 
-          --subdirBAFailsRemaining;
-          TestApi::markRequestAsFailed(req, 56, "Simulated socket failure");
-          return true;
-        } else {
-          return false;
-        }
+              --subdirBAFailsRemaining;
+              TestApi::markRequestAsFailed(req, 56, "Simulated socket failure");
+              return true;
+          } else {
+              return false;
+          }
       });
 
   repo->update();
@@ -884,17 +864,18 @@ void testPersistentSocketFailure(HTTP::Client *cl) {
   }
 
   repo.reset(new HTTPRepository(p, cl));
-  repo->setBaseUrl("http://localhost:2000/repo");
+  repo->setBaseUrl(testServer.url("/repo"));
 
+  const std::string dirB_prefix = testServer.url("/repo/dirB");
   TestApi::setResponseDoneCallback(
-      cl, [](int curlResult, HTTP::Request_ptr req) {
-        const auto url = req->url();
-        if (url.find("http://localhost:2000/repo/dirB") == 0) {
-          TestApi::markRequestAsFailed(req, 56, "Simulated socket failure");
-          return true;
-        }
+      cl, [dirB_prefix](int curlResult, HTTP::Request_ptr req) {
+          const auto url = req->url();
+          if (url.find(dirB_prefix) == 0) {
+              TestApi::markRequestAsFailed(req, 56, "Simulated socket failure");
+              return true;
+          }
 
-        return false;
+          return false;
       });
 
   repo->update();
@@ -915,6 +896,9 @@ void testPersistentSocketFailure(HTTP::Client *cl) {
 int main(int argc, char* argv[])
 {
   sglog().setLogLevels( SG_ALL, SG_INFO );
+
+  setupRepoRoutes();
+  testServer.start();
 
   HTTP::Client cl;
   cl.setMaxConnections(1);
@@ -949,13 +933,11 @@ int main(int argc, char* argv[])
 
     testAbandonCorruptFiles(&cl);
 
-    testServer.disconnectAll();
     cl.clearAllConnections();
 
     testServerModifyDuringSync(&cl);
     testDestroyDuringSync(&cl);
 
-    testServer.disconnectAll();
     cl.clearAllConnections();
 
     testCopyInstalledChildren(&cl);

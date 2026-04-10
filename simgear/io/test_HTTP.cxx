@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2011 James Turner
 
 #include <cstdlib>
 #include <cstring>
@@ -22,6 +23,20 @@
 
 #include <curl/multi.h>
 
+
+#ifdef SG_WINDOWS
+    #include <winsock2.h>
+    #define close(s) closesocket(s)
+typedef int socklen_t;
+typedef SOCKET raw_socket_t;
+#else
+    #include <netinet/in.h>
+    #include <sys/socket.h>
+    #include <unistd.h>
+typedef int raw_socket_t;
+#endif
+
+
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -32,13 +47,13 @@ using namespace simgear;
 
 const char* BODY1 = "The quick brown fox jumps over a lazy dog.";
 const char* BODY3 = "Cras ut neque nulla. Duis ut velit neque, sit amet "
-"pharetra risus. In est ligula, lacinia vitae congue in, sollicitudin at "
-"libero. Mauris pharetra pretium elit, nec placerat dui semper et. Maecenas "
-"magna magna, placerat sed luctus ac, commodo et ligula. Mauris at purus et "
-"nisl molestie auctor placerat at quam. Donec sapien magna, venenatis sed "
-"iaculis id, fringilla vel arcu. Duis sed neque nisi. Cras a arcu sit amet "
-"risus ultrices varius. Integer sagittis euismod dui id varius. Cras vel "
-"justo gravida metus.";
+                    "pharetra risus. In est ligula, lacinia vitae congue in, sollicitudin at "
+                    "libero. Mauris pharetra pretium elit, nec placerat dui semper et. Maecenas "
+                    "magna magna, placerat sed luctus ac, commodo et ligula. Mauris at purus et "
+                    "nisl molestie auctor placerat at quam. Donec sapien magna, venenatis sed "
+                    "iaculis id, fringilla vel arcu. Duis sed neque nisi. Cras a arcu sit amet "
+                    "risus ultrices various. Integer sagittis euismod dui id various. Cras vel "
+                    "justo gravida metus.";
 
 const unsigned int body2Size = 8 * 1024;
 char body2[body2Size];
@@ -66,7 +81,7 @@ protected:
     {
         complete = true;
     }
- 
+
     void onFail() override
     {
         failed = true;
@@ -74,7 +89,6 @@ protected:
 
     void gotBodyData(const char* s, int n) override
     {
-    //    std::cout << "got body data:'" << string(s, n) << "'" <<std::endl;
         bodyData += string(s, n);
     }
 
@@ -85,277 +99,13 @@ protected:
     }
 };
 
-class HTTPTestChannel : public TestServerChannel
-{
-public:
-
-    virtual void processRequestHeaders()
-    {
-        if (path == "/test1") {
-            string contentStr(BODY1);
-            stringstream d;
-            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
-            d << "Content-Length:" << contentStr.size() << "\r\n";
-            d << "\r\n"; // final CRLF to terminate the headers
-            d << contentStr;
-            push(d.str().c_str());
-        } else if (path == "/testLorem") {
-            string contentStr(BODY3);
-            stringstream d;
-            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
-            d << "Content-Length:" << contentStr.size() << "\r\n";
-            d << "\r\n"; // final CRLF to terminate the headers
-            d << contentStr;
-            push(d.str().c_str());
-        } else if (path == "/test_zero_length_content") {
-            string contentStr;
-            stringstream d;
-            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
-            d << "Content-Length:" << contentStr.size() << "\r\n";
-            d << "\r\n"; // final CRLF to terminate the headers
-            d << contentStr;
-            push(d.str().c_str());
-        } else if (path == "/test_headers") {
-            SG_CHECK_EQUAL(requestHeaders["X-Foo"], string("Bar"));
-            SG_CHECK_EQUAL(requestHeaders["X-AnotherHeader"],
-                           string("A longer value"));
-
-            string contentStr(BODY1);
-            stringstream d;
-            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
-            d << "Content-Length:" << contentStr.size() << "\r\n";
-            d << "\r\n"; // final CRLF to terminate the headers
-            d << contentStr;
-            push(d.str().c_str());
-        } else if (path == "/test2") {
-            sendBody2();
-        } else if (path == "/testchunked") {
-            stringstream d;
-            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
-            d << "Transfer-Encoding:chunked\r\n";
-            d << "\r\n";
-            d << "8\r\n"; // first chunk
-            d << "ABCDEFGH\r\n";
-            d << "6\r\n"; // second chunk
-            d << "ABCDEF\r\n";
-            d << "10\r\n"; // third chunk
-            d << "ABCDSTUVABCDSTUV\r\n";
-            d << "0\r\n"; // start of trailer
-            d << "X-Foobar: wibble\r\n"; // trailer data
-            d << "\r\n";
-            push(d.str().c_str());
-        } else if (path == "http://www.google.com/test2") {
-            // proxy test
-            if (requestHeaders["Host"] != "www.google.com") {
-                sendErrorResponse(400, true, "bad destination");
-            }
-
-            if (requestHeaders["Proxy-Authorization"] != string()) {
-                sendErrorResponse(401, false, "bad auth, not empty"); // shouldn't supply auth
-            }
-
-            sendBody2();
-        } else if (path == "http://www.google.com/test3") {
-            // proxy test
-            if (requestHeaders["Host"] != "www.google.com") {
-                sendErrorResponse(400, true, "bad destination");
-            }
-
-            string credentials = requestHeaders["Proxy-Authorization"];
-            if (credentials.substr(0, 5) != "Basic") {
-              // request basic auth
-              stringstream d;
-              d << "HTTP/1.1 " << 407 << " " << reasonForCode(407) << "\r\n";
-              d << "WWW-Authenticate: Basic real=\"simgear\"\r\n";
-              d << "\r\n"; // final CRLF to terminate the headers
-              push(d.str().c_str());
-              return;
-            }
-
-            std::vector<unsigned char> userAndPass;
-            strutils::decodeBase64(credentials.substr(6), userAndPass);
-            std::string decodedUserPass((char*) userAndPass.data(), userAndPass.size());
-
-            if (decodedUserPass != "johndoe:swordfish") {
-                std::map<string, string>::const_iterator it;
-                for (it = requestHeaders.begin(); it != requestHeaders.end(); ++it) {
-                  cerr << "header:" << it->first << " = " << it->second << endl;
-                }
-
-                sendErrorResponse(401, false, "bad auth, not as set"); // forbidden
-            }
-
-            sendBody2();
-        } else if (strutils::starts_with(path, "/test_1_0")) {
-            string contentStr(BODY1);
-            if (strutils::ends_with(path, "/B")) {
-                contentStr = BODY3;
-            }
-            stringstream d;
-            d << "HTTP/1.0 " << 200 << " " << reasonForCode(200) << "\r\n";
-            d << "\r\n"; // final CRLF to terminate the headers
-            d << contentStr;
-            push(d.str().c_str());
-            closeAfterSending();
-        } else if (path == "/test_close") {
-            string contentStr(BODY1);
-            stringstream d;
-            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
-            d << "Connection: close\r\n";
-            d << "\r\n"; // final CRLF to terminate the headers
-            d << contentStr;
-            push(d.str().c_str());
-            closeAfterSending();
-        } else if (path == "/test_abrupt_close") {
-            // simulate server doing socket close before sending any
-            // response - this used to cause a TerraSync failure since we
-            // would get stuck restarting the request
-            closeAfterSending();
-
-        } else if (path == "/test_args") {
-            if ((args["foo"] != "abc") || (args["bar"] != "1234") || (args["username"] != "johndoe")) {
-                sendErrorResponse(400, true, "bad arguments");
-                return;
-            }
-
-            string contentStr(BODY1);
-            stringstream d;
-            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
-            d << "Content-Length:" << contentStr.size() << "\r\n";
-            d << "\r\n"; // final CRLF to terminate the headers
-            d << contentStr;
-            push(d.str().c_str());
-        } else if (path == "/test_post") {
-            if (requestHeaders["Content-Type"] != "application/x-www-form-urlencoded") {
-                cerr << "bad content type: '" << requestHeaders["Content-Type"] << "'" << endl;
-                 sendErrorResponse(400, true, "bad content type");
-                 return;
-            }
-
-            requestContentLength = strutils::to_int(requestHeaders["Content-Length"]);
-            setByteCount(requestContentLength);
-            state = STATE_REQUEST_BODY;
-        } else if ((path == "/test_put") || (path == "/test_create")) {
-              if (requestHeaders["Content-Type"] != "x-application/foobar") {
-                  cerr << "bad content type: '" << requestHeaders["Content-Type"] << "'" << endl;
-                   sendErrorResponse(400, true, "bad content type");
-                   return;
-              }
-
-              requestContentLength = strutils::to_int(requestHeaders["Content-Length"]);
-              setByteCount(requestContentLength);
-              state = STATE_REQUEST_BODY;
-        } else if (path == "/test_get_during_send") {
-            // indicate we will send some number of bytes, but only send
-            // some of them now.
-            waitingOnNextRequestToContinue = true;
-
-            string contentStr(BODY3, 100); // only send first 100 chars
-            stringstream d;
-            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
-            d << "Content-Length:" << strlen(BODY3) << "\r\n";
-            d << "\r\n"; // final CRLF to terminate the headers
-            d << contentStr;
-            push(d.str().c_str());
-        } else if (path == "/test_get_during_send_2") {
-            stringstream d;
-
-            if (waitingOnNextRequestToContinue) {
-                waitingOnNextRequestToContinue = false;
-                // push the rest of the first request
-                d << string(BODY3).substr(100);
-            }
-
-
-            // push the response to this request
-            string contentStr(BODY1);
-            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
-            d << "Content-Length:" << contentStr.size() << "\r\n";
-            d << "\r\n"; // final CRLF to terminate the headers
-            d << contentStr;
-            push(d.str().c_str());
-        } else if (path == "/test_redirect") {
-            string contentStr("<html>See <a href=\"wibble\">Here</a></html>");
-            stringstream d;
-            d << "HTTP/1.1 " << 302 << " " << "Found" << "\r\n";
-            d << "Location:" << " http://localhost:2000/was_redirected" << "\r\n";
-            d << "Content-Length:" << contentStr.size() << "\r\n";
-            d << "\r\n"; // final CRLF to terminate the headers
-            d << contentStr;
-            push(d.str().c_str());
-        } else if (path == "/was_redirected") {
-            string contentStr(BODY1);
-            stringstream d;
-            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
-            d << "Content-Length:" << contentStr.size() << "\r\n";
-            d << "\r\n"; // final CRLF to terminate the headers
-            d << contentStr;
-            push(d.str().c_str());
-        } else {
-          TestServerChannel::processRequestHeaders();
-        }
-    }
-
-    void processRequestBody()
-    {
-      if (path == "/test_post") {
-            if ((args["foo"] != "abc") || (args["bar"] != "1234") || (args["username"] != "johndoe")) {
-                sendErrorResponse(400, true, "bad arguments");
-                return;
-            }
-
-            stringstream d;
-            d << "HTTP/1.1 " << 204 << " " << reasonForCode(204) << "\r\n";
-            d << "\r\n"; // final CRLF to terminate the headers
-            push(d.str().c_str());
-        } else if (path == "/test_put") {
-          std::cerr << "sending PUT response" << std::endl;
-
-          SG_CHECK_EQUAL(buffer, BODY3);
-          stringstream d;
-          d << "HTTP/1.1 " << 204 << " " << reasonForCode(204) << "\r\n";
-          d << "\r\n"; // final CRLF to terminate the headers
-          push(d.str().c_str());
-        } else if (path == "/test_create") {
-          std::cerr << "sending create response" << std::endl;
-
-          std::string entityStr = "http://localhost:2000/something.txt";
-
-          SG_CHECK_EQUAL(buffer, BODY3);
-          stringstream d;
-          d << "HTTP/1.1 " << 201 << " " << reasonForCode(201) << "\r\n";
-          d << "Location:" << entityStr << "\r\n";
-          d << "Content-Length:" << entityStr.size() << "\r\n";
-          d << "\r\n"; // final CRLF to terminate the headers
-          d << entityStr;
-
-          push(d.str().c_str());
-        } else {
-          TestServerChannel::processRequestBody();
-        }
-    }
-
-    void sendBody2()
-    {
-        stringstream d;
-        d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
-        d << "Content-Length:" << body2Size << "\r\n";
-        d << "\r\n"; // final CRLF to terminate the headers
-        push(d.str().c_str());
-        bufferSend(body2, body2Size);
-    }
-
-    bool waitingOnNextRequestToContinue;
-};
-
-TestServer<HTTPTestChannel> testServer;
+TestServer testServer;
 
 void waitForComplete(HTTP::Client* cl, TestRequest* tr)
 {
     SGTimeStamp start(SGTimeStamp::now());
     while (start.elapsedMSec() <  10000) {
         cl->update();
-        testServer.poll();
 
         if (tr->complete) {
             return;
@@ -371,7 +121,6 @@ void waitForFailed(HTTP::Client* cl, TestRequest* tr)
     SGTimeStamp start(SGTimeStamp::now());
     while (start.elapsedMSec() <  10000) {
         cl->update();
-        testServer.poll();
 
         if (tr->failed) {
             return;
@@ -389,7 +138,6 @@ bool waitFor(HTTP::Client* cl, CompletionCheck ccheck)
     SGTimeStamp start(SGTimeStamp::now());
     while (start.elapsedMSec() <  10000) {
         cl->update();
-        testServer.poll();
 
         if (ccheck()) {
             return true;
@@ -401,10 +149,192 @@ bool waitFor(HTTP::Client* cl, CompletionCheck ccheck)
     return false;
 }
 
+void setupRoutes()
+{
+    testServer.svr.Get("/test1", [](const httplib::Request&, httplib::Response& res) {
+        res.set_content(BODY1, "text/plain");
+    });
+
+    testServer.svr.Get("/testLorem", [](const httplib::Request&, httplib::Response& res) {
+        res.set_content(BODY3, "text/plain");
+    });
+
+    testServer.svr.Get("/test_zero_length_content", [](const httplib::Request&, httplib::Response& res) {
+        res.set_content("", "text/plain");
+    });
+
+    testServer.svr.Get("/test_headers", [](const httplib::Request& req, httplib::Response& res) {
+        SG_CHECK_EQUAL(req.get_header_value("X-Foo"), string("Bar"));
+        SG_CHECK_EQUAL(req.get_header_value("X-AnotherHeader"), string("A longer value"));
+        res.set_content(BODY1, "text/plain");
+    });
+
+    testServer.svr.Get("/test2", [](const httplib::Request&, httplib::Response& res) {
+        res.set_content(string(body2, body2Size), "application/octet-stream");
+    });
+
+    testServer.svr.Get("/testchunked", [](const httplib::Request&, httplib::Response& res) {
+        std::string fullBody = "ABCDEFGHABCDEFABCDSTUVABCDSTUV";
+        res.set_chunked_content_provider(
+            "text/plain",
+            [fullBody](size_t offset, httplib::DataSink& sink) {
+                if (offset < fullBody.size()) {
+                    sink.write(fullBody.data() + offset, fullBody.size() - offset);
+                }
+                sink.done_with_trailer({{"X-Foobar", "wibble"}});
+                return true;
+            });
+    });
+
+    testServer.svr.Get("/test_args", [](const httplib::Request& req, httplib::Response& res) {
+        if (req.get_param_value("foo") != "abc" ||
+            req.get_param_value("bar") != "1234" ||
+            req.get_param_value("username") != "johndoe") {
+            res.status = 400;
+            res.set_content("bad arguments", "text/plain");
+            return;
+        }
+        res.set_content(BODY1, "text/plain");
+    });
+
+    testServer.svr.Post("/test_post", [](const httplib::Request& req, httplib::Response& res) {
+        if (req.get_header_value("Content-Type").find("application/x-www-form-urlencoded") == string::npos) {
+            res.status = 400;
+            res.set_content("bad content type", "text/plain");
+            return;
+        }
+
+        if (req.get_param_value("foo") != "abc" ||
+            req.get_param_value("bar") != "1234" ||
+            req.get_param_value("username") != "johndoe") {
+            res.status = 400;
+            res.set_content("bad arguments", "text/plain");
+            return;
+        }
+
+        res.status = 204;
+    });
+
+    testServer.svr.Put("/test_put", [](const httplib::Request& req, httplib::Response& res) {
+        if (req.get_header_value("Content-Type") != "x-application/foobar") {
+            res.status = 400;
+            res.set_content("bad content type", "text/plain");
+            return;
+        }
+
+        SG_CHECK_EQUAL(req.body, string(BODY3));
+        res.status = 204;
+    });
+
+    testServer.svr.Put("/test_create", [](const httplib::Request& req, httplib::Response& res) {
+        if (req.get_header_value("Content-Type") != "x-application/foobar") {
+            res.status = 400;
+            res.set_content("bad content type", "text/plain");
+            return;
+        }
+
+        SG_CHECK_EQUAL(req.body, string(BODY3));
+
+        std::string entityStr = testServer.url("/something.txt");
+        res.status = 201;
+        res.set_header("Location", entityStr);
+        res.set_content(entityStr, "text/plain");
+    });
+
+    // HTTP/1.0 style: Connection: close, no Content-Length
+    testServer.svr.Get(R"(/test_1_0(.*))", [](const httplib::Request& req, httplib::Response& res) {
+        string suffix = req.matches[1];
+        string contentStr(BODY1);
+        if (suffix == "/B") {
+            contentStr = BODY3;
+        }
+        res.set_header("Connection", "close");
+        res.set_content(contentStr, "text/plain");
+    });
+
+    testServer.svr.Get("/test_close", [](const httplib::Request&, httplib::Response& res) {
+        res.set_header("Connection", "close");
+        res.set_content(BODY1, "text/plain");
+    });
+
+    testServer.svr.Get("/test_get_during_send", [](const httplib::Request&, httplib::Response& res) {
+        res.set_content(BODY3, "text/plain");
+    });
+
+    testServer.svr.Get("/test_get_during_send_2", [](const httplib::Request&, httplib::Response& res) {
+        res.set_content(BODY1, "text/plain");
+    });
+
+    testServer.svr.Get("/test_redirect", [](const httplib::Request&, httplib::Response& res) {
+        res.status = 302;
+        res.set_header("Location", testServer.url("/was_redirected"));
+        res.set_content("<html>See <a href=\"wibble\">Here</a></html>", "text/html");
+    });
+
+    testServer.svr.Get("/was_redirected", [](const httplib::Request&, httplib::Response& res) {
+        res.set_content(BODY1, "text/plain");
+    });
+
+    // Proxy-style routes: when curl sends a proxy request, the full URL is the path
+    testServer.svr.set_pre_routing_handler([](const httplib::Request& req, httplib::Response& res) {
+        if (req.path == "http://www.google.com/test2") {
+            if (req.get_header_value("Host") != "www.google.com") {
+                res.status = 400;
+                res.set_content("bad destination", "text/plain");
+                return httplib::Server::HandlerResponse::Handled;
+            }
+
+            if (!req.get_header_value("Proxy-Authorization").empty()) {
+                res.status = 401;
+                res.set_content("bad auth, not empty", "text/plain");
+                return httplib::Server::HandlerResponse::Handled;
+            }
+
+            res.set_content(string(body2, body2Size), "application/octet-stream");
+            return httplib::Server::HandlerResponse::Handled;
+        }
+
+        if (req.path == "http://www.google.com/test3") {
+            if (req.get_header_value("Host") != "www.google.com") {
+                res.status = 400;
+                res.set_content("bad destination", "text/plain");
+                return httplib::Server::HandlerResponse::Handled;
+            }
+
+            string credentials = req.get_header_value("Proxy-Authorization");
+            if (credentials.substr(0, 5) != "Basic") {
+                res.status = 407;
+                res.set_header("WWW-Authenticate", "Basic realm=\"simgear\"");
+                return httplib::Server::HandlerResponse::Handled;
+            }
+
+            std::vector<unsigned char> userAndPass;
+            strutils::decodeBase64(credentials.substr(6), userAndPass);
+            std::string decodedUserPass((char*)userAndPass.data(), userAndPass.size());
+
+            if (decodedUserPass != "johndoe:swordfish") {
+                res.status = 401;
+                res.set_content("bad auth, not as set", "text/plain");
+                return httplib::Server::HandlerResponse::Handled;
+            }
+
+            res.set_content(string(body2, body2Size), "application/octet-stream");
+            return httplib::Server::HandlerResponse::Handled;
+        }
+
+        return httplib::Server::HandlerResponse::Unhandled;
+    });
+}
+
 
 int main(int argc, char* argv[])
 {
     sglog().setLogLevels( SG_ALL, SG_INFO );
+
+    setupRoutes();
+    testServer.start();
+
+    const int port = testServer.port();
 
     HTTP::Client cl;
     // force all requests to use the same connection for this test
@@ -412,10 +342,10 @@ int main(int argc, char* argv[])
 
 // test URL parsing
     {
-        auto tr1 = std::make_unique<TestRequest>("http://localhost.woo.zar:2000/test1?foo=bar");
+        auto tr1 = std::make_unique<TestRequest>("http://localhost.woo.zar:2000/test1?foo=bar"); // codespell:ignore zar
         SG_CHECK_EQUAL(tr1->scheme(), "http");
-        SG_CHECK_EQUAL(tr1->hostAndPort(), "localhost.woo.zar:2000");
-        SG_CHECK_EQUAL(tr1->host(), "localhost.woo.zar");
+        SG_CHECK_EQUAL(tr1->hostAndPort(), "localhost.woo.zar:2000"); // codespell:ignore zar
+        SG_CHECK_EQUAL(tr1->host(), "localhost.woo.zar");             // codespell:ignore zar
         SG_CHECK_EQUAL(tr1->port(), 2000);
         SG_CHECK_EQUAL(tr1->path(), "/test1");
     }
@@ -431,7 +361,7 @@ int main(int argc, char* argv[])
 
 // basic get request
     {
-        TestRequest* tr = new TestRequest("http://localhost:2000/test1");
+        TestRequest* tr = new TestRequest(testServer.url("/test1"));
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
 
@@ -444,20 +374,20 @@ int main(int argc, char* argv[])
     }
 
     {
-      TestRequest* tr = new TestRequest("http://localhost:2000/testLorem");
-      HTTP::Request_ptr own(tr);
-      cl.makeRequest(tr);
+        TestRequest* tr = new TestRequest(testServer.url("/testLorem"));
+        HTTP::Request_ptr own(tr);
+        cl.makeRequest(tr);
 
-      waitForComplete(&cl, tr);
-      SG_CHECK_EQUAL(tr->responseCode(), 200);
-      SG_CHECK_EQUAL(tr->responseReason(), string("OK"));
-      SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY3));
-      SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY3));
-      SG_CHECK_EQUAL(tr->bodyData, string(BODY3));
+        waitForComplete(&cl, tr);
+        SG_CHECK_EQUAL(tr->responseCode(), 200);
+        SG_CHECK_EQUAL(tr->responseReason(), string("OK"));
+        SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY3));
+        SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY3));
+        SG_CHECK_EQUAL(tr->bodyData, string(BODY3));
     }
 
     {
-        TestRequest* tr = new TestRequest("http://localhost:2000/test_args?foo=abc&bar=1234&username=johndoe");
+        TestRequest* tr = new TestRequest(testServer.url("/test_args?foo=abc&bar=1234&username=johndoe"));
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
@@ -465,7 +395,7 @@ int main(int argc, char* argv[])
     }
 
     {
-        TestRequest* tr = new TestRequest("http://localhost:2000/test_headers");
+        TestRequest* tr = new TestRequest(testServer.url("/test_headers"));
         HTTP::Request_ptr own(tr);
         tr->requestHeader("X-Foo") = "Bar";
         tr->requestHeader("X-AnotherHeader") = "A longer value";
@@ -481,13 +411,13 @@ int main(int argc, char* argv[])
 
 // larger get request
     for (unsigned int i=0; i<body2Size; ++i) {
-        // this contains embeded 0s on purpose, i.e it's
+        // this contains embedded 0s on purpose, i.e it's
         // not text data but binary
         body2[i] = (i << 4) | (i >> 2);
     }
 
     {
-        TestRequest* tr = new TestRequest("http://localhost:2000/test2");
+        TestRequest* tr = new TestRequest(testServer.url("/test2"));
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
@@ -498,7 +428,7 @@ int main(int argc, char* argv[])
 
     cerr << "testing chunked transfer encoding" << endl;
     {
-        TestRequest* tr = new TestRequest("http://localhost:2000/testchunked");
+        TestRequest* tr = new TestRequest(testServer.url("/testchunked"));
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
 
@@ -513,19 +443,18 @@ int main(int argc, char* argv[])
 
 // test 404
     {
-        TestRequest* tr = new TestRequest("http://localhost:2000/not-found");
+        TestRequest* tr = new TestRequest(testServer.url("/not-found"));
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
         SG_CHECK_EQUAL(tr->responseCode(), 404);
-        SG_CHECK_EQUAL(tr->responseReason(), string("not found"));
-        SG_CHECK_EQUAL(tr->responseLength(), 0);
+        SG_CHECK_EQUAL(tr->responseReason(), string("Not Found"));
     }
 
     cout << "done 404 test" << endl;
 
     {
-        TestRequest* tr = new TestRequest("http://localhost:2000/test_args?foo=abc&bar=1234&username=johndoe");
+        TestRequest* tr = new TestRequest(testServer.url("/test_args?foo=abc&bar=1234&username=johndoe"));
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
@@ -535,7 +464,7 @@ int main(int argc, char* argv[])
     cout << "done1" << endl;
 // test HTTP/1.0
     {
-        TestRequest* tr = new TestRequest("http://localhost:2000/test_1_0");
+        TestRequest* tr = new TestRequest(testServer.url("/test_1_0"));
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
@@ -547,7 +476,7 @@ int main(int argc, char* argv[])
     cout << "done2" << endl;
 // test HTTP/1.1 Connection::close
     {
-        TestRequest* tr = new TestRequest("http://localhost:2000/test_close");
+        TestRequest* tr = new TestRequest(testServer.url("/test_close"));
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(&cl, tr);
@@ -564,295 +493,306 @@ int main(int argc, char* argv[])
         cl.makeRequest(tr);
         waitForFailed(&cl, tr);
 
-
-
         const int HOST_NOT_FOUND_CODE = CURLE_COULDNT_RESOLVE_HOST;
         SG_CHECK_EQUAL(tr->responseCode(), HOST_NOT_FOUND_CODE);
     }
 
   cout << "testing abrupt close" << endl;
-    // test server-side abrupt close
-    {
-        TestRequest* tr = new TestRequest("http://localhost:2000/test_abrupt_close");
-        HTTP::Request_ptr own(tr);
-        cl.makeRequest(tr);
-        waitForFailed(&cl, tr);
+  // test server-side abrupt close: use a raw TCP socket that accepts
+  // a connection and immediately closes it, producing CURLE_GOT_NOTHING
+  {
+      raw_socket_t listen_sock = socket(AF_INET, SOCK_STREAM, 0);
+      struct sockaddr_in addr = {};
+      addr.sin_family = AF_INET;
+      addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+      addr.sin_port = 0;
+      ::bind(listen_sock, (struct sockaddr*)&addr, sizeof(addr));
+      ::listen(listen_sock, 1);
 
-        const int SERVER_NO_DATA_CODE = CURLE_GOT_NOTHING;
-        SG_CHECK_EQUAL(tr->responseCode(), SERVER_NO_DATA_CODE);
-    }
+      socklen_t addrlen = sizeof(addr);
+      getsockname(listen_sock, (struct sockaddr*)&addr, &addrlen);
+      int abrupt_port = ntohs(addr.sin_port);
 
-cout << "testing proxy close" << endl;
-// test proxy
-    {
-        cl.setProxy("localhost", 2000);
-        TestRequest* tr = new TestRequest("http://www.google.com/test2");
-        HTTP::Request_ptr own(tr);
-        cl.makeRequest(tr);
-        waitForComplete(&cl, tr);
-        SG_CHECK_EQUAL(tr->responseCode(), 200);
-        SG_CHECK_EQUAL(tr->responseLength(), body2Size);
-        SG_CHECK_EQUAL(tr->bodyData, string(body2, body2Size));
-    }
-
-    {
-        cl.setProxy("localhost", 2000, "johndoe:swordfish");
-        TestRequest* tr = new TestRequest("http://www.google.com/test3");
-        HTTP::Request_ptr own(tr);
-        cl.makeRequest(tr);
-        waitForComplete(&cl, tr);
-        SG_CHECK_EQUAL(tr->responseCode(), 200);
-        SG_CHECK_EQUAL(tr->responseBytesReceived(), body2Size);
-        SG_CHECK_EQUAL(tr->bodyData, string(body2, body2Size));
-    }
-
-// pipelining
-// disabled because Curl >= 7.62 default to HTTP/2 multiplexing (which is good)
-// but hence don't worry about HTTP1.x/ pipelining. The test server we use for
-// running these tests only supports HTTP1.x until we find a better solution,
-// so disabling the test for now.
-#if 0
-    cout << "testing HTTP 1.1 pipelining" << endl;
-
-    {
-        testServer.disconnectAll();
-        cl.clearAllConnections();
-
-        cl.setProxy("", 80);
-        TestRequest* tr = new TestRequest("http://localhost:2000/test1");
-        HTTP::Request_ptr own(tr);
-        cl.makeRequest(tr);
-
-
-        TestRequest* tr2 = new TestRequest("http://localhost:2000/testLorem");
-        HTTP::Request_ptr own2(tr2);
-        cl.makeRequest(tr2);
-
-        TestRequest* tr3 = new TestRequest("http://localhost:2000/test1");
-        HTTP::Request_ptr own3(tr3);
-        cl.makeRequest(tr3);
-
-        SG_VERIFY(waitFor(&cl, [tr, tr2, tr3]() {
-            return tr->complete && tr2->complete &&tr3->complete; 
-        }));
-
-        SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
-
-        SG_CHECK_EQUAL(tr2->responseLength(), strlen(BODY3));
-        SG_CHECK_EQUAL(tr2->responseBytesReceived(), strlen(BODY3));
-        SG_CHECK_EQUAL(tr2->bodyData, string(BODY3));
-
-        SG_CHECK_EQUAL(tr3->bodyData, string(BODY1));
-
-        SG_CHECK_EQUAL(testServer.connectCount(), 1);
-    }
+      std::thread acceptThread([listen_sock]() {
+          raw_socket_t client = accept(listen_sock, nullptr, nullptr);
+#ifdef SG_WINDOWS
+          if (client != INVALID_SOCKET) {
+#else
+          if (client >= 0) {
 #endif
+              // Read the incoming request so the TCP connection is fully
+              // established from curl's perspective, then close without
+              // sending any response data.
+              char buf[4096];
+              recv(client, buf, sizeof(buf), 0);
+              ::close(client);
+          }
+          ::close(listen_sock);
+      });
 
-// multiple requests with an HTTP 1.0 server
-    {
-        cout << "http 1.0 multiple requests" << endl;
+      string abruptUrl = "http://127.0.0.1:" + std::to_string(abrupt_port) + "/test_abrupt_close";
+      TestRequest* tr = new TestRequest(abruptUrl);
+      HTTP::Request_ptr own(tr);
+      cl.makeRequest(tr);
+      waitForFailed(&cl, tr);
 
-        cl.setProxy("", 80);
-        TestRequest* tr = new TestRequest("http://localhost:2000/test_1_0/A");
-        HTTP::Request_ptr own(tr);
-        cl.makeRequest(tr);
+      const int SERVER_NO_DATA_CODE = CURLE_GOT_NOTHING;
+      SG_CHECK_EQUAL(tr->responseCode(), SERVER_NO_DATA_CODE);
 
-        TestRequest* tr2 = new TestRequest("http://localhost:2000/test_1_0/B");
-        HTTP::Request_ptr own2(tr2);
-        cl.makeRequest(tr2);
+      acceptThread.join();
+  }
 
-        TestRequest* tr3 = new TestRequest("http://localhost:2000/test_1_0/C");
-        HTTP::Request_ptr own3(tr3);
-        cl.makeRequest(tr3);
+  cout << "testing proxy" << endl;
+  // test proxy
+  {
+      cl.setProxy("127.0.0.1", port);
+      TestRequest* tr = new TestRequest("http://www.google.com/test2");
+      HTTP::Request_ptr own(tr);
+      cl.makeRequest(tr);
+      waitForComplete(&cl, tr);
+      SG_CHECK_EQUAL(tr->responseCode(), 200);
+      SG_CHECK_EQUAL(tr->responseLength(), body2Size);
+      SG_CHECK_EQUAL(tr->bodyData, string(body2, body2Size));
+  }
 
-        SG_VERIFY(waitFor(&cl, [tr, tr2, tr3]() {
-            return tr->complete && tr2->complete &&tr3->complete; 
-        }));
+  {
+      cl.setProxy("127.0.0.1", port, "johndoe:swordfish");
+      TestRequest* tr = new TestRequest("http://www.google.com/test3");
+      HTTP::Request_ptr own(tr);
+      cl.makeRequest(tr);
+      waitForComplete(&cl, tr);
+      SG_CHECK_EQUAL(tr->responseCode(), 200);
+      SG_CHECK_EQUAL(tr->responseBytesReceived(), body2Size);
+      SG_CHECK_EQUAL(tr->bodyData, string(body2, body2Size));
+  }
 
-        SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY1));
-        SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY1));
-        SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
+  // pipelining: cpp-httplib serves HTTP/1.1 with keep-alive, so multiple
+  // concurrent requests on the same connection work correctly.
+  cout << "testing HTTP 1.1 pipelining" << endl;
 
-        SG_CHECK_EQUAL(tr2->responseLength(), strlen(BODY3));
-        SG_CHECK_EQUAL(tr2->responseBytesReceived(), strlen(BODY3));
-        SG_CHECK_EQUAL(tr2->bodyData, string(BODY3));
-        SG_CHECK_EQUAL(tr3->bodyData, string(BODY1));
-    }
+  {
+      cl.clearAllConnections();
 
-// POST
-    {
-        cout << "testing POST" << endl;
-        TestRequest* tr = new TestRequest("http://localhost:2000/test_post?foo=abc&bar=1234&username=johndoe", "POST");
-        tr->setBodyData("", "application/x-www-form-urlencoded");
+      cl.setProxy("", 80);
+      TestRequest* tr = new TestRequest(testServer.url("/test1"));
+      HTTP::Request_ptr own(tr);
+      cl.makeRequest(tr);
 
-        HTTP::Request_ptr own(tr);
-        cl.makeRequest(tr);
-        waitForComplete(&cl, tr);
-        SG_CHECK_EQUAL(tr->responseCode(), 204);
-    }
 
-    // PUT
-        {
-            cout << "testing PUT" << endl;
-            TestRequest* tr = new TestRequest("http://localhost:2000/test_put", "PUT");
-            tr->setBodyData(BODY3, "x-application/foobar");
+      TestRequest* tr2 = new TestRequest(testServer.url("/testLorem"));
+      HTTP::Request_ptr own2(tr2);
+      cl.makeRequest(tr2);
 
-            HTTP::Request_ptr own(tr);
-            cl.makeRequest(tr);
-            waitForComplete(&cl, tr);
-            SG_CHECK_EQUAL(tr->responseCode(), 204);
-        }
+      TestRequest* tr3 = new TestRequest(testServer.url("/test1"));
+      HTTP::Request_ptr own3(tr3);
+      cl.makeRequest(tr3);
 
-        {
-            cout << "testing PUT create" << endl;
-            TestRequest* tr = new TestRequest("http://localhost:2000/test_create", "PUT");
-            tr->setBodyData(BODY3, "x-application/foobar");
+      SG_VERIFY(waitFor(&cl, [tr, tr2, tr3]() {
+          return tr->complete && tr2->complete && tr3->complete;
+      }));
 
-            HTTP::Request_ptr own(tr);
-            cl.makeRequest(tr);
-            waitForComplete(&cl, tr);
-            SG_CHECK_EQUAL(tr->responseCode(), 201);
-        }
+      SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
 
-    // test_zero_length_content
-    {
-        cout << "zero-length-content-response" << endl;
-        TestRequest* tr = new TestRequest("http://localhost:2000/test_zero_length_content");
-        HTTP::Request_ptr own(tr);
-        cl.makeRequest(tr);
-        waitForComplete(&cl, tr);
-        SG_CHECK_EQUAL(tr->responseCode(), 200);
-        SG_CHECK_EQUAL(tr->bodyData, string());
-        SG_CHECK_EQUAL(tr->responseBytesReceived(), 0);
-    }
+      SG_CHECK_EQUAL(tr2->responseLength(), strlen(BODY3));
+      SG_CHECK_EQUAL(tr2->responseBytesReceived(), strlen(BODY3));
+      SG_CHECK_EQUAL(tr2->bodyData, string(BODY3));
 
-    // test cancel
-    {
-        cout <<  "cancel  request" << endl;
-        testServer.disconnectAll();
-        cl.clearAllConnections();
+      SG_CHECK_EQUAL(tr3->bodyData, string(BODY1));
+  }
 
-        cl.setProxy("", 80);
-        TestRequest* tr = new TestRequest("http://localhost:2000/test1");
-        HTTP::Request_ptr own(tr);
-        cl.makeRequest(tr);
+  // multiple requests with an HTTP 1.0 server
+  {
+      cout << "http 1.0 multiple requests" << endl;
 
-        TestRequest* tr2 = new TestRequest("http://localhost:2000/testLorem");
-        HTTP::Request_ptr own2(tr2);
-        cl.makeRequest(tr2);
+      cl.setProxy("", 80);
+      TestRequest* tr = new TestRequest(testServer.url("/test_1_0/A"));
+      HTTP::Request_ptr own(tr);
+      cl.makeRequest(tr);
 
-        TestRequest* tr3 = new TestRequest("http://localhost:2000/test1");
-        HTTP::Request_ptr own3(tr3);
-        cl.makeRequest(tr3);
+      TestRequest* tr2 = new TestRequest(testServer.url("/test_1_0/B"));
+      HTTP::Request_ptr own2(tr2);
+      cl.makeRequest(tr2);
 
-        cl.cancelRequest(tr, "my reason 1");
+      TestRequest* tr3 = new TestRequest(testServer.url("/test_1_0/C"));
+      HTTP::Request_ptr own3(tr3);
+      cl.makeRequest(tr3);
 
-        cl.cancelRequest(tr2, "my reason 2");
+      SG_VERIFY(waitFor(&cl, [tr, tr2, tr3]() {
+          return tr->complete && tr2->complete && tr3->complete;
+      }));
 
-        waitForComplete(&cl, tr3);
+      SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY1));
+      SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY1));
+      SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
 
-        SG_CHECK_EQUAL(tr->responseCode(), -1);
-        SG_CHECK_EQUAL(tr2->responseReason(), "my reason 2");
+      SG_CHECK_EQUAL(tr2->responseLength(), strlen(BODY3));
+      SG_CHECK_EQUAL(tr2->responseBytesReceived(), strlen(BODY3));
+      SG_CHECK_EQUAL(tr2->bodyData, string(BODY3));
+      SG_CHECK_EQUAL(tr3->bodyData, string(BODY1));
+  }
 
-        SG_CHECK_EQUAL(tr3->responseLength(), strlen(BODY1));
-        SG_CHECK_EQUAL(tr3->responseBytesReceived(), strlen(BODY1));
-        SG_CHECK_EQUAL(tr3->bodyData, string(BODY1));
-    }
+  // POST
+  {
+      cout << "testing POST" << endl;
+      TestRequest* tr = new TestRequest(testServer.url("/test_post?foo=abc&bar=1234&username=johndoe"), "POST");
+      tr->setBodyData("", "application/x-www-form-urlencoded");
 
-    // test cancel
-    {
-        cout <<  "cancel middle request" << endl;
-        testServer.disconnectAll();
-        cl.clearAllConnections();
+      HTTP::Request_ptr own(tr);
+      cl.makeRequest(tr);
+      waitForComplete(&cl, tr);
+      SG_CHECK_EQUAL(tr->responseCode(), 204);
+  }
 
-        cl.setProxy("", 80);
-        TestRequest* tr = new TestRequest("http://localhost:2000/test1");
-        HTTP::Request_ptr own(tr);
-        cl.makeRequest(tr);
+  // PUT
+  {
+      cout << "testing PUT" << endl;
+      TestRequest* tr = new TestRequest(testServer.url("/test_put"), "PUT");
+      tr->setBodyData(BODY3, "x-application/foobar");
 
-        TestRequest* tr2 = new TestRequest("http://localhost:2000/testLorem");
-        HTTP::Request_ptr own2(tr2);
-        cl.makeRequest(tr2);
+      HTTP::Request_ptr own(tr);
+      cl.makeRequest(tr);
+      waitForComplete(&cl, tr);
+      SG_CHECK_EQUAL(tr->responseCode(), 204);
+  }
 
-        TestRequest* tr3 = new TestRequest("http://localhost:2000/test1");
-        HTTP::Request_ptr own3(tr3);
-        cl.makeRequest(tr3);
+  {
+      cout << "testing PUT create" << endl;
+      TestRequest* tr = new TestRequest(testServer.url("/test_create"), "PUT");
+      tr->setBodyData(BODY3, "x-application/foobar");
 
-        cl.cancelRequest(tr2, "middle request");
+      HTTP::Request_ptr own(tr);
+      cl.makeRequest(tr);
+      waitForComplete(&cl, tr);
+      SG_CHECK_EQUAL(tr->responseCode(), 201);
+  }
 
-        waitForComplete(&cl, tr3);
+  // test_zero_length_content
+  {
+      cout << "zero-length-content-response" << endl;
+      TestRequest* tr = new TestRequest(testServer.url("/test_zero_length_content"));
+      HTTP::Request_ptr own(tr);
+      cl.makeRequest(tr);
+      waitForComplete(&cl, tr);
+      SG_CHECK_EQUAL(tr->responseCode(), 200);
+      SG_CHECK_EQUAL(tr->bodyData, string());
+      SG_CHECK_EQUAL(tr->responseBytesReceived(), 0);
+  }
 
-        SG_CHECK_EQUAL(tr->responseCode(), 200);
-        SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY1));
-        SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY1));
-        SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
+  // test cancel
+  {
+      cout << "cancel  request" << endl;
+      cl.clearAllConnections();
 
-        SG_CHECK_EQUAL(tr2->responseCode(), -1);
+      cl.setProxy("", 80);
+      TestRequest* tr = new TestRequest(testServer.url("/test1"));
+      HTTP::Request_ptr own(tr);
+      cl.makeRequest(tr);
 
-        SG_CHECK_EQUAL(tr3->responseLength(), strlen(BODY1));
-        SG_CHECK_EQUAL(tr3->responseBytesReceived(), strlen(BODY1));
-        SG_CHECK_EQUAL(tr3->bodyData, string(BODY1));
-    }
+      TestRequest* tr2 = new TestRequest(testServer.url("/testLorem"));
+      HTTP::Request_ptr own2(tr2);
+      cl.makeRequest(tr2);
 
-    // disabling this test for now, since it seems to have changed depending
-    // on the libCurl version. (Or some other configuration which is currently
-    // not apparent).
-    // old behaviour: Curl sends the second request soon after makeRequest
-    // new behaviour: Curl waits for the first request to complete, before
-    // sending the second request (i.e acts as if HTTP pipelining is disabled)
-#if 0
-    {
-        cout << "get-during-response-send\n\n" << endl;
-        cl.clearAllConnections();
-        //test_get_during_send
+      TestRequest* tr3 = new TestRequest(testServer.url("/test1"));
+      HTTP::Request_ptr own3(tr3);
+      cl.makeRequest(tr3);
 
-        TestRequest* tr = new TestRequest("http://localhost:2000/test_get_during_send");
-        HTTP::Request_ptr own(tr);
-        cl.makeRequest(tr);
+      cl.cancelRequest(tr, "my reason 1");
 
-        // kick things along
-        for (int i=0; i<10; ++i) {
-            SGTimeStamp::sleepForMSec(1);
-            cl.update();
-            testServer.poll();
+      cl.cancelRequest(tr2, "my reason 2");
 
-        }
+      waitForComplete(&cl, tr3);
 
-        TestRequest* tr2 = new TestRequest("http://localhost:2000/test_get_during_send_2");
-        HTTP::Request_ptr own2(tr2);
-        cl.makeRequest(tr2);
+      SG_CHECK_EQUAL(tr->responseCode(), -1);
+      SG_CHECK_EQUAL(tr2->responseReason(), "my reason 2");
 
-        SG_VERIFY(waitFor(&cl, [tr, tr2]() {
-            return tr->isComplete() && tr2->isComplete();
-        }));
-        
-        SG_CHECK_EQUAL(tr->responseCode(), 200);
-        SG_CHECK_EQUAL(tr->bodyData, string(BODY3));
-        SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY3));
-        SG_CHECK_EQUAL(tr2->responseCode(), 200);
-        SG_CHECK_EQUAL(tr2->bodyData, string(BODY1));
-        SG_CHECK_EQUAL(tr2->responseBytesReceived(), strlen(BODY1));
-    }
-#endif
-    
-    {
-        cout << "redirect test" << endl;
-        // redirect test
-        testServer.disconnectAll();
-        cl.clearAllConnections();
-        
-        TestRequest* tr = new TestRequest("http://localhost:2000/test_redirect");
-        HTTP::Request_ptr own(tr);
-        cl.makeRequest(tr);
-        
-        waitForComplete(&cl, tr);
-        SG_CHECK_EQUAL(tr->responseCode(), 200);
-        SG_CHECK_EQUAL(tr->responseReason(), string("OK"));
-        SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY1));
-        SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY1));
-        SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
-    }
+      SG_CHECK_EQUAL(tr3->responseLength(), strlen(BODY1));
+      SG_CHECK_EQUAL(tr3->responseBytesReceived(), strlen(BODY1));
+      SG_CHECK_EQUAL(tr3->bodyData, string(BODY1));
+  }
 
-    cout << "all tests passed ok" << endl;
-    return EXIT_SUCCESS;
+  // test cancel
+  {
+      cout << "cancel middle request" << endl;
+      cl.clearAllConnections();
+
+      cl.setProxy("", 80);
+      TestRequest* tr = new TestRequest(testServer.url("/test1"));
+      HTTP::Request_ptr own(tr);
+      cl.makeRequest(tr);
+
+      TestRequest* tr2 = new TestRequest(testServer.url("/testLorem"));
+      HTTP::Request_ptr own2(tr2);
+      cl.makeRequest(tr2);
+
+      TestRequest* tr3 = new TestRequest(testServer.url("/test1"));
+      HTTP::Request_ptr own3(tr3);
+      cl.makeRequest(tr3);
+
+      cl.cancelRequest(tr2, "middle request");
+
+      waitForComplete(&cl, tr3);
+
+      SG_CHECK_EQUAL(tr->responseCode(), 200);
+      SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY1));
+      SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY1));
+      SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
+
+      SG_CHECK_EQUAL(tr2->responseCode(), -1);
+
+      SG_CHECK_EQUAL(tr3->responseLength(), strlen(BODY1));
+      SG_CHECK_EQUAL(tr3->responseBytesReceived(), strlen(BODY1));
+      SG_CHECK_EQUAL(tr3->bodyData, string(BODY1));
+  }
+
+  // make a request mid-response: cpp-httplib handles keep-alive connections
+  // so the second request is processed after the first completes.
+  {
+      cout << "get-during-response-send" << endl;
+      cl.clearAllConnections();
+
+      TestRequest* tr = new TestRequest(testServer.url("/test_get_during_send"));
+      HTTP::Request_ptr own(tr);
+      cl.makeRequest(tr);
+
+      // kick things along
+      for (int i = 0; i < 10; ++i) {
+          SGTimeStamp::sleepForMSec(1);
+          cl.update();
+      }
+
+      TestRequest* tr2 = new TestRequest(testServer.url("/test_get_during_send_2"));
+      HTTP::Request_ptr own2(tr2);
+      cl.makeRequest(tr2);
+
+      SG_VERIFY(waitFor(&cl, [tr, tr2]() {
+          return tr->isComplete() && tr2->isComplete();
+      }));
+
+      SG_CHECK_EQUAL(tr->responseCode(), 200);
+      SG_CHECK_EQUAL(tr->bodyData, string(BODY3));
+      SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY3));
+      SG_CHECK_EQUAL(tr2->responseCode(), 200);
+      SG_CHECK_EQUAL(tr2->bodyData, string(BODY1));
+      SG_CHECK_EQUAL(tr2->responseBytesReceived(), strlen(BODY1));
+  }
+
+  {
+      cout << "redirect test" << endl;
+      // redirect test
+      cl.clearAllConnections();
+
+      TestRequest* tr = new TestRequest(testServer.url("/test_redirect"));
+      HTTP::Request_ptr own(tr);
+      cl.makeRequest(tr);
+
+      waitForComplete(&cl, tr);
+      SG_CHECK_EQUAL(tr->responseCode(), 200);
+      SG_CHECK_EQUAL(tr->responseReason(), string("OK"));
+      SG_CHECK_EQUAL(tr->responseLength(), strlen(BODY1));
+      SG_CHECK_EQUAL(tr->responseBytesReceived(), strlen(BODY1));
+      SG_CHECK_EQUAL(tr->bodyData, string(BODY1));
+  }
+
+  cout << "all tests passed ok" << endl;
+  return EXIT_SUCCESS;
 }

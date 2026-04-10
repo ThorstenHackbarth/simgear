@@ -6,8 +6,9 @@
 #include <simgear/misc/test_macros.hxx>
 
 #include <cstdlib>
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include <sstream>
 
 #include <simgear/package/Catalog.hxx>
 #include <simgear/package/Root.hxx>
@@ -53,26 +54,25 @@ bool global_fail747Request = true;
 
 int global_737RequestsToFailCount = 0;
 
-class TestPackageChannel : public TestServerChannel
-{
-public:
+TestServer testServer;
 
-    virtual void processRequestHeaders()
-    {
-        state = STATE_IDLE;
-        SGPath localPath(global_serverFilesRoot);
+void setupPackageRoutes()
+{
+    testServer.svr.Get("/(.*)", [](const httplib::Request& req, httplib::Response& res) {
+        std::string path = req.path;
 
         if (global_failRequests) {
-            closeWhenDone();
+            res.status = 503;
+            res.set_content("Server failure simulation", "text/plain");
             return;
         }
 
-        if (path.find("alt1") == 0) {
-            path.replace(0, 4, "/catalogTest1");
+        if (path.find("/alt1/") == 0) {
+            path.replace(0, 5, "/catalogTest1");
         }
 
-        if (path.find("alt2/foo") == 0) {
-            path.replace(0, 8, "/catalogTest1");
+        if (path.find("/alt2/foo/") == 0) {
+            path.replace(0, 9, "/catalogTest1");
         }
 
         if (path == "/catalogTest1/catalog.xml") {
@@ -98,50 +98,53 @@ public:
 
         if (path == "/catalogTest1/b747.tar.gz") {
             if (global_fail747Request) {
-                sendErrorResponse(403, false, "Bad URL");
+                res.status = 403;
+                res.set_content("Bad URL", "text/plain");
                 return;
-            } else {
-                path = "/catalogTest1/b747.tar.gz"; // valid path
             }
         }
 
         if ((path.find("/mirror") == 0) && (path.find("/b737.tar.gz") == 8)) {
             if (global_737RequestsToFailCount > 0) {
-                sendErrorResponse(404, false, "Mirror failure");
+                res.status = 404;
+                res.set_content("Mirror failure", "text/plain");
                 --global_737RequestsToFailCount;
                 return;
             }
             path = "/catalogTest1/b737.tar.gz";
         }
 
+        SGPath localPath(global_serverFilesRoot);
         localPath.append(path);
-
-      //  SG_LOG(SG_IO, SG_INFO, "local path is:" << localPath.str());
 
         if (localPath.exists()) {
             std::string content = readFileIntoString(localPath);
-            std::stringstream d;
-            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
-            d << "Content-Length:" << content.size() << "\r\n";
-            d << "\r\n"; // final CRLF to terminate the headers
-            d << content;
 
-            std::string ds(d.str());
-            bufferSend(ds.data(), ds.size());
+            // Rewrite localhost:2000 to actual server port in served XML so
+            // that URLs embedded in catalog data point to our dynamic port.
+            if (path.size() > 4 && path.compare(path.size() - 4, 4, ".xml") == 0) {
+                const std::string oldHost = "localhost:2000";
+                const std::string newHost = "127.0.0.1:" + std::to_string(testServer.port());
+                size_t pos = 0;
+                while ((pos = content.find(oldHost, pos)) != std::string::npos) {
+                    content.replace(pos, oldHost.size(), newHost);
+                    pos += newHost.size();
+                }
+            }
+
+            res.status = 200;
+            res.set_content(content, "application/octet-stream");
         } else {
-            sendErrorResponse(404, false, "");
+            res.status = 404;
         }
-    }
-};
-
-TestServer<TestPackageChannel> testServer;
+    });
+}
 
 void waitForUpdateComplete(HTTP::Client* cl, pkg::Root* root)
 {
     SGTimeStamp start(SGTimeStamp::now());
     while (start.elapsedMSec() <  10000) {
         cl->update();
-        testServer.poll();
 
         if (!cl->hasActiveRequests()) {
             return;
@@ -372,7 +375,7 @@ void testAddCatalog(HTTP::Client* cl)
     // specify a test dir
     root->setHTTPClient(cl);
 
-    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
 
     waitForUpdateComplete(cl, root);
 
@@ -404,7 +407,7 @@ void testInstallPackage(HTTP::Client* cl)
     // specify a test dir
     root->setHTTPClient(cl);
 
-    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
     waitForUpdateComplete(cl, root);
 
     pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.c172p");
@@ -449,7 +452,7 @@ void testUninstall(HTTP::Client* cl)
     pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
     root->setHTTPClient(cl);
 
-    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
     waitForUpdateComplete(cl, root);
 
     pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.c172p");
@@ -476,7 +479,7 @@ void testRemoveCatalog(HTTP::Client* cl)
     root->setHTTPClient(cl);
 
     {
-        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
         waitForUpdateComplete(cl, root);
     }
 
@@ -521,7 +524,7 @@ void testRefreshCatalog(HTTP::Client* cl)
     root->setHTTPClient(cl);
 
     {
-        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
         waitForUpdateComplete(cl, root);
     }
 
@@ -591,7 +594,7 @@ void testInstallTarPackage(HTTP::Client* cl)
     // specify a test dir
     root->setHTTPClient(cl);
 
-    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
     waitForUpdateComplete(cl, root);
 
     pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
@@ -628,7 +631,7 @@ void testInstallArchiveType(HTTP::Client* cl)
     // specify a test dir
     root->setHTTPClient(cl);
 
-    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
     waitForUpdateComplete(cl, root);
 
     pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.movies");
@@ -665,7 +668,7 @@ void testDisableDueToVersion(HTTP::Client* cl)
         pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
         root->setHTTPClient(cl);
 
-        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
         waitForUpdateComplete(cl, root);
         SG_VERIFY(c->isEnabled());
 
@@ -731,7 +734,7 @@ void testVersionMigrate(HTTP::Client* cl)
         pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
         root->setHTTPClient(cl);
 
-        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
         waitForUpdateComplete(cl, root);
         SG_VERIFY(c->isEnabled());
 
@@ -757,7 +760,7 @@ void testVersionMigrate(HTTP::Client* cl)
         SG_VERIFY(cat->isEnabled());
         SG_CHECK_EQUAL(cat->status(), pkg::Delegate::STATUS_REFRESHED);
         SG_CHECK_EQUAL(cat->id(), "org.flightgear.test.catalog1");
-        SG_CHECK_EQUAL(cat->url(), "http://localhost:2000/catalogTest1/catalog-v10.xml");
+        SG_CHECK_EQUAL(cat->url(), testServer.url("/catalogTest1/catalog-v10.xml"));
 
         auto enabledCats = root->catalogs();
         auto it = std::find(enabledCats.begin(), enabledCats.end(), cat);
@@ -787,7 +790,7 @@ void testVersionMigrateToId(HTTP::Client* cl)
         pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
         root->setHTTPClient(cl);
 
-        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
         waitForUpdateComplete(cl, root);
         SG_VERIFY(c->isEnabled());
 
@@ -813,7 +816,7 @@ void testVersionMigrateToId(HTTP::Client* cl)
         SG_VERIFY(!cat->isEnabled());
         SG_CHECK_EQUAL(cat->status(), pkg::Delegate::FAIL_VERSION);
         SG_CHECK_EQUAL(cat->id(), "org.flightgear.test.catalog1");
-        SG_CHECK_EQUAL(cat->url(), "http://localhost:2000/catalogTest1/catalog.xml");
+        SG_CHECK_EQUAL(cat->url(), testServer.url("/catalogTest1/catalog.xml"));
 
         auto enabledCats = root->catalogs();
         auto it = std::find(enabledCats.begin(), enabledCats.end(), cat);
@@ -834,7 +837,7 @@ void testVersionMigrateToId(HTTP::Client* cl)
         SG_VERIFY(altCat->isEnabled());
         SG_CHECK_EQUAL(altCat->status(), pkg::Delegate::STATUS_REFRESHED);
         SG_CHECK_EQUAL(altCat->id(), "org.flightgear.test.catalog-alt");
-        SG_CHECK_EQUAL(altCat->url(), "http://localhost:2000/catalogTest1/catalog-alt.xml");
+        SG_CHECK_EQUAL(altCat->url(), testServer.url("/catalogTest1/catalog-alt.xml"));
 
         it = std::find(enabledCats.begin(), enabledCats.end(), altCat);
         SG_VERIFY(it != enabledCats.end());
@@ -914,7 +917,7 @@ void testOfflineMode(HTTP::Client* cl)
         pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
         root->setHTTPClient(cl);
 
-        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+        pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
         waitForUpdateComplete(cl, root);
         SG_VERIFY(c->isEnabled());
 
@@ -986,9 +989,9 @@ void removeInvalidCatalog(HTTP::Client* cl)
     root->setHTTPClient(cl);
 
     // another catalog so the dicts are non-empty
-    pkg::CatalogRef anotherCat = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    pkg::CatalogRef anotherCat = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
 
-    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTestInvalid/catalog.xml");
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTestInvalid/catalog.xml"));
     waitForUpdateComplete(cl, root);
     SG_VERIFY(!c->isEnabled());
     SG_VERIFY(c->status() == pkg::Delegate::FAIL_VALIDATION);
@@ -1003,7 +1006,7 @@ void removeInvalidCatalog(HTTP::Client* cl)
 
     // re-add it again, and remove it again
     {
-        pkg::CatalogRef c2 = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTestInvalid/catalog.xml");
+        pkg::CatalogRef c2 = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTestInvalid/catalog.xml"));
         waitForUpdateComplete(cl, root);
         SG_VERIFY(!c2->isEnabled());
         SG_VERIFY(c2->status() == pkg::Delegate::FAIL_VALIDATION);
@@ -1035,7 +1038,7 @@ void updateInvalidToValid(HTTP::Client* cl)
     pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
     root->setHTTPClient(cl);
 
-    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTestInvalid/catalog.xml");
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTestInvalid/catalog.xml"));
     waitForUpdateComplete(cl, root);
     SG_VERIFY(!c->isEnabled());
 
@@ -1066,7 +1069,7 @@ void updateValidToInvalid(HTTP::Client* cl)
     pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
     root->setHTTPClient(cl);
 
-    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTestInvalid/catalog.xml");
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTestInvalid/catalog.xml"));
     waitForUpdateComplete(cl, root);
     SG_VERIFY(c->isEnabled());
     SG_VERIFY(c->status() == pkg::Delegate::STATUS_REFRESHED);
@@ -1094,7 +1097,7 @@ void updateInvalidToInvalid(HTTP::Client* cl)
     pkg::RootRef root(new pkg::Root(rootPath, "8.1.2"));
     root->setHTTPClient(cl);
 
-    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTestInvalid/catalog.xml");
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTestInvalid/catalog.xml"));
     waitForUpdateComplete(cl, root);
     SG_VERIFY(!c->isEnabled());
 
@@ -1126,7 +1129,7 @@ void testInstallBadPackage(HTTP::Client* cl)
     // specify a test dir
     root->setHTTPClient(cl);
 
-    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
     waitForUpdateComplete(cl, root);
 
     pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b747-400");
@@ -1178,7 +1181,7 @@ void testMirrorsFailure(HTTP::Client* cl)
     // specify a test dir
     root->setHTTPClient(cl);
 
-    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
     waitForUpdateComplete(cl, root);
 
     pkg::PackageRef p1 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
@@ -1210,29 +1213,29 @@ void testMigrateInstalled(HTTP::Client *cl) {
   pkg::CatalogRef oldCatalog, newCatalog;
 
   {
-    oldCatalog = pkg::Catalog::createFromUrl(
-        root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
-    waitForUpdateComplete(cl, root);
+      oldCatalog = pkg::Catalog::createFromUrl(
+          root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
+      waitForUpdateComplete(cl, root);
 
-    pkg::PackageRef p1 =
-        root->getPackageById("org.flightgear.test.catalog1.b747-400");
-    p1->install();
-    auto p2 = root->getPackageById("org.flightgear.test.catalog1.c172p");
-    p2->install();
-    auto p3 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
-    p3->install();
-    waitForUpdateComplete(cl, root);
+      pkg::PackageRef p1 =
+          root->getPackageById("org.flightgear.test.catalog1.b747-400");
+      p1->install();
+      auto p2 = root->getPackageById("org.flightgear.test.catalog1.c172p");
+      p2->install();
+      auto p3 = root->getPackageById("org.flightgear.test.catalog1.b737-NG");
+      p3->install();
+      waitForUpdateComplete(cl, root);
   }
 
   {
-    newCatalog = pkg::Catalog::createFromUrl(
-        root.ptr(), "http://localhost:2000/catalogTest2/catalog.xml");
-    waitForUpdateComplete(cl, root);
+      newCatalog = pkg::Catalog::createFromUrl(
+          root.ptr(), testServer.url("/catalogTest2/catalog.xml"));
+      waitForUpdateComplete(cl, root);
 
-    string_list existing;
-    for (const auto& pack : oldCatalog->installedPackages(simgear::pkg::AnyPackageType)) {
-        existing.push_back(pack->id());
-    }
+      string_list existing;
+      for (const auto& pack : oldCatalog->installedPackages(simgear::pkg::AnyPackageType)) {
+          existing.push_back(pack->id());
+      }
 
     SG_CHECK_EQUAL(4, existing.size());
 
@@ -1271,7 +1274,7 @@ void testDontMigrateRemoved(HTTP::Client *cl) {
     root->setHTTPClient(cl);
 
     pkg::CatalogRef c = pkg::Catalog::createFromUrl(
-        root.ptr(), "http://localhost:2000/catalogTest1/catalog-alt.xml");
+        root.ptr(), testServer.url("/catalogTest1/catalog-alt.xml"));
     waitForUpdateComplete(cl, root);
 
     root->removeCatalogById("org.flightgear.test.catalog-alt");
@@ -1283,7 +1286,7 @@ void testDontMigrateRemoved(HTTP::Client *cl) {
     root->setHTTPClient(cl);
 
     pkg::CatalogRef c = pkg::Catalog::createFromUrl(
-        root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+        root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
     waitForUpdateComplete(cl, root);
     SG_VERIFY(c->isEnabled());
   }
@@ -1308,7 +1311,7 @@ void testDontMigrateRemoved(HTTP::Client *cl) {
     SG_CHECK_EQUAL(cat->status(), pkg::Delegate::FAIL_VERSION);
     SG_CHECK_EQUAL(cat->id(), "org.flightgear.test.catalog1");
     SG_CHECK_EQUAL(cat->url(),
-                   "http://localhost:2000/catalogTest1/catalog.xml");
+                   testServer.url("/catalogTest1/catalog.xml"));
 
     auto enabledCats = root->catalogs();
     auto it = std::find(enabledCats.begin(), enabledCats.end(), cat);
@@ -1332,7 +1335,7 @@ void testProvides(HTTP::Client* cl)
     // specify a test dir
     root->setHTTPClient(cl);
 
-    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), "http://localhost:2000/catalogTest1/catalog.xml");
+    pkg::CatalogRef c = pkg::Catalog::createFromUrl(root.ptr(), testServer.url("/catalogTest1/catalog.xml"));
     waitForUpdateComplete(cl, root);
 
     // query
@@ -1353,6 +1356,9 @@ int main(int argc, char* argv[])
     cl.setMaxConnections(1);
 
     global_serverFilesRoot = SGPath::fromLocal8Bit(SRC_DIR);
+
+    setupPackageRoutes();
+    testServer.start();
 
     testAddCatalog(&cl);
 

@@ -34,6 +34,7 @@ endif()
 if(ENABLE_TESTS)
 
 add_simgear_autotest(catalog_test CatalogTest.cxx)
+target_link_libraries(catalog_test httplib::httplib)
 set_target_properties(catalog_test PROPERTIES
         COMPILE_DEFINITIONS "SRC_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"" )
 
