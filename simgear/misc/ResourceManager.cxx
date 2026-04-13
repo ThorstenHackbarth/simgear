@@ -6,29 +6,81 @@
  * @brief  manage finding resources by names/paths
  */
 
-#include <assert.h>
 #include <algorithm>
+#include <cassert>
 #include <mutex>
+#include <vector>
 
-#include <simgear_config.h>
-
-#include <simgear/misc/ResourceManager.hxx>
+#include <simgear/debug/debug_types.h>
 #include <simgear/debug/logstream.hxx>
+#include <simgear/misc/ResourceManager.hxx>
+#include <simgear/misc/sg_dir.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 namespace simgear
 {
-    
+
 static inline std::mutex static_manager_mutex;
 static ResourceManager* static_manager = nullptr;
+
+std::ostream& operator<<(std::ostream& stream, ResourceManager::FileType type)
+{
+    switch (type) {
+    case ResourceManager::FileType::Font:
+        stream << "Font";
+        break;
+    default:
+        stream << "Unknown";
+    }
+    return stream;
+}
 
 ResourceProvider::~ResourceProvider()
 {
     // pin to this compilation unit
 }
 
+void ResourceProvider::findAllOfTypeHelper(
+    SGPath path, ResourceManager::FileType type,
+    std::vector<SGPath>& result) const
+{
+    if (!path.exists()) {
+        return;
+    }
+    switch (type) {
+    case ResourceManager::FileType::Font:
+        path.append("Fonts");
+        break;
+    default:
+        SG_LOG(SG_IO, SG_DEV_WARN, "ResourceManager::findAllOfType: type '" << type << "' not handled");
+        return;
+    }
+    findAllOfTypeHelper(Dir(path), type, result);
+}
+
+void ResourceProvider::findAllOfTypeHelper(
+    const Dir& dir, ResourceManager::FileType type,
+    std::vector<SGPath>& result) const
+{
+    if (!dir.exists()) {
+        return;
+    }
+    for (const auto& c : dir.children()) {
+        if (c.isDir()) {
+            findAllOfTypeHelper(c, type, result);
+        } else if (c.isFile()) {
+            const std::string suffix = c.complete_lower_extension();
+            if (type == ResourceManager::FileType::Font) {
+                if (suffix == "ttf" || suffix == "otf") {
+                    result.push_back(c);
+                }
+            }
+        }
+    }
+}
+
 ResourceManager::ResourceManager()
 {
-    
 }
 
 ResourceManager* ResourceManager::instance()
@@ -37,9 +89,9 @@ ResourceManager* ResourceManager::instance()
     if (!static_manager) {
         static_manager = new ResourceManager();
     }
-    
+
     return static_manager;
-}    
+}
 
 bool ResourceManager::haveInstance()
 {
@@ -52,8 +104,8 @@ ResourceManager::~ResourceManager()
     const std::lock_guard<std::mutex> lock(static_manager_mutex);
     assert(this == static_manager);
     static_manager = nullptr;
-    std::for_each(_providers.begin(), _providers.end(), 
-        [](ResourceProvider* p) { delete p; });
+    std::for_each(_providers.begin(), _providers.end(),
+                  [](ResourceProvider* p) { delete p; });
 }
 
 void ResourceManager::reset()
@@ -75,16 +127,22 @@ public:
         ResourceProvider(aPriority),
         _base(aBase)
     {
-        
     }
-    
-    virtual SGPath resolve(const std::string& aResource, SGPath&) const
+
+    virtual PathList findAllOfType(ResourceManager::FileType type) const override
+    {
+        std::vector<SGPath> paths;
+        findAllOfTypeHelper(_base, type, paths);
+        return paths;
+    }
+
+    virtual SGPath resolve(const std::string& aResource, SGPath&) const override
     {
         SGPath p(_base, aResource);
         return p.exists() ? p : SGPath();
     }
 private:
-    SGPath _base;  
+    SGPath _base;
 };
 
 void ResourceManager::addBasePath(const SGPath& aPath, Priority aPriority)
@@ -103,7 +161,7 @@ void ResourceManager::addProvider(ResourceProvider* aProvider)
         return;
       }
     }
-    
+
     // fell out of the iteration, goes to the end of the vec
     _providers.push_back(aProvider);
 }
@@ -113,7 +171,7 @@ void ResourceManager::removeProvider(ResourceProvider* aProvider)
     assert(aProvider);
     auto it = std::find(_providers.begin(), _providers.end(), aProvider);
     if (it == _providers.end()) {
-        SG_LOG(SG_GENERAL, SG_DEV_ALERT, "unknown provider doing remove");
+        SG_LOG(SG_GENERAL, SG_DEV_ALERT, "Cannot remove unregistered resource provider");
         return;
     }
 
@@ -149,6 +207,16 @@ SGPath ResourceManager::findPath(const std::string& aResource, SGPath aContext)
     }
 
     return SGPath();
+}
+
+std::vector<SGPath> ResourceManager::findAllOfType(FileType type)
+{
+    std::vector<SGPath> paths;
+    for (const auto& provider : _providers) {
+        std::vector<SGPath> foundPaths = provider->findAllOfType(type);
+        paths.insert(paths.end(), foundPaths.begin(), foundPaths.end());
+    }
+    return paths;
 }
 
 } // of namespace simgear
