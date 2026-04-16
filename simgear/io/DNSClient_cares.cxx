@@ -4,6 +4,7 @@
 #include <simgear_config.h>
 
 #include <algorithm>
+#include <type_traits>
 
 #include "DNSClient.hxx"
 #include <ares.h>
@@ -27,6 +28,22 @@ namespace DNS {
 #define ARES_REC_TYPE_SRV 33
 #define ARES_REC_TYPE_TXT 16
 #endif
+
+// Compatibility breakage from c-ares commit 6475221a427394b6d2a3d3cb0b0abe18:
+// the fourth argument of functions of type 'ares_callback' was changed from
+// 'unsigned char*' to 'const unsigned char*'.
+//
+// TODO: use ARES_VERSION for this when it becomes possible. At the time of
+// this writing, c-ares v1.34.6 uses 'unsigned char*'; more recent commits in
+// the v1.34 branch use 'const unsigned char*', however v1.34.7 hasn't been
+// released yet.
+using cares_char_type =
+    std::conditional<
+        std::is_same_v<ares_callback,
+                       void (*)(void*, int, int, unsigned char*, int)>,
+        unsigned char,
+        const unsigned char>::type;
+
 
 class Client::ClientPrivate {
 public:
@@ -84,7 +101,8 @@ public:
             request);
     }
 
-    static void callback(void* arg, int status, int timeouts, unsigned char* abuf, int alen) {
+    static void callback(void* arg, int status, int timeouts, cares_char_type* abuf, int alen)
+    {
         Request* r = static_cast<Request*>(arg);
 
         if (status != ARES_SUCCESS) {
@@ -110,8 +128,8 @@ public:
         r->setComplete(true);
     }
 
-    static void parse_NAPTR( unsigned char * abuf, int alen, NAPTRRequest * record ) {
-
+    static void parse_NAPTR(cares_char_type* abuf, int alen, NAPTRRequest* record)
+    {
         struct ares_naptr_reply* naptr_out;
         int result = ares_parse_naptr_reply(abuf, alen, &naptr_out);
         if (result != ARES_SUCCESS) {
@@ -147,7 +165,7 @@ public:
         ares_free_data(naptr_out);
     }
 
-    static void parse_SRV(unsigned char* abuf, int alen, SRVRequest* record)
+    static void parse_SRV(cares_char_type* abuf, int alen, SRVRequest* record)
     {
         struct ares_srv_reply* srv_out;
         int result = ares_parse_srv_reply(abuf, alen, &srv_out);
@@ -173,7 +191,7 @@ public:
         ares_free_data(srv_out);
     }
 
-    static void parse_TXT(unsigned char* abuf, int alen, TXTRequest* record)
+    static void parse_TXT(cares_char_type* abuf, int alen, TXTRequest* record)
     {
         struct ares_txt_reply* txt_out;
         int result = ares_parse_txt_reply(abuf, alen, &txt_out);
