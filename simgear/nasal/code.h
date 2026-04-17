@@ -21,7 +21,8 @@
 // collector synchronization.
 #define OBJ_CACHE_SZ 1
 
-enum {    
+// clang-format off
+enum {
     OP_NOT, OP_MUL, OP_PLUS, OP_MINUS, OP_DIV, OP_NEG, OP_CAT, OP_LT, OP_LTE,
     OP_GT, OP_GTE, OP_EQ, OP_NEQ, OP_EACH, OP_JMP, OP_JMPLOOP, OP_JIFNOTPOP,
     OP_JIFEND, OP_FCALL, OP_MCALL, OP_RETURN, OP_PUSHCONST, OP_PUSHONE,
@@ -32,6 +33,7 @@ enum {
     OP_MCALLH, OP_XCHG2, OP_UNPACK, OP_SLICE, OP_SLICE2, OP_BIT_AND, OP_BIT_OR,
     OP_BIT_XOR, OP_BIT_NEG
 };
+// clang-format on
 
 struct Frame {
     naRef func; // naFunc object
@@ -49,7 +51,7 @@ struct Globals {
     void** deadBlocks;
     int deadsz;
     int ndead;
-    
+
     // Threading stuff
     int nThreads;
     int waitCount;
@@ -99,7 +101,7 @@ struct Context {
 
     // Error handling
     jmp_buf jumpHandle;
-    char error[128];
+    char error[1024];
     naRef dieArg;
 
     // Sub-call lists

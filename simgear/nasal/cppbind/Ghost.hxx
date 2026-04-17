@@ -302,7 +302,10 @@ namespace nasal
             }
             catch(const std::exception& ex)
             {
-              naRuntimeError(c, "Fatal error in method call: %s", ex.what());
+                naRuntimeError(c, "Fatal error in method call: %s (at %s:%d)",
+                               ex.what(),
+                               naStr_data(naGetSourceFile(c, 0)),
+                               naGetLine(c, 0));
             }
             catch(...)
             {

@@ -59,8 +59,11 @@ namespace nasal
       naNil() // locals
     );
 
-    if( const char* error = naGetError(_ctx) )
-      throw std::runtime_error(error);
+    if (const char* error = naGetError(_ctx)) {
+        int line = naGetLine(_ctx, 0);
+        char* file = naStr_data(naGetSourceFile(_ctx, 0));
+        throw std::runtime_error(std::string{error} + " (at " + file + ":" + std::to_string(line) + ")");
+    }
 
     return ret;
   }
