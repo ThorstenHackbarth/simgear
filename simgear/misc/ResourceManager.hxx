@@ -82,10 +82,7 @@ public:
 
     virtual ~ResourceProvider();
 
-    virtual std::vector<SGPath> findAllOfType(ResourceManager::FileType type) const
-    {
-        return {}; // temporary workaround to let FG compile
-    }
+    virtual std::vector<SGPath> findAllOfType(ResourceManager::FileType type) const = 0;
 
     virtual ResourceManager::Priority priority() const
     {
