@@ -67,8 +67,11 @@ public:
     using iterator_category = CategoryOrTraversal;
 
     // ── dereference ──────────────────────────────────────────────────────────
+    // Returns decltype(auto) so proxy iterators whose dereference() returns by
+    // value (e.g. Reference = int instead of int&) compile without truncation.
+    // iterator_traits::reference still reflects the declared Reference type.
 
-    reference operator*() const
+    decltype(auto) operator*() const
     {
         return iterator_core_access::dereference(derived());
     }

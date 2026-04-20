@@ -123,7 +123,10 @@ static void test_hash_functor_string()
 
 // ── ADL hash_value override ───────────────────────────────────────────────────
 namespace test_ns {
-    struct Widget { int id; };
+    struct Widget {
+        int id;
+        bool operator==(const Widget& o) const { return id == o.id; }
+    };
     std::size_t hash_value(const Widget& w) { return boost::hash_value(w.id); }
 }
 

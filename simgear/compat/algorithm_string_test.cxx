@@ -12,6 +12,7 @@
 #endif
 
 #include <simgear/misc/test_macros.hxx>
+#include <cstring>
 #include <string>
 #include <vector>
 

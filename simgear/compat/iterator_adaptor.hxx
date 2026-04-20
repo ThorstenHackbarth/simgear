@@ -79,6 +79,11 @@ class iterator_adaptor
 public:
     using base_type = Base;
     using typename facade_t::reference;
+    using typename facade_t::difference_type;
+
+    // Boost names the base class iterator_adaptor_ so Derived constructors can
+    // write: Derived(Base b) : Derived::iterator_adaptor_(b) {}
+    using iterator_adaptor_ = iterator_adaptor;
 
     iterator_adaptor() = default;
 
@@ -105,6 +110,41 @@ protected:
                                       Reference, Difference>& other) const
     {
         return base_ == other.base_;
+    }
+
+public:
+    // Random-access operators – delegate directly to the Base iterator.
+    // Only well-formed when Base itself supports random access; the compiler
+    // produces a clear diagnostic otherwise.
+
+    Derived& operator+=(difference_type n)
+    {
+        base_ += n;
+        return static_cast<Derived&>(*this);
+    }
+
+    Derived& operator-=(difference_type n)
+    {
+        base_ -= n;
+        return static_cast<Derived&>(*this);
+    }
+
+    friend Derived operator+(Derived d, difference_type n) { d += n; return d; }
+    friend Derived operator+(difference_type n, Derived d) { d += n; return d; }
+    friend Derived operator-(Derived d, difference_type n) { d -= n; return d; }
+
+    template<class OtherDerived>
+    difference_type operator-(
+        const iterator_adaptor<OtherDerived, Base,
+                               Value, CategoryOrTraversal,
+                               Reference, Difference>& other) const
+    {
+        return base_ - other.base();
+    }
+
+    decltype(auto) operator[](difference_type n) const
+    {
+        return *(static_cast<const Derived&>(*this) + n);
     }
 
 private:

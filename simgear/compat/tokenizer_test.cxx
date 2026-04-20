@@ -102,8 +102,8 @@ static void test_dereference_string_interface()
 {
     // *tok gives std::string with begin()/end()/rbegin()
     typedef boost::tokenizer<boost::char_separator<char>> Tok;
-    Tok t(std::string("50%").cbegin(), std::string("50%").cend(),
-          boost::char_separator<char>(" "));
+    std::string s("50%");
+    Tok t(s.cbegin(), s.cend(), boost::char_separator<char>(" "));
     auto it = t.begin();
     SG_VERIFY(it != t.end());
     SG_CHECK_EQUAL(*it, std::string("50%"));
@@ -114,8 +114,8 @@ static void test_dereference_string_interface()
 static void test_arrow_member_access()
 {
     typedef boost::tokenizer<boost::char_separator<char>> Tok;
-    Tok t(std::string("alpha").cbegin(), std::string("alpha").cend(),
-          boost::char_separator<char>(" "));
+    std::string s("alpha");
+    Tok t(s.cbegin(), s.cend(), boost::char_separator<char>(" "));
     auto it = t.begin();
     SG_CHECK_EQUAL(it->length(), std::size_t{5});
 }
@@ -154,7 +154,7 @@ static void test_reiteration()
     Tok t(s.begin(), s.end(), boost::char_separator<char>(" "));
     auto v1 = std::vector<std::string>(t.begin(), t.end());
     auto v2 = std::vector<std::string>(t.begin(), t.end());
-    SG_CHECK_EQUAL(v1, v2);
+    SG_CHECK_EQUAL_NOSTREAM(v1, v2);
 }
 
 static void test_custom_delimiter()
