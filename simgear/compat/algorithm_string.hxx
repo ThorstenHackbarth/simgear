@@ -205,4 +205,17 @@ make_split_iterator(const Range& range, Finder finder)
     return {range, std::move(finder)};
 }
 
+// ── iends_with ────────────────────────────────────────────────────────────────
+
+inline bool iends_with(const std::string& str, const std::string& suffix)
+{
+    if (suffix.size() > str.size()) return false;
+    return std::equal(
+        str.end() - static_cast<std::ptrdiff_t>(suffix.size()), str.end(),
+        suffix.begin(), suffix.end(),
+        [](unsigned char a, unsigned char b) {
+            return std::tolower(a) == std::tolower(b);
+        });
+}
+
 } // namespace boost

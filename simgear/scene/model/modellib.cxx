@@ -19,7 +19,11 @@
 #  include <simgear_config.h>
 #endif
 
-#include <boost/algorithm/string.hpp>
+#ifdef SG_NO_BOOST
+#  include <simgear/compat/algorithm_string.hxx>
+#else
+#  include <boost/algorithm/string.hpp>
+#endif
 
 #include <osg/Version>
 #include <osg/PagedLOD>

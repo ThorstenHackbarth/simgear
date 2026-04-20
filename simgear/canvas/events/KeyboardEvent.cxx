@@ -12,10 +12,15 @@
 
 #include <osgGA/GUIEventAdapter>
 
-#include <boost/version.hpp>
-#if BOOST_VERSION >= 104800
-# include <boost/container/flat_map.hpp>
-# include <boost/container/flat_set.hpp>
+#ifndef SG_NO_BOOST
+# include <boost/version.hpp>
+# if BOOST_VERSION >= 104800
+#  include <boost/container/flat_map.hpp>
+#  include <boost/container/flat_set.hpp>
+# else
+#  include <map>
+#  include <set>
+# endif
 #else
 # include <map>
 # include <set>
@@ -99,11 +104,13 @@ namespace canvas
     // system.
     typedef std::pair<const char*, uint8_t> InternalKeyInfo;
 
-#if BOOST_VERSION >= 104800
+#if !defined(SG_NO_BOOST) && defined(BOOST_VERSION) && BOOST_VERSION >= 104800
     typedef boost::container::flat_map<int, InternalKeyInfo> InternalKeyMap;
     typedef boost::container::flat_set<int> KeyList;
 #else
-#   warning "Use Boost >= 1.48 for faster and more memory efficient key lookup"
+#  if !defined(SG_NO_BOOST)
+#    warning "Use Boost >= 1.48 for faster and more memory efficient key lookup"
+#  endif
     typedef std::map<int, InternalKeyInfo> InternalKeyMap;
     typedef std::set<int> KeyList;
 #endif

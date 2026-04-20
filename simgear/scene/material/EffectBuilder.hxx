@@ -29,9 +29,13 @@
 #include <osg/Object>
 #include <osgDB/Registry>
 
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/ordered_index.hpp>
+#ifdef SG_NO_BOOST
+#  include <type_traits>
+#else
+#  include <boost/multi_index_container.hpp>
+#  include <boost/multi_index/member.hpp>
+#  include <boost/multi_index/ordered_index.hpp>
+#endif
 
 #include <simgear/props/AtomicChangeListener.hxx>
 #include <simgear/props/props.hxx>
@@ -98,8 +102,6 @@ protected:
 
 namespace effect
 {
-using boost::multi_index_container;
-using namespace boost::multi_index;
 
 // tags for accessing both sides of a bidirectional map
 
@@ -115,7 +117,96 @@ struct EffectNameValue
 };
 
 // The class template bidirectional_map wraps the specification
-// of a bidirectional map based on multi_index_container.
+// of a bidirectional map.
+
+#ifdef SG_NO_BOOST
+
+// C++20 replacement for boost::multi_index bidirectional map.
+// Two std::maps provide O(log n) lookup in both directions.
+template<typename FromType, typename ToType>
+struct bidirectional_map
+{
+#if _MSC_VER >= 1600
+    struct value_type {
+        FromType first;
+        ToType second;
+        value_type(FromType f, ToType s) : first(f), second(s) {}
+    };
+#else
+    typedef std::pair<FromType, ToType> value_type;
+#endif
+
+    struct type {
+        using from_map_t = std::map<FromType, ToType>;
+        using to_map_t   = std::map<ToType, FromType>;
+
+        // Default iterator: iterates over from-index (string -> T)
+        // itr->first = FromType,  itr->second = ToType
+        using iterator = typename from_map_t::const_iterator;
+
+        // to-index iterator: wraps to_map but presents pairs as (FromType, ToType)
+        // to match Boost multi_index semantics where *itr is the full value_type.
+        struct to_iterator {
+            typename to_map_t::const_iterator _it;
+
+            // arrow_proxy lets itr->first give FromType, itr->second give ToType
+            struct arrow_proxy {
+                FromType first;
+                ToType   second;
+                const arrow_proxy* operator->() const { return this; }
+            };
+
+            arrow_proxy operator->() const { return {_it->second, _it->first}; }
+
+            bool operator==(const to_iterator& o) const { return _it == o._it; }
+            bool operator!=(const to_iterator& o) const { return _it != o._it; }
+        };
+
+        // index_iterator<Tag>::type – the iterator type for named index Tag
+        template<class Tag>
+        struct index_iterator {
+            using type = std::conditional_t<
+                std::is_same_v<Tag, from>, iterator, to_iterator>;
+        };
+
+        // Named index views returned by get<Tag>()
+        struct from_view {
+            const from_map_t* ref;
+            iterator find(const FromType& k) const { return ref->find(k); }
+            iterator end()                   const { return ref->end(); }
+        };
+
+        struct to_view {
+            const to_map_t* ref;
+            to_iterator find(const ToType& k) const { return {ref->find(k)}; }
+            to_iterator end()                 const { return {ref->end()}; }
+        };
+
+        template<class Tag>
+        auto get() const {
+            if constexpr (std::is_same_v<Tag, from>)
+                return from_view{&_fmap};
+            else
+                return to_view{&_tmap};
+        }
+
+        // end() mirrors Boost container's end() (== from-index end)
+        iterator end() const { return _fmap.end(); }
+
+        void insert(const value_type& v) {
+            _fmap.emplace(v.first, v.second);
+            _tmap.emplace(v.second, v.first);
+        }
+
+        from_map_t _fmap;
+        to_map_t   _tmap;
+    };
+};
+
+#else // !SG_NO_BOOST
+
+using boost::multi_index_container;
+using namespace boost::multi_index;
 
 template<typename FromType,typename ToType>
 struct bidirectional_map
@@ -130,10 +221,6 @@ struct bidirectional_map
     typedef std::pair<FromType,ToType> value_type;
 #endif
 
-    /* A bidirectional map can be simulated as a multi_index_container
-     * of pairs of (FromType,ToType) with two unique indices, one
-     * for each member of the pair.
-     */
     typedef multi_index_container<
         value_type,
         indexed_by<
@@ -144,6 +231,8 @@ struct bidirectional_map
             >
         > type;
 };
+
+#endif // SG_NO_BOOST
 
 template<typename T>
 struct EffectPropertyMap
