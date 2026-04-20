@@ -8,6 +8,7 @@ set(HEADERS
     functional_hash.hxx
     tokenizer.hxx
     call_traits.hxx
+    mpl_has_xxx.hxx
     iterator_facade.hxx
     iterator_adaptor.hxx
     algorithm_string.hxx
