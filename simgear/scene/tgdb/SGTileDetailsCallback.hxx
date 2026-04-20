@@ -8,7 +8,11 @@
 
 #include <osg/LOD>
 
-#include <boost/foreach.hpp>
+#ifndef SG_NO_BOOST
+#  include <boost/foreach.hpp>
+#else
+#  include <algorithm>
+#endif
 
 #include <simgear/scene/material/matmodel.hxx>
 #include <simgear/scene/model/SGOffsetTransform.hxx>
@@ -632,6 +636,23 @@ public:
             bool found = false;
             TreeBin* bin = NULL;
 
+#ifdef SG_NO_BOOST
+            {
+                auto it = std::find_if(randomForest.begin(), randomForest.end(),
+                    [&](TreeBin* b) {
+                        return b->texture           == mat->get_tree_texture()
+                            && b->teffect           == mat->get_tree_effect()
+                            && b->texture_varieties == mat->get_tree_varieties()
+                            && b->range             == mat->get_tree_range()
+                            && b->width             == mat->get_tree_width()
+                            && b->height            == mat->get_tree_height();
+                    });
+                if (it != randomForest.end()) {
+                    found = true;
+                    bin = *it;
+                }
+            }
+#else
             BOOST_FOREACH(bin, randomForest)
             {
                 if ((bin->texture           == mat->get_tree_texture()  ) &&
@@ -644,6 +665,7 @@ public:
                 break;
                     }
             }
+#endif
 
             if (!found) {
                 bin = new TreeBin();
