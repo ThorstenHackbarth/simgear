@@ -12,7 +12,11 @@
 #include <simgear/nasal/cppbind/cppbind_fwd.hxx>
 #include <simgear/std/type_traits.hxx>
 
-#include <boost/call_traits.hpp>
+#ifdef SG_NO_BOOST
+#  include <simgear/compat/call_traits.hxx>
+#else
+#  include <boost/call_traits.hpp>
+#endif
 
 #include <any>
 #include <array>

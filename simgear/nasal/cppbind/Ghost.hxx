@@ -15,8 +15,13 @@
 #include <simgear/structure/SGWeakReferenced.hxx>
 #include <simgear/structure/SGWeakPtr.hxx>
 
-#include <boost/call_traits.hpp>
-#include <boost/mpl/has_xxx.hpp>
+#ifdef SG_NO_BOOST
+#  include <simgear/compat/call_traits.hxx>
+#  include <simgear/compat/mpl_has_xxx.hxx>
+#else
+#  include <boost/call_traits.hpp>
+#  include <boost/mpl/has_xxx.hpp>
+#endif
 
 #include <map>
 #include <memory>

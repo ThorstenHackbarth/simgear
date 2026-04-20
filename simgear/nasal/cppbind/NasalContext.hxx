@@ -8,7 +8,11 @@
 #include "cppbind_fwd.hxx"
 #include "NasalMe.hxx"
 
-#include <boost/call_traits.hpp>
+#ifdef SG_NO_BOOST
+#  include <simgear/compat/call_traits.hxx>
+#else
+#  include <boost/call_traits.hpp>
+#endif
 #include <initializer_list>
 
 namespace nasal
