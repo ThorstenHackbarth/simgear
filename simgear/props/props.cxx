@@ -37,10 +37,15 @@
 # include <iostream>
 using std::cerr;
 #else
-# include <boost/algorithm/string/find_iterator.hpp>
-# include <boost/algorithm/string/predicate.hpp>
-# include <boost/functional/hash.hpp>
-# include <boost/range.hpp>
+# ifdef SG_NO_BOOST
+#  include <simgear/compat/functional_hash.hxx>
+#  include <simgear/compat/algorithm_string.hxx>
+# else
+#  include <boost/algorithm/string/find_iterator.hpp>
+#  include <boost/algorithm/string/predicate.hpp>
+#  include <boost/functional/hash.hpp>
+#  include <boost/range.hpp>
+# endif
 
 # include <simgear/compiler.h>
 # include <simgear/debug/logstream.hxx>

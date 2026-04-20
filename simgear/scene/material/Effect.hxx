@@ -9,7 +9,11 @@
 #include <queue>
 #include <mutex>
 
-#include <boost/functional/hash.hpp>
+#ifdef SG_NO_BOOST
+#  include <simgear/compat/functional_hash.hxx>
+#else
+#  include <boost/functional/hash.hpp>
+#endif
 
 #include <osg/Object>
 #include <osg/observer_ptr>
