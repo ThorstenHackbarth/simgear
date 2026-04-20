@@ -5,12 +5,18 @@
 #ifndef SG_NASAL_HASH_HXX_
 #define SG_NASAL_HASH_HXX_
 
-#include <boost/mpl/if.hpp>
+#ifndef SG_NO_BOOST
+#  include <boost/mpl/if.hpp>   // unused; kept for reference only
+#endif
 
 #include "from_nasal.hxx"
 #include "to_nasal.hxx"
 
-#include <boost/iterator/iterator_facade.hpp>
+#ifdef SG_NO_BOOST
+#  include <simgear/compat/iterator_facade.hxx>
+#else
+#  include <boost/iterator/iterator_facade.hpp>
+#endif
 #include <simgear/std/type_traits.hxx>
 #include <simgear/structure/map.hxx>
 #include <type_traits>

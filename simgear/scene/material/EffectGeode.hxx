@@ -19,7 +19,11 @@
 
 #include <osg/Geode>
 
-#include <boost/iterator/iterator_adaptor.hpp>
+#ifdef SG_NO_BOOST
+#  include <simgear/compat/iterator_adaptor.hxx>
+#else
+#  include <boost/iterator/iterator_adaptor.hpp>
+#endif
 
 #include "Effect.hxx"
 #include "mat.hxx"
