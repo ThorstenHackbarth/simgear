@@ -8,7 +8,11 @@
 
 #include "CSSBorder.hxx"
 
-#include <boost/tokenizer.hpp>
+#ifdef SG_NO_BOOST
+#  include <simgear/compat/tokenizer.hxx>
+#else
+#  include <boost/tokenizer.hpp>
+#endif
 
 namespace simgear
 {
