@@ -148,9 +148,15 @@ endif()
 
 find_package(Threads REQUIRED)
 
-find_package(Boost REQUIRED)
-set (BOOST_CXX_FLAGS "-DBOOST_BIMAP_DISABLE_SERIALIZATION -DBOOST_NO_STDLIB_CONFIG -DBOOST_NO_AUTO_PTR -DBOOST_NO_CXX98_BINDERS")
-include(BoostTestTargets)
+option(SIMGEAR_NO_BOOST "Build without Boost library dependency using C++20 std replacements" OFF)
+if(SIMGEAR_NO_BOOST)
+    message(STATUS "SimGear: Building without Boost (SG_NO_BOOST enabled)")
+    add_compile_definitions(SG_NO_BOOST)
+else()
+    find_package(Boost REQUIRED)
+    set (BOOST_CXX_FLAGS "-DBOOST_BIMAP_DISABLE_SERIALIZATION -DBOOST_NO_STDLIB_CONFIG -DBOOST_NO_AUTO_PTR -DBOOST_NO_CXX98_BINDERS")
+    include(BoostTestTargets)
+endif()
 
 set(SG_SOUND_USES_OPENALSOFT OFF) # default to off
 

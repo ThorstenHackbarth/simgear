@@ -28,6 +28,7 @@ foreach( mylibfolder
         bucket
         bvh
         canvas
+        compat
         debug
         embedded_resources
         emesary
@@ -80,8 +81,10 @@ target_include_directories(SimGearCore PRIVATE ${PROJECT_BINARY_DIR}/simgear)
 target_include_directories(SimGearCore INTERFACE
     $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
 
-target_include_directories(SimGearCore PUBLIC
-  ${Boost_INCLUDE_DIRS})
+if(NOT SIMGEAR_NO_BOOST)
+    target_include_directories(SimGearCore PUBLIC ${Boost_INCLUDE_DIRS})
+    target_link_libraries(SimGearCore PUBLIC Boost::boost)
+endif()
 
 if (MSVC)
     message(WARNING "FIXME: setting _HAS_STD_BYTE=0 for SimGear build, this needs to be fixed.")
