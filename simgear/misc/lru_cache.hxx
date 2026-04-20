@@ -44,7 +44,11 @@
 #include <utility>
 #include <mutex>
 
-#include <boost/optional.hpp>
+#ifdef SG_NO_BOOST
+#  include <simgear/compat/optional.hxx>
+#else
+#  include <boost/optional.hpp>
+#endif
 #include <simgear/threads/SGThread.hxx>
 
 namespace simgear
