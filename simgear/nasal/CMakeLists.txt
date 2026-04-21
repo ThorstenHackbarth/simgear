@@ -1,16 +1,16 @@
-
-include (SimGearComponent)
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2010 James Turner <james@flightgear.org>
 
 add_definitions(-DSOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
-set(HEADERS 
+set(HEADERS
     naref.h
     nasal.h
     iolib.h
     NasalEmesaryInterface.hxx
     )
 
-set(SOURCES 
+set(SOURCES
     bitslib.c
     code.c
     codegen.c
@@ -40,7 +40,8 @@ if (NOT WIN32)
       )
 endif(NOT WIN32)
 
-simgear_component(nasal nasal "${SOURCES}" "${HEADERS}")
+target_sources(SimGearCore PRIVATE ${SOURCES} ${HEADERS})
+install(FILES ${HEADERS} DESTINATION include/simgear/nasal)
 
 if(ENABLE_TESTS)
 

@@ -1,11 +1,9 @@
-include (SimGearComponent)
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2010 James Turner <james@flightgear.org>
 
 set(HEADERS
     terrasync.hxx
     )
 
-set(SOURCES 
-    terrasync.cxx
-    )
-
-simgear_component(tsync scene/tsync "${SOURCES}" "${HEADERS}")
+target_sources(SimGearCore PRIVATE terrasync.cxx ${HEADERS})
+install(FILES ${HEADERS} DESTINATION include/simgear/scene/tsync)

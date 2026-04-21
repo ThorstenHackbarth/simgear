@@ -1,14 +1,14 @@
-include (SimGearComponent)
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2010 James Turner <james@flightgear.org>
 
-set(HEADERS 
+set(HEADERS
     sample.hxx
     sample_group.hxx
     xmlsound.hxx
     soundmgr.hxx
-    filters.hxx
     )
-    
-set(SOURCES 
+
+set(SOURCES
     sample.cxx
     sample_group.cxx
     xmlsound.cxx
@@ -20,16 +20,19 @@ if (USE_AEONWAVE)
         soundmgr_aeonwave.cxx
         )
 else()
-    set(HEADERS ${HEADERS}
-        readwav.hxx
-        )
     set(SOURCES ${SOURCES}
         soundmgr_openal.cxx
         readwav.cxx
+        readwav.hxx
         )
 endif()
 
-simgear_scene_component(sound sound "${SOURCES}" "${HEADERS}")
+if (TARGET SimGearScene)
+    target_sources(SimGearScene PRIVATE ${SOURCES}
+        filters.hxx
+        ${HEADERS})
+    install(FILES ${HEADERS} DESTINATION include/simgear/sound)
+endif()
 
 if(ENABLE_TESTS AND ENABLE_SOUND)
     function(create_test TEST_NAME)

@@ -1,13 +1,9 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2010 James Turner <james@flightgear.org>
 
-include (SimGearComponent)
-
-
-set(HEADERS 
+set(HEADERS
     easyxml.hxx
     )
-    
-set(SOURCES 
-    easyxml.cxx
-    )
 
-simgear_component(xml xml "${SOURCES}" "${HEADERS}")
+target_sources(SimGearCore PRIVATE easyxml.cxx ${HEADERS})
+install(FILES ${HEADERS} DESTINATION include/simgear/xml)

@@ -1,8 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # SPDX-FileCopyrightText: 2010 James Turner <james@flightgear.org>
 
-include (SimGearComponent)
-
 set(HEADERS
   cppbind_fwd.hxx
   Ghost.hxx
@@ -25,7 +23,7 @@ set(DETAIL_HEADERS
   detail/to_nasal_helper.hxx
 )
 
-set(SOURCES
+target_sources(SimGearCore PRIVATE
   Ghost.cxx
   NasalCode.cxx
   NasalContext.cxx
@@ -34,10 +32,10 @@ set(SOURCES
   NasalObject.cxx
   detail/from_nasal_helper.cxx
   detail/to_nasal_helper.cxx
-)
-
-simgear_component(nasal/cppbind nasal/cppbind "${SOURCES}" "${HEADERS}")
-simgear_component(nasal/cppbind/detail nasal/cppbind/detail "" "${DETAIL_HEADERS}")
+  ${HEADERS})
+install(FILES ${HEADERS} DESTINATION include/simgear/nasal/cppbind)
+target_sources(SimGearCore PRIVATE ${DETAIL_HEADERS})
+install(FILES ${DETAIL_HEADERS} DESTINATION include/simgear/nasal/cppbind/detail)
 
 add_boost_test(cppbind_ghost
   SOURCES test/cppbind_test_ghost.cxx

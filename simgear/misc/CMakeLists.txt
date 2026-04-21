@@ -1,5 +1,5 @@
-
-include (SimGearComponent)
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2010 James Turner <james@flightgear.org>
 
 set(HEADERS
     CSSBorder.hxx
@@ -9,18 +9,12 @@ set(HEADERS
     argparse.hxx
     inputvalue.hxx
     inputcolor.hxx
-    interpolator.hxx
     make_new.hxx
     sg_dir.hxx
-    sg_hash.hxx
     sg_path.hxx
     stdint.hxx
-    stopwatch.hxx
     strutils.hxx
-    tabbed_values.hxx
-    texcoord.hxx
     test_macros.hxx
-    lru_cache.hxx
     )
 
 set(SOURCES
@@ -40,14 +34,22 @@ set(SOURCES
     )
 
 if (WINDOWS)
-    list(APPEND HEADERS sgversionhelpers.hxx)
+    target_sources(SimGearCore PRIVATE sgversionhelpers.hxx)
 endif()
 
 if (APPLE)
     list(APPEND SOURCES CocoaHelpers.mm)
 endif()
 
-simgear_component(misc misc "${SOURCES}" "${HEADERS}")
+target_sources(SimGearCore PRIVATE ${SOURCES}
+    interpolator.hxx
+    sg_hash.hxx
+    stopwatch.hxx
+    tabbed_values.hxx
+    texcoord.hxx
+    lru_cache.hxx
+    ${HEADERS})
+install(FILES ${HEADERS} DESTINATION include/simgear/misc)
 
 if(ENABLE_TESTS)
 

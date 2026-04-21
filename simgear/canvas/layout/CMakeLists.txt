@@ -1,10 +1,7 @@
 # SPDX-FileCopyrightText: 2014 Thomas Geymayer <tomgey@gmail.com>
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-include (SimGearComponent)
-
 set(HEADERS
-  AlignFlag_values.hxx
   BoxLayout.hxx
   GridLayout.hxx
   ImageLayoutItem.hxx
@@ -14,17 +11,19 @@ set(HEADERS
   SpacerItem.hxx
 )
 
-set(SOURCES
-  BoxLayout.cxx
-  GridLayout.cxx
-  ImageLayoutItem.cxx
-  Layout.cxx
-  LayoutItem.cxx
-  NasalWidget.cxx
-  SpacerItem.cxx
-)
-
-simgear_scene_component(canvas-layout canvas/layout "${SOURCES}" "${HEADERS}")
+if (TARGET SimGearScene)
+    target_sources(SimGearScene PRIVATE
+        BoxLayout.cxx
+        GridLayout.cxx
+        ImageLayoutItem.cxx
+        Layout.cxx
+        LayoutItem.cxx
+        NasalWidget.cxx
+        SpacerItem.cxx
+        AlignFlag_values.hxx
+        ${HEADERS})
+    install(FILES ${HEADERS} DESTINATION include/simgear/canvas/layout)
+endif()
 
 add_boost_test(canvas_layout
   SOURCES canvas_layout_test.cxx

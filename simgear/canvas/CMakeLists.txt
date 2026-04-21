@@ -1,12 +1,10 @@
-include (SimGearComponent)
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2012 Thomas Geymayer
 
 set(HEADERS
   canvas_fwd.hxx
   Canvas.hxx
   CanvasEvent.hxx
-  CanvasEventManager.hxx
-  CanvasEventTypes.hxx
-  CanvasEventVisitor.hxx
   CanvasMgr.hxx
   CanvasObjectPlacement.hxx
   CanvasPlacement.hxx
@@ -16,22 +14,26 @@ set(HEADERS
   VGInitOperation.hxx
 )
 
-set(SOURCES
-  Canvas.cxx
-  CanvasEvent.cxx
-  CanvasEventManager.cxx
-  CanvasEventVisitor.cxx
-  CanvasMgr.cxx
-  CanvasObjectPlacement.cxx
-  CanvasPlacement.cxx
-  CanvasWindow.cxx
-  ODGauge.cxx
-  VGInitOperation.cxx
-)
-
 add_subdirectory(ShaderVG/src)
 add_subdirectory(elements)
 add_subdirectory(events)
 add_subdirectory(layout)
 
-simgear_scene_component(canvas canvas "${SOURCES}" "${HEADERS}")
+if (TARGET SimGearScene)
+    target_sources(SimGearScene PRIVATE
+        Canvas.cxx
+        CanvasEvent.cxx
+        CanvasEventManager.cxx
+        CanvasEventVisitor.cxx
+        CanvasMgr.cxx
+        CanvasObjectPlacement.cxx
+        CanvasPlacement.cxx
+        CanvasWindow.cxx
+        ODGauge.cxx
+        VGInitOperation.cxx
+        CanvasEventManager.hxx
+        CanvasEventTypes.hxx
+        CanvasEventVisitor.hxx
+        ${HEADERS})
+    install(FILES ${HEADERS} DESTINATION include/simgear/canvas)
+endif()

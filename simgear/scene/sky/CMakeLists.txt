@@ -1,6 +1,7 @@
-include (SimGearComponent)
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2010 James Turner <james@flightgear.org>
 
-set(HEADERS 
+set(HEADERS
     CloudShaderGeometry.hxx
     cloud.hxx
     cloudfield.hxx
@@ -15,19 +16,20 @@ set(HEADERS
     stars.hxx
     )
 
-set(SOURCES 
-    CloudShaderGeometry.cxx
-    cloud.cxx
-    cloudfield.cxx
-    dome.cxx
-    galaxy.cxx
-    moon.cxx
-    newcloud.cxx
-    oursun.cxx
-    planets.cxx
-    sky.cxx
-    sphere.cxx
-    stars.cxx
-    )
-
-simgear_scene_component(sky scene/sky "${SOURCES}" "${HEADERS}")
+if (TARGET SimGearScene)
+    target_sources(SimGearScene PRIVATE
+        CloudShaderGeometry.cxx
+        cloud.cxx
+        cloudfield.cxx
+        dome.cxx
+        galaxy.cxx
+        moon.cxx
+        newcloud.cxx
+        oursun.cxx
+        planets.cxx
+        sky.cxx
+        sphere.cxx
+        stars.cxx
+        ${HEADERS})
+    install(FILES ${HEADERS} DESTINATION include/simgear/scene/sky)
+endif()

@@ -1,4 +1,5 @@
-include (SimGearComponent)
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2012 Thomas Geymayer
 
 set(HEADERS
   CustomEvent.hxx
@@ -8,15 +9,16 @@ set(HEADERS
   CanvasKeyBinding.hxx
 )
 
-set(SOURCES
-  CustomEvent.cxx
-  DeviceEvent.cxx
-  KeyboardEvent.cxx
-  MouseEvent.cxx
-  CanvasKeyBinding.cxx
-)
-
-simgear_scene_component(canvas-events canvas/events "${SOURCES}" "${HEADERS}")
+if (TARGET SimGearScene)
+    target_sources(SimGearScene PRIVATE
+        CustomEvent.cxx
+        DeviceEvent.cxx
+        KeyboardEvent.cxx
+        MouseEvent.cxx
+        CanvasKeyBinding.cxx
+        ${HEADERS})
+    install(FILES ${HEADERS} DESTINATION include/simgear/canvas/events)
+endif()
 
 add_boost_test(canvas_event
   SOURCES event_test.cpp

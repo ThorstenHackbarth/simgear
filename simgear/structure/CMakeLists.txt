@@ -1,24 +1,18 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # SPDX-FileCopyrightText: 2010 James Turner
 
-include (SimGearComponent)
-
 set(HEADERS
-    ExpressionBinding.hxx
     SGAtomic.hxx
     SGBinding.hxx
     SGExpression.hxx
     SGReferenced.hxx
     SGSharedPtr.hxx
-    SGSmplhist.hxx
-    SGSmplstat.hxx
     SGSourceLocation.hxx
     SGWeakPtr.hxx
     SGWeakReferenced.hxx
     SGPerfMon.hxx
     singleton.hpp
     Singleton.hxx
-    StringTable.hxx
     callback.hxx
     commands.hxx
     event_mgr.hxx
@@ -30,7 +24,7 @@ set(HEADERS
     StateMachine.hxx
     )
 
-set(SOURCES
+target_sources(SimGearCore PRIVATE
     ExpressionBinding.cxx
     SGAtomic.cxx
     SGBinding.cxx
@@ -45,9 +39,12 @@ set(SOURCES
     exception.cxx
     subsystem_mgr.cxx
     StateMachine.cxx
-    )
-
-simgear_component(structure structure "${SOURCES}" "${HEADERS}")
+    ExpressionBinding.hxx
+    SGSmplhist.hxx
+    SGSmplstat.hxx
+    StringTable.hxx
+    ${HEADERS})
+install(FILES ${HEADERS} DESTINATION include/simgear/structure)
 
 if(ENABLE_TESTS)
   add_simgear_autotest(test_subsystems subsystem_test.cxx)

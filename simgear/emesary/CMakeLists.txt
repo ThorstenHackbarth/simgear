@@ -1,8 +1,7 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2019 Richard Harrison
 
-
-include (SimGearComponent)
-
-set(HEADERS 
+set(HEADERS
     Emesary.hxx
     INotification.hxx
     IReceiver.hxx
@@ -11,12 +10,9 @@ set(HEADERS
     Transmitter.hxx
     notifications.hxx
     )
-    
-set(SOURCES 
-    Emesary.cxx
-    )
 
-simgear_component(emesary emesary "${SOURCES}" "${HEADERS}")
+target_sources(SimGearCore PRIVATE Emesary.cxx ${HEADERS})
+install(FILES ${HEADERS} DESTINATION include/simgear/emesary)
 
 
 if(ENABLE_TESTS)

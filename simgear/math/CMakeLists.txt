@@ -1,9 +1,6 @@
 # SPDX-FileCopyrightText: 2010 James Turner
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-include (SimGearComponent)
-
-
 set(HEADERS
     SGBox.hxx
     SGCMath.hxx
@@ -29,9 +26,7 @@ set(HEADERS
     SGVec2.hxx
     SGVec3.hxx
     SGVec4.hxx
-    beziercurve.hxx
     interpolater.hxx
-    leastsqs.hxx
     sg_geodesy.hxx
     sg_types.hxx
     sg_random.hxx
@@ -39,15 +34,16 @@ set(HEADERS
     simd4x4.hxx
     )
 
-set(SOURCES
+target_sources(SimGearCore PRIVATE
     SGGeodesy.cxx
     SGLineSegment.cxx
     interpolater.cxx
     leastsqs.cxx
     sg_random.cxx
-    )
-
-simgear_component(math math "${SOURCES}" "${HEADERS}")
+    beziercurve.hxx
+    leastsqs.hxx
+    ${HEADERS})
+install(FILES ${HEADERS} DESTINATION include/simgear/math)
 
 if(ENABLE_TESTS)
 

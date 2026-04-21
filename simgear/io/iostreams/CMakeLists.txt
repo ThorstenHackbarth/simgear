@@ -1,4 +1,5 @@
-include (SimGearComponent)
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2010 James Turner <james@flightgear.org>
 
 set(HEADERS
     sgstream.hxx
@@ -8,15 +9,14 @@ set(HEADERS
     zlibstream.hxx
     )
 
-set(SOURCES
+target_sources(SimGearCore PRIVATE
     sgstream.cxx
     gzfstream.cxx
     gzcontainerfile.cxx
     CharArrayStream.cxx
     zlibstream.cxx
-    )
-
-simgear_component(IOStreams io/iostreams "${SOURCES}" "${HEADERS}")
+    ${HEADERS})
+install(FILES ${HEADERS} DESTINATION include/simgear/io/iostreams)
 
 if(ENABLE_TESTS)
   add_simgear_autotest(test_streams sgstream_test.cxx )

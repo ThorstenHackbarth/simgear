@@ -1,7 +1,7 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2010 James Turner <james@flightgear.org>
 
-include (SimGearComponent)
-
-set(HEADERS 
+set(HEADERS
     AtomicChangeListener.hxx
     condition.hxx
     easing_functions.hxx
@@ -18,7 +18,7 @@ set(HEADERS
     vectorPropTemplates.hxx
     )
 
-set(SOURCES 
+target_sources(SimGearCore PRIVATE
     AtomicChangeListener.cxx
     condition.cxx
     easing_functions.cxx
@@ -29,9 +29,8 @@ set(SOURCES
     propertyObject.cxx
     props.cxx
     props_io.cxx
-    )
-
-simgear_component(props props "${SOURCES}" "${HEADERS}")
+    ${HEADERS})
+install(FILES ${HEADERS} DESTINATION include/simgear/props)
 
 if(ENABLE_TESTS)
 

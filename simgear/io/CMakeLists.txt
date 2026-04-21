@@ -3,8 +3,6 @@
 
 add_subdirectory(iostreams)
 
-include (SimGearComponent)
-
 set(HEADERS
     iochannel.hxx
     lowlevel.hxx
@@ -73,7 +71,8 @@ if (CycloneDDS_FOUND)
     target_link_libraries(test_dds CycloneDDS::ddsc)
 endif (CycloneDDS_FOUND)
 
-simgear_component(io io "${SOURCES}" "${HEADERS}")
+target_sources(SimGearCore PRIVATE ${SOURCES} ${HEADERS})
+install(FILES ${HEADERS} DESTINATION include/simgear/io)
 
 if(ENABLE_TESTS)
 

@@ -1,7 +1,7 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2010 James Turner <james@flightgear.org>
 
-include (SimGearComponent)
-
-set(HEADERS 
+set(HEADERS
     celestialBody.hxx
     ephemeris.hxx
     jupiter.hxx
@@ -16,8 +16,8 @@ set(HEADERS
     uranus.hxx
     venus.hxx
     )
-    
-set(SOURCES 
+
+target_sources(SimGearCore PRIVATE
     celestialBody.cxx
     ephemeris.cxx
     jupiter.cxx
@@ -30,6 +30,5 @@ set(SOURCES
     stardata.cxx
     uranus.cxx
     venus.cxx
-    )
-
-simgear_component(ephem ephemeris "${SOURCES}" "${HEADERS}")
+    ${HEADERS})
+install(FILES ${HEADERS} DESTINATION include/simgear/ephemeris)

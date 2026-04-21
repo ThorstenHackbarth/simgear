@@ -1,22 +1,10 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2010 James Turner <james@flightgear.org>
 
-
-include (SimGearComponent)
-
-set(HEADERS 
+set(HEADERS
     sg_time.hxx
     timestamp.hxx
-    timezone.h
-    zonedetect.h
     lowleveltime.h
-    rawprofile.hxx
-    )
-    
-set(SOURCES 
-    lowleveltime.cxx
-    sg_time.cxx
-    timestamp.cxx
-    timezone.cxx
-    zonedetect.c
     )
 
 if(ENABLE_TESTS)
@@ -33,4 +21,14 @@ if(ENABLE_TESTS)
     create_test(zonetest)
 endif()
 
-simgear_component(timing timing "${SOURCES}" "${HEADERS}")
+target_sources(SimGearCore PRIVATE
+    lowleveltime.cxx
+    sg_time.cxx
+    timestamp.cxx
+    timezone.cxx
+    zonedetect.c
+    timezone.h
+    zonedetect.h
+    rawprofile.hxx
+    ${HEADERS})
+install(FILES ${HEADERS} DESTINATION include/simgear/timing)
