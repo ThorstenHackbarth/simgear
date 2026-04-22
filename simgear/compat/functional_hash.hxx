@@ -10,23 +10,25 @@
 #include <functional>
 #include <cstddef>
 #include <iterator>
+#include <utility>   // std::pair
 
 namespace boost {
 
+// Forward-declare hash<T> so hash_combine can use it before the full definition.
+template<class T> struct hash;
+
 // ── hash_combine ─────────────────────────────────────────────────────────────
 // Mix a single value's hash into an existing seed.
-// Uses the golden-ratio constant from the original Boost implementation.
+// Uses hash<T> (not std::hash<T> directly) so pair/tuple overloads are found.
 
 template<class T>
 inline void hash_combine(std::size_t& seed, const T& v)
 {
-    seed ^= std::hash<T>{}(v) + std::size_t{0x9e3779b9u}
+    seed ^= hash<T>{}(v) + std::size_t{0x9e3779b9u}
             + (seed << 6) + (seed >> 2);
 }
 
 // ── hash_range ────────────────────────────────────────────────────────────────
-// Accumulate the hash of every element in [first, last) into seed.
-
 template<class InputIt>
 inline void hash_range(std::size_t& seed, InputIt first, InputIt last)
 {
@@ -34,7 +36,6 @@ inline void hash_range(std::size_t& seed, InputIt first, InputIt last)
         hash_combine(seed, *first);
 }
 
-// Convenience overload: compute from scratch and return the seed.
 template<class InputIt>
 inline std::size_t hash_range(InputIt first, InputIt last)
 {
@@ -51,6 +52,16 @@ template<class T>
 inline std::size_t hash_value(const T& v)
 {
     return std::hash<T>{}(v);
+}
+
+// Pair overload: combine hashes of both elements, matching Boost behaviour.
+template<class A, class B>
+inline std::size_t hash_value(const std::pair<A, B>& p)
+{
+    std::size_t seed = 0;
+    hash_combine(seed, p.first);
+    hash_combine(seed, p.second);
+    return seed;
 }
 
 // ── hash<T> ───────────────────────────────────────────────────────────────────

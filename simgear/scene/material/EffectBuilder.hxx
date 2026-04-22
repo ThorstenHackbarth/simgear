@@ -137,6 +137,7 @@ struct bidirectional_map
 #endif
 
     struct type {
+        using value_type = std::pair<FromType, ToType>;
         using from_map_t = std::map<FromType, ToType>;
         using to_map_t   = std::map<ToType, FromType>;
 
