@@ -9,6 +9,7 @@ set(HEADERS
   LayoutItem.hxx
   NasalWidget.hxx
   SpacerItem.hxx
+  AlignFlag_values.hxx
 )
 
 if (TARGET SimGearScene)
@@ -20,7 +21,6 @@ if (TARGET SimGearScene)
         LayoutItem.cxx
         NasalWidget.cxx
         SpacerItem.cxx
-        AlignFlag_values.hxx
         ${HEADERS})
     install(FILES ${HEADERS} DESTINATION include/simgear/canvas/layout)
 endif()
