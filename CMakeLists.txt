@@ -148,7 +148,7 @@ endif()
 
 find_package(Threads REQUIRED)
 
-option(SIMGEAR_NO_BOOST "Build without Boost library dependency using C++20 std replacements" OFF)
+option(SIMGEAR_NO_BOOST "Build without Boost library dependency using C++20 std replacements" ON)
 if(SIMGEAR_NO_BOOST)
     message(STATUS "SimGear: Building without Boost (SG_NO_BOOST enabled)")
     add_compile_definitions(SG_NO_BOOST)
@@ -208,6 +208,7 @@ else()
     include(CreateOSGImportedTargets)
 endif(SIMGEAR_HEADLESS)
 
+if(NOT SIMGEAR_HEADLESS)
 # Ensure that we are using the right version of OSG
 # This should probably be done by modifying FindOpenSceneGraph.cmake, but this
 # is easier/faster and only requires minimal changes to OSG.
@@ -255,6 +256,7 @@ if (NOT SIMGEAR_OSG_CORRECT_VERSION)
         "Please ensure that you are using the correct branch of the OSG fork."
     )
 endif()
+endif(NOT SIMGEAR_HEADLESS)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "OpenBSD")
     # As of 2020-08-01, OpenBSD's system zlib is slightly old, but it's usable
