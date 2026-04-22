@@ -12,6 +12,7 @@ set(HEADERS
   CanvasWindow.hxx
   ODGauge.hxx
   VGInitOperation.hxx
+  CanvasEventTypes.hxx
 )
 
 add_subdirectory(ShaderVG/src)
@@ -32,7 +33,6 @@ if (TARGET SimGearScene)
         ODGauge.cxx
         VGInitOperation.cxx
         CanvasEventManager.hxx
-        CanvasEventTypes.hxx
         CanvasEventVisitor.hxx
         ${HEADERS})
     install(FILES ${HEADERS} DESTINATION include/simgear/canvas)
