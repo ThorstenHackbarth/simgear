@@ -152,6 +152,13 @@ option(SIMGEAR_NO_BOOST "Build without Boost library dependency using C++20 std 
 if(SIMGEAR_NO_BOOST)
     message(STATUS "SimGear: Building without Boost (SG_NO_BOOST enabled)")
     add_compile_definitions(SG_NO_BOOST)
+    # Provide no-op stub so Boost.Test-based targets are silently skipped.
+    function(add_boost_test)
+    endfunction()
+    # BoostTestTargets.cmake normally runs include_directories(CMAKE_CURRENT_BINARY_DIR)
+    # at top-level scope, making generated headers (simgear_config.h) findable as
+    # <simgear/simgear_config.h>.  Replicate that when Boost is disabled.
+    include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 else()
     find_package(Boost REQUIRED)
     set (BOOST_CXX_FLAGS "-DBOOST_BIMAP_DISABLE_SERIALIZATION -DBOOST_NO_STDLIB_CONFIG -DBOOST_NO_AUTO_PTR -DBOOST_NO_CXX98_BINDERS")
