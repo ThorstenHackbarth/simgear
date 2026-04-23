@@ -24,12 +24,10 @@ set(SOURCES
     argparse.cxx
     inputvalue.cxx
     inputcolor.cxx
-    interpolator.cxx
     sg_dir.cxx
     sg_path.cxx
     sg_hash.cxx
     strutils.cxx
-    tabbed_values.cxx
     texcoord.cxx
     )
 
@@ -42,10 +40,7 @@ if (APPLE)
 endif()
 
 target_sources(SimGearCore PRIVATE ${SOURCES}
-    interpolator.hxx
     sg_hash.hxx
-    stopwatch.hxx
-    tabbed_values.hxx
     texcoord.hxx
     lru_cache.hxx
     ${HEADERS})
@@ -55,7 +50,6 @@ if(ENABLE_TESTS)
 
 add_simgear_autotest(test_argparse argparse_test.cxx)
 add_simgear_autotest(test_CSSBorder CSSBorder_test.cxx)
-add_simgear_autotest(test_tabbed_values tabbed_values_test.cxx)
 add_simgear_autotest(test_strutils strutils_test.cxx)
 add_simgear_autotest(test_path path_test.cxx )
 add_simgear_autotest(test_sg_dir sg_dir_test.cxx)
