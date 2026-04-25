@@ -349,16 +349,18 @@ static std::string to_hex(std::size_t v) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// CORRECTNESS SECTION — uses fixed small datasets, outputs diffable KEY=VALUE.
+// CORRECTNESS SECTION — uses full fuzzed datasets, outputs diffable KEY=VALUE.
+// Both binaries use the same PCG32 seed so every line must be identical.
 // ═════════════════════════════════════════════════════════════════════════════
 
 static void correctness_tokenizer()
 {
     using Tok = boost::tokenizer<boost::char_separator<char>>;
     const boost::char_separator<char> sep(" \t\n");
+    const auto& inputs = fuzz::get().tok;
 
-    for (std::size_t i = 0; i < fixed::tok.size(); ++i) {
-        const auto& s = fixed::tok[i];
+    for (std::size_t i = 0; i < inputs.size(); ++i) {
+        const auto& s = inputs[i];
         Tok t(s.begin(), s.end(), sep);
         std::string joined;
         for (auto it = t.begin(); it != t.end(); ++it) {
@@ -385,8 +387,9 @@ static void correctness_optional()
     std::cout << "opt.none.has_value=" << (empty ? "1" : "0") << '\n';
     std::cout << "opt.none.value_or="  << empty.value_or("DEFAULT") << '\n';
 
-    for (std::size_t i = 0; i < fixed::opt_values.size(); ++i) {
-        boost::optional<std::string> o = fixed::opt_values[i];
+    const auto& vals = fuzz::get().opt_values;
+    for (std::size_t i = 0; i < vals.size(); ++i) {
+        boost::optional<std::string> o = vals[i];
         std::cout << "opt." << i << ".has_value=" << (o ? "1" : "0") << '\n';
         std::cout << "opt." << i << ".value="     << (o ? *o : "none") << '\n';
         std::cout << "opt." << i << ".value_or="  << o.value_or("FALLBACK") << '\n';
@@ -407,8 +410,9 @@ static void correctness_optional()
 
 static void correctness_equals()
 {
-    for (std::size_t i = 0; i < fixed::eq_pairs.size(); ++i) {
-        const auto& [cand, query] = fixed::eq_pairs[i];
+    const auto& pairs = fuzz::get().eq_pairs;
+    for (std::size_t i = 0; i < pairs.size(); ++i) {
+        const auto& [cand, query] = pairs[i];
         auto r = boost::make_iterator_range(query.c_str(),
                                             query.c_str() + query.size());
         bool result = boost::equals(cand, r);
@@ -421,8 +425,9 @@ static void correctness_equals()
 
 static void correctness_split()
 {
-    for (std::size_t i = 0; i < fixed::paths.size(); ++i) {
-        const auto& path = fixed::paths[i];
+    const auto& paths = fuzz::get().paths;
+    for (std::size_t i = 0; i < paths.size(); ++i) {
+        const auto& path = paths[i];
         auto r = boost::make_iterator_range(path.c_str(),
                                             path.c_str() + path.size());
         auto itr = boost::make_split_iterator(
@@ -449,15 +454,15 @@ static void correctness_split()
 
 static void correctness_iter_facade()
 {
-    int arr[] = {1, 2, 3, 4, 5};
-    std::string joined;
-    for (auto it = DoubledIterator(arr); it != DoubledIterator(arr + 5); ++it) {
-        if (!joined.empty()) joined += '|';
-        joined += std::to_string(*it);
-    }
-    std::cout << "iter_facade.doubled=" << joined << '\n';
+    const auto& arr = fuzz::get().iter_array;
+    long long sum = 0;
+    for (auto it  = DoubledIterator(arr.data());
+              it != DoubledIterator(arr.data() + arr.size()); ++it)
+        sum += *it;
+    std::cout << "iter_facade.doubled.sum=" << sum << '\n';
+    std::cout << "iter_facade.doubled.n="   << arr.size() << '\n';
 
-    DoubledIterator it(arr);
+    DoubledIterator it(arr.data());
     auto old = it++;
     std::cout << "iter_facade.post_inc.old=" << *old << '\n';
     std::cout << "iter_facade.post_inc.new=" << *it  << '\n';
@@ -465,16 +470,18 @@ static void correctness_iter_facade()
 
 static void correctness_hash_ints()
 {
-    for (std::size_t i = 0; i < fixed::hash_ints.size(); ++i)
+    const auto& ints  = fuzz::get().hash_ints;
+    const auto& range = fuzz::get().hash_range_ints;
+
+    for (std::size_t i = 0; i < ints.size(); ++i)
         std::cout << "hash.int." << i << '='
-                  << to_hex(boost::hash_value(fixed::hash_ints[i])) << '\n';
+                  << to_hex(boost::hash_value(ints[i])) << '\n';
 
     std::cout << "hash.range_ints="
-              << to_hex(boost::hash_range(fixed::hash_range_ints.begin(),
-                                           fixed::hash_range_ints.end())) << '\n';
+              << to_hex(boost::hash_range(range.begin(), range.end())) << '\n';
     {
         std::size_t seed = 0;
-        for (int v : fixed::hash_ints) boost::hash_combine(seed, v);
+        for (int v : ints) boost::hash_combine(seed, v);
         std::cout << "hash.combine_ints=" << to_hex(seed) << '\n';
     }
     boost::hash<int> h;
