@@ -14,7 +14,7 @@ set -euo pipefail
 REPO="$(cd "$(dirname "$0")" && pwd)"
 SRC="$REPO/compat_benchmark.cxx"
 IFLAGS="-I$REPO"
-CXX_FLAGS="-std=c++20 -O2"
+CXX_FLAGS="-std=c++20 -Ofast"
 BENCH_BOOST=/tmp/bench_boost
 BENCH_COMPAT=/tmp/bench_compat
 

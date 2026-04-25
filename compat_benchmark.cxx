@@ -13,8 +13,8 @@
 // seeded PCG32 PRNG so runs are reproducible across both variants.
 //
 // Build:
-//   g++ -std=c++20 -O2 -I<repo>              compat_benchmark.cxx -o bench_boost
-//   g++ -std=c++20 -O2 -I<repo> -DSG_NO_BOOST compat_benchmark.cxx -o bench_compat
+//   g++ -std=c++20 -Ofast -I<repo>              compat_benchmark.cxx -o bench_boost
+//   g++ -std=c++20 -Ofast -I<repo> -DSG_NO_BOOST compat_benchmark.cxx -o bench_compat
 
 // ── Conditional includes ───────────────────────────────────────────────────────
 
