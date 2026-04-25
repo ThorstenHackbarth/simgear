@@ -85,7 +85,7 @@ echo "      Both implementations satisfy the hash contract (deterministic, low c
 
 echo ""
 echo "══════════════════════════════════════════════════════════════"
-echo "  PERFORMANCE  (N=500,000 iterations, ns/operation)"
+echo "  PERFORMANCE  (N=5,000 iterations × ~100 fuzzed items, ns/item)"
 echo "══════════════════════════════════════════════════════════════"
 echo ""
 
@@ -114,7 +114,7 @@ labels = {
     'timing.hash_value_int': 'hash_value<int>',
     'timing.hash_value_str': 'hash_value<string>',
     'timing.hash_combine':   'hash_combine (per item)',
-    'timing.hash_range':     'hash_range (int[6])',
+    'timing.hash_range':     'hash_range (int[600], per elem)',
     'timing.optional':       'optional (per item)',
     'timing.equals':         'equals() (per pair)',
     'timing.split':          'split_iterator (per path)',
