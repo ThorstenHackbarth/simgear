@@ -116,6 +116,7 @@ public:
         float transparency;
         stream >> transparency;
         // mMaterial->setTransparency(osg::Material::FRONT_AND_BACK, transparency);
+        diffuse[3] = 1.0f - transparency;
         mTranslucent = 0 < transparency;
 
         // must correspond to the material we use for the color array below
