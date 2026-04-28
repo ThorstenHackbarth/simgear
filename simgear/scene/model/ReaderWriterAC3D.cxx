@@ -6,6 +6,9 @@
  * Adapted for FlightGear by Fernando García Liñán, 2024.
  *
  * SPDX-License-Identifier: LGPL-2.1-or-later
+ * SPDX-FileCopyrightText: Andy Colebourne
+ * SPDX-FileCopyrightText: 2002 Geoff Michel
+ * SPDX-FileCopyrightText: 2024 Fernando García Liñán
  */
 
 #include "ReaderWriterAC3D.hxx"
