@@ -7,12 +7,6 @@ spec:
       type: boolean
       default: false
       description: "Clear the 'ccache' cache before starting the builds"
-
-    mr-rebuild-fg:
-      type: boolean
-      default: false
-      description: >
-        Whether to trigger an FG rebuild if this is a merge request pipeline
 ---
 
 variables:
@@ -308,23 +302,8 @@ test:
     reports:
       junit: $BUILD_DIR/result.xml
 
-rebuild-fg-from-mr:
-  stage: deploy
-  trigger:
-    project: flightgear/flightgear
-    branch: $BRANCH_REF
-    strategy: mirror
-    inputs:
-      # cf. https://docs.gitlab.com/ci/pipelines/downstream_pipelines/#fetch-artifacts-from-an-upstream-merge-request-pipeline
-      simgear_ref: $CI_MERGE_REQUEST_REF_PATH
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && "$[[ inputs.mr-rebuild-fg ]]" == "true"'
-  inherit:
-    variables: false
-
-# if we're NOT building a merge-request, build the
-# same branch as here: again this assumes SimGear+FlightGear
-# branches names match
+# If we're NOT building a merge-request, build the same branch as here. This
+# assumes that SimGear and FlightGear branch names match.
 staging:
   stage: deploy
   rules:
