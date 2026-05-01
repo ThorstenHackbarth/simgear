@@ -88,7 +88,7 @@ public:
 private:
     naRef doCall(Context& ctx, std::initializer_list<naRef> args) const;
 
-    ObjectHolder<> _codeRef;
+    ObjectHolder<SGReferenced>::Ref _codeRef;
     std::vector<std::string> _errors;
 };
 

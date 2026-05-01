@@ -36,7 +36,7 @@ NasalCode::NasalCode(naRef globals,
 
     // Bind to the provided closure (global namespace) and GC-protect
     naRef func = naBindFunction(ctx, code, globals);
-    _codeRef.reset(func);
+    _codeRef = ObjectHolder<SGReferenced>::makeShared(func);
 }
 
 //----------------------------------------------------------------------------
@@ -60,7 +60,7 @@ naRef NasalCode::doCall(Context& ctx, std::initializer_list<naRef> args) const
 
     naRef result = naCallMethodCtx(
         ctx,
-        _codeRef.get_naRef(),
+        _codeRef->get_naRef(),
         naNil(), // self (no 'me' object)
         args.size(),
         const_cast<naRef*>(args.begin()),
@@ -88,7 +88,7 @@ naRef NasalCode::callWithLocals(naRef locals) const
     int lsave = naGCSave(locals);
     naRef result = naCallMethodCtx(
         ctx,
-        _codeRef.get_naRef(),
+        _codeRef->get_naRef(),
         naNil(), // self
         0, nullptr,
         locals);
