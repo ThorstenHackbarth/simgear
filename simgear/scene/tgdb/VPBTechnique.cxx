@@ -1325,7 +1325,7 @@ void VPBTechnique::generateGeometry(BufferData& buffer, const osg::Vec3d& center
                 new_v = (*vertices)[i01] - ((*skirtVectors)[i01])*skirtHeight;
                 (*vertices).push_back(new_v);
                 if (normals.valid()) (*normals).push_back((*normals)[i01]);
-                texcoords1->push_back((*texcoords1)[i01]);
+                texcoords0->push_back((*texcoords0)[i01]);
                 texcoords1->push_back((*texcoords1)[i01]);
 
                 skirtDrawElements->addElement(i01);
