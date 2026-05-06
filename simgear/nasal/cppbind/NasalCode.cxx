@@ -7,6 +7,8 @@
 
 #include <sstream>
 
+#include <simgear/structure/exception.hxx>
+
 namespace nasal {
 
 //----------------------------------------------------------------------------
@@ -67,6 +69,17 @@ naRef NasalCode::doCall(Context& ctx, std::initializer_list<naRef> args) const
         naNil() // locals
     );
 
+    // naCallMethodCtx has already invoked the registered error handler
+    // (which logs the error).  Re-surface it as a C++ exception so that
+    // callers can detect the failure and disable the offending code path.
+    if (const char* err = naGetError(ctx)) {
+        int line = naGetLine(ctx, 0);
+        char* file = naStr_data(naGetSourceFile(ctx, 0));
+        throw sg_exception(std::string("Nasal runtime error: ") + err,
+                           "",
+                           sg_location(file, line));
+    }
+
     return result;
 }
 
@@ -94,6 +107,18 @@ naRef NasalCode::callWithLocals(naRef locals) const
         locals);
 
     naGCRelease(lsave);
+
+    // naCallMethodCtx has already invoked the registered error handler
+    // (which logs the error).  Re-surface it as a C++ exception so that
+    // callers can detect the failure and disable the offending code path.
+    if (const char* err = naGetError(ctx)) {
+        int line = naGetLine(ctx, 0);
+        char* file = naStr_data(naGetSourceFile(ctx, 0));
+        throw sg_exception(std::string("Nasal runtime error: ") + err,
+                           "",
+                           sg_location(file, line));
+    }
+
     return result;
 }
 

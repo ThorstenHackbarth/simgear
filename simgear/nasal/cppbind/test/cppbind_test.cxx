@@ -10,6 +10,7 @@
 #include <simgear/nasal/cppbind/NasalCode.hxx>
 #include <simgear/nasal/cppbind/NasalHash.hxx>
 #include <simgear/nasal/cppbind/NasalString.hxx>
+#include <simgear/structure/exception.hxx>
 #include <simgear/structure/map.hxx>
 
 #include <cstring>
@@ -578,5 +579,26 @@ BOOST_AUTO_TEST_CASE(nasal_code)
         BOOST_REQUIRE(code.isValid());
         naRef result = code.callWithLocals(locals.get_naRef());
         BOOST_CHECK_EQUAL(ctx.from_nasal<double>(result), 42.0);
+    }
+
+    // call() with a runtime error must throw sg_exception, not crash
+    {
+        TestContext ctx;
+        Hash globals(ctx);
+
+        NasalCode code(globals.get_naRef(), "undefined_sym()");
+        BOOST_REQUIRE(code.isValid()); // parses fine; error is at call time
+        BOOST_CHECK_THROW(code.call(), sg_exception);
+    }
+
+    // callWithLocals() with a runtime error must also throw sg_exception
+    {
+        TestContext ctx;
+        Hash locals(ctx);
+        Hash globals(ctx);
+
+        NasalCode code(globals.get_naRef(), "no_such_func()");
+        BOOST_REQUIRE(code.isValid());
+        BOOST_CHECK_THROW(code.callWithLocals(locals.get_naRef()), sg_exception);
     }
 }
