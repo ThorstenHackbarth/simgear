@@ -1,20 +1,6 @@
 // SGText.cxx - Manage text in the scene graph
-// Copyright (C) 2009 Torsten Dreyer Torsten (_at_) t3r *dot* de
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
+// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-FileCopyrightText: 2009 Torsten Dreyer Torsten (_at_) t3r *dot* de
 
 #include <simgear_config.h>
 
@@ -68,7 +54,7 @@ private:
   string format;
 };
 
-void SGText::UpdateCallback::operator()(osg::Node * node, osg::NodeVisitor *nv ) 
+void SGText::UpdateCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
   // FIXME:
   // hopefully the users never specifies bad formats here
@@ -83,7 +69,7 @@ void SGText::UpdateCallback::operator()(osg::Node * node, osg::NodeVisitor *nv )
   }
   if( text->getText().createUTF8EncodedString().compare( buf )  ) {
     // be lazy and set the text only if the property has changed.
-    // update() computes the glyph representation which looks 
+    // update() computes the glyph representation which looks
     // more expensive than the above string compare.
     text->setText( buf, osgText::String::ENCODING_UTF8 );
     text->update();
@@ -91,8 +77,8 @@ void SGText::UpdateCallback::operator()(osg::Node * node, osg::NodeVisitor *nv )
   traverse( node, nv );
 }
 
-osg::Node * SGText::appendText(const SGPropertyNode* configNode, 
-  SGPropertyNode* modelRoot, const osgDB::Options* options)
+osg::Node* SGText::appendText(const SGPropertyNode* configNode,
+                              SGPropertyNode* modelRoot, const osgDB::Options* options)
 {
   SGConstPropertyNode_ptr p;
 
@@ -121,9 +107,9 @@ osg::Node * SGText::appendText(const SGPropertyNode* configNode,
                                    "SGText: couldn't find font:" + requestedFont);
   }
 
-  text->setCharacterSize(configNode->getDoubleValue("character-size", 1.0 ), 
-                         configNode->getDoubleValue("character-aspect-ratio", 1.0 ));
-  
+  text->setCharacterSize(configNode->getDoubleValue("character-size", 1.0),
+                         configNode->getDoubleValue("character-aspect-ratio", 1.0));
+
   if( (p = configNode->getNode( "font-resolution" )) != NULL )
     text->setFontResolution( p->getIntValue( "width", 32 ), p->getIntValue( "height", 32 ) );
 
@@ -173,8 +159,7 @@ osg::Node * SGText::appendText(const SGPropertyNode* configNode,
 
   text->setDrawMode( drawMode );
 
-  if( (p = configNode->getNode( "alignment" )) != NULL ) {
-      
+  if ((p = configNode->getNode("alignment")) != NULL) {
       text->setAlignment(simgear::osgutils::mapAlignment(p->getStringValue()));
   }
 
@@ -190,7 +175,7 @@ osg::Node * SGText::appendText(const SGPropertyNode* configNode,
       SG_LOG(SG_GENERAL, SG_ALERT, "ignoring unknown layout '" << layout <<"'." );
     }
   }
-  
+
   if( (p = configNode->getNode( "max-width" )) != NULL )
     text->setMaximumWidth( p->getDoubleValue() );
 
