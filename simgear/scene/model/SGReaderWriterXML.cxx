@@ -514,7 +514,7 @@ sgLoad3DModel_internal(const SGPath& path,
     // Check for an XML wrapper
     if (modelpath.extension() == "xml") {
        try {
-           readProperties(modelpath, props);
+           readProperties(modelpath, props, 0, true);
         } catch (const sg_exception &t) {
             simgear::reportFailure(simgear::LoadFailure::BadData, simgear::ErrorCode::XMLModelLoad,
                                    "Failed to load model XML:" + t.getFormattedMessage(), t.getLocation());
