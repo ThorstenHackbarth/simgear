@@ -1073,7 +1073,7 @@ public:
         auto &uniforms = compositor->getBuiltinUniforms();
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_TEXTURE_MATRIX]);
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_VIEWPORT]);
-        // SG_UNIFORM_PIXEL_SIZE,
+        ss->addUniform(uniforms[Compositor::SG_UNIFORM_PIXEL_SIZE]);
         // SG_UNIFORM_ASPECT_RATIO,
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_VIEW_MATRIX]);
         ss->addUniform(uniforms[Compositor::SG_UNIFORM_VIEW_MATRIX_INV]);
