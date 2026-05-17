@@ -107,6 +107,10 @@ osg::Node * SGText::appendText(const SGPropertyNode* configNode,
   if (effect)
     g->setEffect(effect);
 
+  // The hdr-forward pass (used by Effects/text-default) should *not* be writing
+  // to the depth buffer.
+  text->setEnableDepthWrites(false);
+
   const auto requestedFont = configNode->getStringValue("font","Helvetica");
   const SGPath fontPath = simgear::ResourceManager::instance()->findPath("Fonts/" + requestedFont);
   if ( !fontPath.isNull() ) {
