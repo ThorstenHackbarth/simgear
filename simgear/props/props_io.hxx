@@ -8,8 +8,7 @@
  * See props.html for documentation [replace with URL when available].
  */
 
-#ifndef __PROPS_IO_HXX
-#define __PROPS_IO_HXX
+#pragma once
 
 #include <simgear/compiler.h>
 #include <simgear/props/props.hxx>
@@ -76,6 +75,11 @@ void writeProperties (const SGPath &file,
 
 
 /**
+ * type-safe copying of property value from source to destination.
+ */
+bool copyPropertyValue(const SGPropertyNode* in, SGPropertyNode* out);
+
+/**
  * Copy properties from one node to another.
  */
 bool copyProperties (const SGPropertyNode *in, SGPropertyNode *out);
@@ -88,12 +92,11 @@ using PropertyPredicate = std::function<bool (const SGPropertyNode* in)>;
 
 /**
  * Copy properties, if the predicate returns true for the in node.
- * If a parent node returns false, descendats will <em>not</em> be
+ * If a parent node returns false, descendants will <em>not</em> be
  * checked
  */
 bool copyPropertiesIf(const SGPropertyNode *in, SGPropertyNode *out,
                         PropertyPredicate predicate);
 
-#endif // __PROPS_IO_HXX
 
 // end of props_io.hxx

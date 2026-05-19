@@ -4001,18 +4001,11 @@ void SGPropertyNode::copy(SGPropertyNode *to) const
             SGPropertyNode* to_child = to->getChild(child->getNameString());
             if (!to_child)
                 to_child = to->addChild(child->getNameString());
-            if (child->nChildren())
-            {
-                child->copy(to_child);
-            }
-            else
-            {
-                to_child->setValue(child->getStringValue().c_str());
-            }
+            child->copy(to_child);
         }
+    } else {
+        copyPropertyValue(this, to);
     }
-    else
-        to->setValue(getStringValue().c_str());
 }
 
 SGPropertyNode * SGPropertyNode::getNode (const std::string& relative_path, bool create)

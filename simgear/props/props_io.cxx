@@ -850,6 +850,9 @@ copyProperties (const SGPropertyNode *in, SGPropertyNode *out)
   // copy the attributes.
   out->setAttributes( in->getAttributes() );
 
+  // copy the source location
+  out->setLocation(in->getLocation());
+
   // Next, copy the children.
   int nChildren = in->nChildren();
   for (int i = 0; i < nChildren; i++) {
