@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <simgear/scene/SGSceneFwd.hxx>
+#include <simgear/scene/SGSceneFwd_osg.hxx>
 
 class SGBucket;
 

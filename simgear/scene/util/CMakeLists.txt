@@ -75,9 +75,9 @@ set(SOURCES
 
 simgear_scene_component(util scene/util "${SOURCES}" "${HEADERS}")
 
-if(ENABLE_TESTS)
+if(ENABLE_TESTS AND TARGET SimGearScene)
 
 add_simgear_autotest(test_parse_color parse_color_test.cxx )
 target_link_libraries(test_parse_color SimGearScene)
 
-endif(ENABLE_TESTS)
+endif()

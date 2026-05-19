@@ -13,6 +13,17 @@
 #include <osg/Referenced>
 #include <osgParticle/PrecipitationEffect>
 
+#include <simgear/scene/Handle.hxx>
+
+// MIGRATION NOTE (Phase 1, Step 1.5):
+// SGPrecipitation is OSG-by-design (inherits osg::Referenced, returns
+// osg::Group*, holds an osg::ref_ptr to an osgParticle effect). A full
+// backend-neutral redesign lands in Phase 6 (sky / clouds / precipitation
+// port). For now this header exposes Handle.hxx so callers can migrate
+// to NodeHandle-flavored signatures as soon as the wicked backend lands a
+// SGPrecipitation replacement; until then the OSG API is the only one
+// available.
+
 
 class SGPrecipitation : public osg::Referenced
 {

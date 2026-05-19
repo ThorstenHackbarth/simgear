@@ -28,10 +28,15 @@
 
 #include <simgear/props/props.hxx>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/scene/Handle.hxx>
 
 namespace osg {
     class PagedLOD;
 }
+
+// Backend-neutral alias — public callers should prefer loadModelHandle()
+// over loadModel() so they do not depend on osg::Node*.
+using ModelHandle = sg::scene::ModelHandle;
 
 namespace simgear {
 
@@ -55,6 +60,14 @@ public:
                                 SGModelData *data=0,
                                 bool autoTooltipsMaster=false,
                                 int autoTooltipsMasterMax=0);
+
+    // Backend-neutral wrapper. Returns an opaque ModelHandle wrapping the
+    // loaded model (or an invalid handle on failure). Phase 1 migration plan.
+    static ModelHandle loadModelHandle(const std::string& path,
+                                       SGPropertyNode* prop_root = nullptr,
+                                       SGModelData* data = nullptr,
+                                       bool autoTooltipsMaster = false,
+                                       int autoTooltipsMasterMax = 0);
 
     // Load a 3D model (any format) through the DatabasePager.
     // This function initially just returns a proxy node that refers to

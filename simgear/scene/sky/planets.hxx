@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <simgear/scene/SGSceneFwd.hxx>
+#include <simgear/scene/SGSceneFwd_osg.hxx>
 
 #include <simgear/math/SGVec3.hxx>
 #include <simgear/structure/SGReferenced.hxx>

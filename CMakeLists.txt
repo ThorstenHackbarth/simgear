@@ -98,6 +98,35 @@ set(SYSTEM_UDNS OFF)
 endif()
 
 option(SIMGEAR_HEADLESS "Set to ON to build SimGear without GUI/graphics support" OFF)
+
+# Render backend selection for the scene subsystem.
+#   osg    — link against the FlightGear OpenSceneGraph fork (current default)
+#   wicked — link against WickedEngine; no OSG dependency
+#   none   — equivalent to SIMGEAR_HEADLESS=ON (no scene subsystem)
+set(SIMGEAR_RENDER_BACKEND "osg" CACHE STRING
+    "Render backend for SimGear's scene subsystem (osg, wicked, none)")
+set_property(CACHE SIMGEAR_RENDER_BACKEND PROPERTY STRINGS osg wicked none)
+
+if(NOT SIMGEAR_RENDER_BACKEND MATCHES "^(osg|wicked|none)$")
+    message(FATAL_ERROR
+        "SIMGEAR_RENDER_BACKEND must be one of: osg, wicked, none "
+        "(got '${SIMGEAR_RENDER_BACKEND}')")
+endif()
+
+# SIMGEAR_HEADLESS=ON takes precedence and forces backend to 'none' for compatibility.
+if(SIMGEAR_HEADLESS AND NOT SIMGEAR_RENDER_BACKEND STREQUAL "none")
+    message(STATUS "SIMGEAR_HEADLESS=ON overrides SIMGEAR_RENDER_BACKEND -> none")
+    set(SIMGEAR_RENDER_BACKEND "none" CACHE STRING "" FORCE)
+endif()
+
+# Derived: any non-osg backend implies the existing headless code paths until
+# the matching scene implementations land in later migration phases.
+if(NOT SIMGEAR_RENDER_BACKEND STREQUAL "osg")
+    set(SIMGEAR_HEADLESS ON CACHE BOOL "" FORCE)
+endif()
+
+message(STATUS "SimGear render backend: ${SIMGEAR_RENDER_BACKEND}")
+
 option(ENABLE_CYCLONE   "Set to ON to build SimGear with Cyclone Data Distribution Service support" ON)
 option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
 option(ENABLE_GDAL      "Set to ON to build SimGear with GDAL support" OFF)
@@ -195,52 +224,55 @@ else()
     include(CreateOSGImportedTargets)
 endif(SIMGEAR_HEADLESS)
 
-# Ensure that we are using the right version of OSG
-# This should probably be done by modifying FindOpenSceneGraph.cmake, but this
-# is easier/faster and only requires minimal changes to OSG.
-set(CMAKE_REQUIRED_INCLUDES ${OPENSCENEGRAPH_INCLUDE_DIRS})
+# OSG version checks only apply to the osg backend.
+if(SIMGEAR_RENDER_BACKEND STREQUAL "osg")
+    # Ensure that we are using the right version of OSG
+    # This should probably be done by modifying FindOpenSceneGraph.cmake, but this
+    # is easier/faster and only requires minimal changes to OSG.
+    set(CMAKE_REQUIRED_INCLUDES ${OPENSCENEGRAPH_INCLUDE_DIRS})
 
-# Force CMake to rerun the compile tests
-unset(SIMGEAR_OSG_USE_FG_FORK CACHE)
-unset(SIMGEAR_OSG_CORRECT_VERSION CACHE)
+    # Force CMake to rerun the compile tests
+    unset(SIMGEAR_OSG_USE_FG_FORK CACHE)
+    unset(SIMGEAR_OSG_CORRECT_VERSION CACHE)
 
-check_cxx_source_compiles(
-    "
-    #include <osg/Version>
-    #if !defined(OPENSCENEGRAPH_FG_MAJOR_VERSION)
-    #error Found upstream OSG
-    #endif
-    int main() { return 0; }
-    "
-    SIMGEAR_OSG_USE_FG_FORK
-)
-if (NOT SIMGEAR_OSG_USE_FG_FORK)
-    message(
-        FATAL_ERROR
-        "Upstream version of OpenSceneGraph found, but a forked version for FlightGear is required.\n"
-        "Please download from https://gitlab.com/flightgear/openscenegraph"
+    check_cxx_source_compiles(
+        "
+        #include <osg/Version>
+        #if !defined(OPENSCENEGRAPH_FG_MAJOR_VERSION)
+        #error Found upstream OSG
+        #endif
+        int main() { return 0; }
+        "
+        SIMGEAR_OSG_USE_FG_FORK
     )
-endif()
+    if (NOT SIMGEAR_OSG_USE_FG_FORK)
+        message(
+            FATAL_ERROR
+            "Upstream version of OpenSceneGraph found, but a forked version for FlightGear is required.\n"
+            "Please download from https://gitlab.com/flightgear/openscenegraph"
+        )
+    endif()
 
-# For now do an exact version match
-check_cxx_source_compiles(
-    "
-    #include <osg/Version>
-    #if !(OPENSCENEGRAPH_FG_MAJOR_VERSION == ${SIMGEAR_MAJOR_VERSION} && \
-          OPENSCENEGRAPH_FG_MINOR_VERSION == ${SIMGEAR_MINOR_VERSION} && \
-          OPENSCENEGRAPH_FG_PATCH_VERSION == ${SIMGEAR_PATCH_VERSION})
-    #error Incorrect OSG version
-    #endif
-    int main() { return 0; }
-    "
-    SIMGEAR_OSG_CORRECT_VERSION
-)
-if (NOT SIMGEAR_OSG_CORRECT_VERSION)
-    message(
-        FATAL_ERROR
-        "OpenSceneGraph was compiled for another version of FlightGear.\n"
-        "Please ensure that you are using the correct branch of the OSG fork."
+    # For now do an exact version match
+    check_cxx_source_compiles(
+        "
+        #include <osg/Version>
+        #if !(OPENSCENEGRAPH_FG_MAJOR_VERSION == ${SIMGEAR_MAJOR_VERSION} && \
+              OPENSCENEGRAPH_FG_MINOR_VERSION == ${SIMGEAR_MINOR_VERSION} && \
+              OPENSCENEGRAPH_FG_PATCH_VERSION == ${SIMGEAR_PATCH_VERSION})
+        #error Incorrect OSG version
+        #endif
+        int main() { return 0; }
+        "
+        SIMGEAR_OSG_CORRECT_VERSION
     )
+    if (NOT SIMGEAR_OSG_CORRECT_VERSION)
+        message(
+            FATAL_ERROR
+            "OpenSceneGraph was compiled for another version of FlightGear.\n"
+            "Please ensure that you are using the correct branch of the OSG fork."
+        )
+    endif()
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "OpenBSD")

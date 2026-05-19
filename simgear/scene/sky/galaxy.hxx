@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <simgear/scene/SGSceneFwd.hxx>
+#include <simgear/scene/SGSceneFwd_osg.hxx>
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/structure/SGReferenced.hxx>

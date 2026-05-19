@@ -34,9 +34,9 @@ set(SOURCES
 simgear_scene_component(material scene/material "${SOURCES}" "${HEADERS}")
 
 
-if(ENABLE_TESTS)
+if(ENABLE_TESTS AND TARGET SimGearScene)
 
 add_simgear_autotest(test_parseBlendFunc parseBlendFunc_test.cxx )
 target_link_libraries(test_parseBlendFunc SimGearScene)
 
-endif(ENABLE_TESTS)
+endif()

@@ -13,6 +13,8 @@
 #include "CompositorBuffer.hxx"
 #include "CompositorPass.hxx"
 
+#include <simgear/scene/Handle.hxx>
+
 class SGPropertyNode;
 
 namespace simgear {
@@ -78,6 +80,11 @@ public:
                osg::Viewport* viewport,
                const MVRInfo* mvr_info = nullptr);
     ~Compositor();
+
+    // Backend-neutral identity handle. Wraps `this`; callers can pass the
+    // handle through API boundaries without committing to OSG types. The
+    // wicked-backend implementation lives in the Compositor port (phase 6).
+    sg::scene::CompositorHandle handle() const;
 
     /**
      * \brief Create a Compositor from a property tree.

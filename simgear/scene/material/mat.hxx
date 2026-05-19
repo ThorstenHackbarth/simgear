@@ -35,6 +35,14 @@ class StateSet;
 #include <simgear/math/SGRect.hxx>
 #include <simgear/bvh/BVHMaterial.hxx>
 
+#include <simgear/scene/Handle.hxx>
+
+// Backend-neutral opaque-handle aliases. Public callers should prefer these
+// over Texture2DRef / osg::Texture2D* — they hide the OSG dependency and
+// will be transparent under the WickedEngine port (see migration plan).
+using MaterialHandle = sg::scene::MaterialHandle;
+using TextureHandle  = sg::scene::TextureHandle;
+
 typedef osg::ref_ptr<osg::Texture2D> Texture2DRef;
 typedef std::vector<SGRect <float> > AreaList;
 
@@ -125,6 +133,19 @@ public:
    * Get the textured state.
    */
   std::string get_one_texture(int setIndex, int texIndex);
+
+  /**
+   * Backend-neutral handle accessors. Wrap the OSG-typed implementation in
+   * sg::scene::Handle so callers do not need to depend on the render backend.
+   * The handle is opaque — backend code recovers its native payload with
+   * Handle::as<...>(), see the migration plan.
+   *
+   * Note: the implementation is provided in mat.cxx (osg backend). Under the
+   * wicked backend, these declarations are visible but the implementations
+   * land alongside the wicked SGMaterial port in a later phase.
+   */
+  MaterialHandle handle() const;
+  TextureHandle  texture(int unit = 0) const;
 
   /**
    * Get the number of textures defined in this set

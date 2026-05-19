@@ -20,7 +20,9 @@ set(SOURCES
 
 simgear_scene_component(canvas-elements canvas/elements "${SOURCES}" "${HEADERS}")
 
-add_boost_test(canvas_element
-  SOURCES canvas_element_test.cpp
-  LIBRARIES SimGearScene
-)
+if(TARGET SimGearScene)
+  add_boost_test(canvas_element
+    SOURCES canvas_element_test.cpp
+    LIBRARIES SimGearScene
+  )
+endif()

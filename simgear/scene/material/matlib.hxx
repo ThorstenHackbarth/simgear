@@ -34,6 +34,12 @@
 #include <osg/Texture1D>
 #include "Atlas.hxx"
 
+#include <simgear/scene/Handle.hxx>
+
+// Backend-neutral material handle alias — public callers should prefer
+// findHandle() over find() so they do not depend on SGMaterial's raw layout.
+using MaterialHandle = sg::scene::MaterialHandle;
+
 #include <memory>
 #include <string>		// Standard C++ string library
 #include <map>			// STL associative "array"
@@ -68,6 +74,12 @@ public:
     // Lookup
     SGMaterial *find( const std::string& material ) const;
     SGMaterial *find( int material ) const;
+
+    // Backend-neutral lookup. Returns an opaque MaterialHandle that wraps
+    // the resolved SGMaterial (or an invalid handle if no such material).
+    // Phase 1 migration plan — see SGMaterial::handle().
+    MaterialHandle findHandle(const std::string& material) const;
+    MaterialHandle findHandle(int material) const;
 
     void setAtlas(osg::ref_ptr<simgear::Atlas> atlas) { _atlas = atlas; };
     osg::ref_ptr<simgear::Atlas> getAtlas() { return _atlas; };

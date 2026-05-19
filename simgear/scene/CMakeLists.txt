@@ -5,9 +5,27 @@ include (SimGearComponent)
 
 include_directories(${PROJECT_SOURCE_DIR})
 
-# Top-level scene headers (no associated sources)
-set(SCENE_HEADERS SGSceneFwd.hxx)
+# Backend-neutral scene headers — always installed, always reachable from
+# SimGearCore. Public FlightGear-side callers consume these regardless of
+# whether SimGearScene is built.
+set(BACKEND_NEUTRAL_HEADERS
+    Handle.hxx
+    SGSceneFwd.hxx
+)
+target_sources(SimGearCore PRIVATE ${BACKEND_NEUTRAL_HEADERS})
+install(FILES ${BACKEND_NEUTRAL_HEADERS} DESTINATION include/simgear/scene)
+
+# OSG-flavored forward declarations — internal partner header used by
+# scene-subsystem code (sky/, tgdb/, ...) that legitimately holds OSG types
+# in its signatures. Only installed when SimGearScene is built.
+set(SCENE_HEADERS SGSceneFwd_osg.hxx)
 simgear_scene_component(scene scene "${SCENE_SOURCES}" "${SCENE_HEADERS}")
+
+# Backend-neutral migration tests (run on every backend, tagged 'migration').
+if(ENABLE_TESTS)
+    add_simgear_wicked_autotest(test_handle HandleTest.cxx)
+    add_simgear_wicked_autotest(test_handle_neutrality HandleNeutralityTest.cxx)
+endif()
 
 foreach( mylibfolder
         material

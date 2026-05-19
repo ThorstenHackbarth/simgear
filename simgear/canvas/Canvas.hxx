@@ -22,6 +22,8 @@
 #include <osg/NodeCallback>
 #include <osg/observer_ptr>
 
+#include <simgear/scene/Handle.hxx>
+
 #include <memory>
 #include <string>
 
@@ -195,6 +197,13 @@ namespace canvas
 
       osg::Camera* getCamera() const;
       osg::Texture2D* getTexture() const;
+
+      // Backend-neutral accessors. Public callers should prefer these so
+      // they do not depend on the render backend (osg vs wicked). The
+      // wicked-backend implementations land alongside the canvas RTT port
+      // in a later migration phase.
+      sg::scene::CanvasHandle canvasHandle() const;
+      sg::scene::TextureHandle textureHandle() const;
 
       CullCallbackPtr getCullCallback() const;
 

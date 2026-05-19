@@ -1,29 +1,19 @@
 /*
  * SPDX-FileName: SGSceneFwd.hxx
- * SPDX-FileComment: Forward declarations for common OSG types used in SimGear's scene subsystem
+ * SPDX-FileComment: Backend-neutral forward declarations for SimGear's scene subsystem
  * SPDX-License-Identifier: LGPL-2.0-or-later
  * SPDX-FileCopyrightText: 2026 James Turner <james@flightgear.org>
+ *                         2026 Thorsten Hackbarth <thorsten.hackbarth@gmx.de>
  */
 
 #pragma once
 
-// osg::ref_ptr<T> template - needed to form osg_ref<T> member declarations
-#include <osg/ref_ptr>
+// Public, backend-neutral forward declarations for the SimGear scene
+// subsystem. This header MUST NOT include or reference OSG types; the legacy
+// OSG-flavored forwards live in the sibling SGSceneFwd_osg.hxx, which is
+// internal to the osg-backend build.
 
-/// Forward declarations for the most commonly used OSG scene-graph types.
-namespace osg {
-class Geometry;
-class Group;
-class Node;
-} // namespace osg
-
-/// Convenience alias: osg_ref<T> is shorthand for osg::ref_ptr<T>.
-/// Note: using osg_ref<T> as a data member requires the complete definition
-/// of T to be visible in any translation unit that constructs or destroys
-/// the containing object.
-template <typename T>
-using osg_ref = osg::ref_ptr<T>;
-
+#include <simgear/scene/Handle.hxx>
 
 namespace simgear {
 class SGReaderWriterOptions;

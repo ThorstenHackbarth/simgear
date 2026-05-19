@@ -184,6 +184,18 @@ Compositor::Compositor(osg::View* view,
         new MoonDirectionWorldCallback);
 }
 
+namespace {
+struct CompositorImpl : sg::scene::detail::HandleImplBase {
+    explicit CompositorImpl(const Compositor* c) : compositor(c) {}
+    const Compositor* compositor{nullptr};
+};
+}
+
+sg::scene::CompositorHandle Compositor::handle() const
+{
+    return sg::scene::CompositorHandle{std::make_shared<CompositorImpl>(this)};
+}
+
 Compositor::~Compositor()
 {
     // Remove slave cameras from the viewer

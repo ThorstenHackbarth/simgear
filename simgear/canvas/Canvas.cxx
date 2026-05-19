@@ -731,6 +731,34 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  // Backend-neutral handle wrappers. Implementation lives here (osg backend);
+  // wicked backend will provide its own canvas.cxx during the canvas RTT port.
+  namespace {
+    struct CanvasHandleImpl : sg::scene::detail::HandleImplBase {
+      explicit CanvasHandleImpl(osg::Camera* c) : camera(c) {}
+      osg::ref_ptr<osg::Camera> camera;
+    };
+    struct CanvasTextureImpl : sg::scene::detail::HandleImplBase {
+      explicit CanvasTextureImpl(osg::Texture2D* t) : texture(t) {}
+      osg::ref_ptr<osg::Texture2D> texture;
+    };
+  }
+
+  sg::scene::CanvasHandle Canvas::canvasHandle() const
+  {
+    osg::Camera* cam = getCamera();
+    if (!cam) return {};
+    return sg::scene::CanvasHandle{std::make_shared<CanvasHandleImpl>(cam)};
+  }
+
+  sg::scene::TextureHandle Canvas::textureHandle() const
+  {
+    osg::Texture2D* tex = getTexture();
+    if (!tex) return {};
+    return sg::scene::TextureHandle{std::make_shared<CanvasTextureImpl>(tex)};
+  }
+
+  //----------------------------------------------------------------------------
   Canvas::CullCallbackPtr Canvas::getCullCallback() const
   {
     return _cull_callback;

@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include <simgear/scene/SGSceneFwd.hxx>
+#include <simgear/scene/SGSceneFwd_osg.hxx>
 
 #include <simgear/ephemeris/stardata.hxx>
 #include <simgear/structure/SGReferenced.hxx>

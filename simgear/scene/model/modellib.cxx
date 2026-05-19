@@ -142,6 +142,30 @@ SGModelLib::loadModel(const string &path,
 
 }
 
+// Backend-neutral wrapper. The impl holds an osg::ref_ptr that keeps the
+// loaded node alive as long as any ModelHandle references it.
+namespace {
+struct ModelImpl : sg::scene::detail::HandleImplBase {
+    explicit ModelImpl(osg::Node* n) : node(n) {}
+    osg::ref_ptr<osg::Node> node;
+};
+}
+
+ModelHandle
+SGModelLib::loadModelHandle(const string& path,
+                            SGPropertyNode* prop_root,
+                            SGModelData* data,
+                            bool autoTooltipsMaster,
+                            int autoTooltipsMasterMax)
+{
+    osg::Node* n = loadModel(path, prop_root, data,
+                             autoTooltipsMaster, autoTooltipsMasterMax);
+    if (!n) {
+        return ModelHandle{};
+    }
+    return ModelHandle{std::make_shared<ModelImpl>(n)};
+}
+
 osg::Node*
 SGModelLib::loadDeferredModel(const string &path, SGPropertyNode *prop_root,
                              SGModelData *data)

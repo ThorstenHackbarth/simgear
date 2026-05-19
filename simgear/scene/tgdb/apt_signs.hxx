@@ -14,7 +14,7 @@
 #include <string>
 #include <memory> // for auto-ptr
 
-#include <simgear/scene/SGSceneFwd.hxx>
+#include <simgear/scene/SGSceneFwd_osg.hxx>
 
 class SGMaterialLib;            // forward declaration
 class SGGeod;

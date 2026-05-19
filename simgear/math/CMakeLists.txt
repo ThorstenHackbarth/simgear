@@ -56,4 +56,7 @@ add_simgear_autotest(math_test SGMathTest.cxx)
 add_simgear_autotest(geometry_test SGGeometryTest.cxx)
 add_simgear_autotest(geodesy_test SGGeodesyTest.cxx)
 
+# Migration-labeled: round-trip accuracy gate for the floating-origin system.
+add_simgear_wicked_autotest(test_geod_ecef_roundtrip GeodEcefRoundtripTest.cxx)
+
 endif(ENABLE_TESTS)

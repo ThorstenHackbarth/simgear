@@ -585,6 +585,40 @@ std::size_t SGMaterial::get_num_textures(int setIndex)
     return st.texture_paths.size();
 }
 
+// Opaque-handle accessors. The Impl wraps the existing OSG-typed surface so
+// the public API can be backend-neutral without touching the legacy callers.
+// Wicked-backend implementations will land alongside the wicked SGMaterial
+// port in a later phase.
+namespace {
+struct MaterialImpl : sg::scene::detail::HandleImplBase {
+    explicit MaterialImpl(const SGMaterial* mat) : material(mat) {}
+    const SGMaterial* material{nullptr};
+};
+
+struct TextureImpl : sg::scene::detail::HandleImplBase {
+    TextureImpl(std::string p, osg::Texture2D* t)
+        : path(std::move(p)), texture(t) {}
+    std::string path;
+    osg::ref_ptr<osg::Texture2D> texture;
+};
+} // namespace
+
+MaterialHandle SGMaterial::handle() const
+{
+    return MaterialHandle{std::make_shared<MaterialImpl>(this)};
+}
+
+TextureHandle SGMaterial::texture(int unit) const
+{
+    // Wrap the path returned by get_one_texture; the OSG-typed texture
+    // object itself is computed lazily by the Effect system and not exposed
+    // here. Wicked-backend code will populate a Wicked texture entity in
+    // the Impl during the material port.
+    auto* self = const_cast<SGMaterial*>(this);
+    std::string path = self->get_one_texture(0, unit);
+    return TextureHandle{std::make_shared<TextureImpl>(std::move(path), nullptr)};
+}
+
 void SGMaterial::buildEffectProperties(const SGReaderWriterOptions* options)
 {
     using namespace osg;

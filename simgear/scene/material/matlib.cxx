@@ -313,6 +313,20 @@ SGMaterial *SGMaterialCache::find(int lc) const
     return find(getNameFromLandclass(lc));
 }
 
+// Backend-neutral wrappers around find(). Delegate to SGMaterial::handle()
+// which produces the opaque sg::scene::MaterialHandle.
+MaterialHandle SGMaterialCache::findHandle(const string& material) const
+{
+    SGMaterial* m = find(material);
+    return m ? m->handle() : MaterialHandle{};
+}
+
+MaterialHandle SGMaterialCache::findHandle(int lc) const
+{
+    SGMaterial* m = find(lc);
+    return m ? m->handle() : MaterialHandle{};
+}
+
 osg::ref_ptr<Atlas> SGMaterialLib::getOrCreateAtlas(SGMaterialLib::landclass_map landclasslib, SGVec2f center, const simgear::SGReaderWriterOptions* const_options) {
 
     osg::ref_ptr<Atlas> atlas;
