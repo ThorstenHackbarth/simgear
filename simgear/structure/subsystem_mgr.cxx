@@ -89,7 +89,7 @@ void
 SGSubsystem::suspend (bool suspended)
 {
     // important we don't use is_suspended() here since SGSubsystemGroup
-    // overries. We record the actual state correctly here, even for groups,
+    // overrides. We record the actual state correctly here, even for groups,
     // so this works out, whereas is_suspended() is always false for groups
     if (_suspended == suspended)
         return;
@@ -414,7 +414,7 @@ SGSubsystemGroup::update (double delta_time_sec)
         // an easy way to ensure in the case where recording is not actually
         // enabled, we don't pay that cost.
         // Longer-term solution: add timing information to the Member struct,
-        // so that it can be recorded without the TimerStats strucutres being
+        // so that it can be recorded without the TimerStats structures being
         // copied/created/cleared each update()
         updateMembersWithTiming(loopCount, delta_time_sec);
     } else {
@@ -485,7 +485,7 @@ void SGSubsystemGroup::updateMembersWithTiming(int loopCount, double delta_time_
                     member->reportTimingStats(&_lastTimerStats);
                     //if (lvTimerStats[member->name] != _timerStats[member->name]) {
                     //    SG_LOG(SG_EVENT, SG_ALERT,
-                    //        " +" << std::setw(6) << std::left << (_timerStats[member->name] - lvTimerStats[member->name])
+                    //        " +"<< std::setw(6) << std::left << (_timerStats[member->name] - lvTimerStats[member->name])
                     //        << " total " << std::setw(6) << std::left << _timerStats[member->name]
                     //        << " " << member->name
                     //    );
@@ -561,8 +561,8 @@ void SGSubsystemGroup::reportTimingStats(TimerStats *_lastValues) {
         auto deltaT = _executionTime - _lastExecutionTime;
         if (deltaT != 0) {
             SG_LOG(SG_EVENT, SG_ALERT,
-                " +" << std::setw(6) << std::setprecision(4) << std::right << deltaT << "ms "
-                << subsystemInstanceId() );
+                   " +" << std::setw(6) << std::setprecision(4) << std::right << deltaT << "ms "
+                        << subsystemInstanceId());
         }
     }
     else
@@ -690,8 +690,9 @@ bool
 SGSubsystemGroup::remove_subsystem(const string &name)
 {
     // direct membership
-    auto it = std::find_if(_members.begin(), _members.end(), [name](const Member* m)
-                           { return m->name == name; });
+    auto it = std::find_if(_members.begin(), _members.end(), [name](const Member* m) {
+        return m->name == name;
+    });
     if (it != _members.end()) {
         // found it, great
         const auto sub = (*it)->subsystem;
@@ -927,6 +928,11 @@ SGSubsystemMgr::SGSubsystemMgr () :
     }
 }
 
+/**
+* This constructor is used by the mock subsystem manager, which allows overwriting
+* the default registration behavior, so that the mock can be used in tests without affecting the global default subsystem manager.
+*/
+
 SGSubsystemMgr::~SGSubsystemMgr ()
 {
     _destructorActive = true;
@@ -946,7 +952,7 @@ SGSubsystemMgr* SGSubsystemMgr::getManager(const std::string& id)
         return global_defaultSubsystemManager;
     }
 
-    // remove me when if/when we supprot multiple subsystem instances
+    // remove me when if/when we support multiple subsystem instances
     throw sg_exception("multiple subsystem instances not supported yet");
 }
 
@@ -1104,7 +1110,7 @@ SGSubsystemMgr::addInstance(const std::string& subsystemClassId,
     if (get_subsystem(subsystemClassId, subsystemInstanceId) != nullptr)
         throw sg_exception("Duplicate add of subsystem: " + combinedName);
 
-    // Create the subsytem.
+    // Create the subsystem.
     SG_LOG(SG_GENERAL, SG_DEBUG, "Adding subsystem " << combinedName);
     auto sub = createInstance(subsystemClassId, subsystemInstanceId);
 
@@ -1230,6 +1236,14 @@ namespace  {
                                { return name == d.name; });
         return it;
     }
+
+    SybsystemRegistrationVec::iterator findRegistrationMutable(const std::string& name)
+    {
+        auto& global_registrations = getGlobalRegistrations();
+        return std::find_if(global_registrations.begin(),
+                            global_registrations.end(),
+                            [name](RegisteredSubsystemData& d) { return name == d.name; });
+    }
 } // of anonymous namespace
 
 void SGSubsystemMgr::registerSubsystem(const std::string& name,
@@ -1248,6 +1262,19 @@ void SGSubsystemMgr::registerSubsystem(const std::string& name,
     if (deps.size() > 0) {
         global_registrations.back().depends = deps;
     }
+}
+
+void SGSubsystemMgr::mockSubsystem(const std::string& name, SubsystemFactoryFunctor f)
+{
+    auto& global_registrations = getGlobalRegistrations();
+    if (!SGSubsystemMgr::_mockable) {
+        throw sg_exception("SGSubsystemMgr not mockable: " + name);
+    }
+    auto it = findRegistrationMutable(name);
+    if (it == global_registrations.end()) {
+        throw sg_exception("Not mocked unknown subsystem registration for: " + name);
+    }
+    it->functor = f; // Now this is legal
 }
 
 auto SGSubsystemMgr::defaultGroupFor(const char* name) -> GroupType
@@ -1294,7 +1321,7 @@ SGSubsystemMgr::create(const std::string& name)
     }
 
     if (it->instanced) {
-        throw sg_exception("SGSubsystemMgr::create: using non-instanced mode for instanced subsytem " + name);
+        throw sg_exception("SGSubsystemMgr::create: using non-instanced mode for instanced subsystem " + name);
     }
 
     SGSubsystemRef ref = it->functor();
@@ -1316,12 +1343,12 @@ SGSubsystemMgr::createInstance(const std::string& name, const std::string& subsy
     }
 
     if (!it->instanced) {
-        throw sg_exception("SGSubsystemMgr::create: using instanced mode for non-instanced subsytem " + name);
+        throw sg_exception("SGSubsystemMgr::create: using instanced mode for non-instanced subsystem " + name);
     }
 
     SGSubsystemRef ref = it->functor();
     if (!ref) {
-        throw sg_exception("SGSubsystemMgr::create: functor failed to create an instsance of " + name);
+        throw sg_exception("SGSubsystemMgr::create: functor failed to create an instance of " + name);
     }
 
     const auto combinedName = name + SUBSYSTEM_NAME_SEPARATOR + subsystemInstanceId;
@@ -1377,6 +1404,8 @@ SGSubsystemMgr::root_node() const
 {
     return _rootNode;
 }
+
+bool SGSubsystemMgr::_mockable = false;
 
 namespace {
     // disabled until subsystemfactory is removed from FlightGear
@@ -1466,7 +1495,7 @@ namespace {
 
         SGSubsystem* instance = manager->get_subsystem(name);
         if (!instance) {
-            SG_LOG(SG_GENERAL, SG_ALERT, "do_remove_subsystem: unknown subsytem:" << name);
+            SG_LOG(SG_GENERAL, SG_ALERT, "do_remove_subsystem: unknown subsystem:" << name);
             return false;
         }
 
@@ -1572,7 +1601,6 @@ namespace {
         for (auto b : built_ins) {
             commandManager->addCommand(b.name, b.command);
         }
-    }
 #endif
 } // anonymous namespace implementing subsystem commands
 

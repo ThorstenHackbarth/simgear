@@ -522,6 +522,8 @@ public:
     void update(double delta_time_sec) override;
     bool is_suspended() const override;
 
+    // purely for testing purpose
+    static void test_allowSubsystemMocks() { _mockable = true; }
     // Subsystem identification.
     static const char* staticSubsystemClassId() { return "subsystem-mgr"; }
 
@@ -632,6 +634,14 @@ public:
                                   bool isInstanced = false,
                                   double updateInterval = 0.0,
                                   std::initializer_list<Dependency> deps = {});
+
+    /**
+     * @brief mock/replace a subsystem with the global registry. This is intended for testing purposes, to allow
+     * mocking out subsystems that are difficult to test (e.g. the FDM) with simpler implementations that allow testing
+     * of other subsystems that depend on them. The mock subsystem will be used in place of the real subsystem when the
+     * subsystem manager creates subsystems, so it should have the same name as the real subsystem. Can't be used in production.
+     */
+    void mockSubsystem(const std::string& name, SubsystemFactoryFunctor f);
 
     template<class T>
     class Registrant
@@ -753,6 +763,8 @@ private:
 
     using DelegateVec = std::vector<Delegate*>;
     DelegateVec _delegates;
+
+    static bool _mockable;
 };
 
 #endif // __SUBSYSTEM_MGR_HXX
