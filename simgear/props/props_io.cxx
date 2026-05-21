@@ -345,6 +345,7 @@ PropsVisitor::endElement (const char * name)
   State &st = state();
   bool ret;
   const sg_location location(getPath(), getLine(), getColumn());
+  bool recordLocation = false;
 
   // If there are no children and it's
   // not an alias, then it's a leaf value.
@@ -372,6 +373,9 @@ PropsVisitor::endElement (const char * name)
       ret = st.node->setDoubleValue(strtod(_data.c_str(), 0));
     } else if (st.type == "string") {
       ret = st.node->setStringValue(_data.c_str());
+      if (_data.find("\n") != string::npos) {
+          recordLocation = true; // record location of multi-line strings
+      }
     } else if (st.type == "vec3d" && _extended) {
       ret = st.node
         ->setValue(simgear::parseString<SGVec3d>(_data));
@@ -380,6 +384,9 @@ PropsVisitor::endElement (const char * name)
         ->setValue(simgear::parseString<SGVec4d>(_data));
     } else if (st.type == "unspecified") {
       ret = st.node->setUnspecifiedValue(_data.c_str());
+      if (_data.find("\n") != string::npos) {
+          recordLocation = true; // record location of multi-line strings
+      }
     } else if (_level == 1) {
       ret = true;		// empty <PropertyList>
     } else {
@@ -399,8 +406,12 @@ PropsVisitor::endElement (const char * name)
                          << "\n at " << location.asString()
       );
   } else {
-    // Record the start location of non-leaf nodes
-    st.node->setLocation(SGSourceLocation(getPath(), st.startLine));
+      // record the location of non-leaf nodes
+      recordLocation = true;
+  }
+
+  if (recordLocation) {
+      st.node->setLocation(SGSourceLocation(getPath(), st.startLine));
   }
 
   // Set the access-mode attributes now,
