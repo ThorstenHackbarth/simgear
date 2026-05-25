@@ -2098,10 +2098,13 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create, int last_ind
     index = 0;
     if (name.end() != token.end()) {
       if (*name.end() == '[') {
-          const char* i = name.end() + 1;
-          const char* end = token.end();
+          // Use auto: string_view::iterator is a typedef to const char* on
+          // libstdc++/libc++ but a checked-iterator wrapper on MSVC's STL,
+          // which does not implicitly convert to const char*.
+          auto i = name.end() + 1;
+          auto end = token.end();
           for (; i != end; ++i) {
-              if (isdigit(*i)) {
+              if (isdigit(static_cast<unsigned char>(*i))) {
                   index = (index * 10) + (*i - '0');
               } else {
                   break;
