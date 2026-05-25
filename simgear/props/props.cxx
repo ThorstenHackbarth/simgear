@@ -2117,8 +2117,12 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create, int last_ind
       }
     }
   }
+  // Pass raw pointers (not iterators) so this compiles on MSVC, where
+  // string_view::iterator is a checked-iterator wrapper that does not
+  // implicitly convert to const char*. data()/data()+size() always returns
+  // const char* across all stdlib implementations.
   return find_node_aux(
-          SGPropertyNodeImpl::getChildImpl(*current, name.begin(), name.end(), index, create),
+          SGPropertyNodeImpl::getChildImpl(*current, name.data(), name.data() + name.size(), index, create),
           itr,
           create,
           last_index
