@@ -1,4 +1,6 @@
-///@file
+// SPDX-License-Identifier: LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2014 Thomas Geymayer <tomgey@gmail.com>
+
 /// Nasal context for testing and executing code
 ///
 // 2014  Thomas Geymayer <tomgey@gmail.com>
@@ -21,6 +23,9 @@
 #define SG_NASAL_TESTCONTEXT_HXX_
 
 #include <simgear/nasal/cppbind/NasalContext.hxx>
+
+#include <stdexcept>            // std::runtime_error
+#include <string>
 
 class TestContext:
   public nasal::Context

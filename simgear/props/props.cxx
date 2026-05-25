@@ -614,7 +614,10 @@ parse_name (const SGPropertyNode *node, const Range &path)
             {}, node->getLocation().str());
     }
   }
-  return Range(path.begin(), static_cast<size_t>(i - path.begin()));
+  // Use path.data() (always const char*) rather than path.begin() — on MSVC
+  // string_view::iterator is a wrapper that does not implicitly convert to
+  // const char*, so the (const char*, size_t) constructor wouldn't bind.
+  return Range(path.data(), static_cast<size_t>(i - path.begin()));
 }
 
 // Validate the name of a single node
@@ -2098,10 +2101,13 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create, int last_ind
     index = 0;
     if (name.end() != token.end()) {
       if (*name.end() == '[') {
-          const char* i = name.end() + 1;
-          const char* end = token.end();
+          // Use auto: string_view::iterator is a typedef to const char* on
+          // libstdc++/libc++ but a checked-iterator wrapper on MSVC's STL,
+          // which does not implicitly convert to const char*.
+          auto i = name.end() + 1;
+          auto end = token.end();
           for (; i != end; ++i) {
-              if (isdigit(*i)) {
+              if (isdigit(static_cast<unsigned char>(*i))) {
                   index = (index * 10) + (*i - '0');
               } else {
                   break;
@@ -2114,8 +2120,12 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create, int last_ind
       }
     }
   }
+  // Pass raw pointers (not iterators) so this compiles on MSVC, where
+  // string_view::iterator is a checked-iterator wrapper that does not
+  // implicitly convert to const char*. data()/data()+size() always returns
+  // const char* across all stdlib implementations.
   return find_node_aux(
-          SGPropertyNodeImpl::getChildImpl(*current, name.begin(), name.end(), index, create),
+          SGPropertyNodeImpl::getChildImpl(*current, name.data(), name.data() + name.size(), index, create),
           itr,
           create,
           last_index
