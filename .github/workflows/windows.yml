@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: Thorsten Hackbarth
+
+name: Windows build
+on: [push, pull_request]
+
+jobs:
+  windows-build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      # windows-2022 ships with VS2022 Enterprise + MSVC. This action just
+      # sets up the dev-shell environment variables for subsequent steps.
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      # Export DEPS_DIR for later steps. Has to be done in a step (not in
+      # the job-level env:) because the runner context isn't evaluated at
+      # job parse time. Dependencies live *outside* the source dir to avoid
+      # CMake's INTERFACE_INCLUDE_DIRECTORIES warning (same workaround as
+      # the GitLab CI Windows job).
+      - name: Set DEPS_DIR
+        shell: pwsh
+        run: |
+          $deps = "${{ runner.temp }}\deps"
+          New-Item -ItemType Directory -Force -Path $deps | Out-Null
+          "DEPS_DIR=$deps" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      # Pull the FG-forked OSG (built by flightgear/openscenegraph CI, branch
+      # 'next') and the windows-3rd-party blob (built by flightgear/windows-3rd-party
+      # CI, branch 'master') straight from GitLab's artifact API. Public
+      # projects, no token required.
+      - name: Fetch dependencies
+        shell: pwsh
+        run: |
+          $osgUrl  = 'https://gitlab.com/api/v4/projects/flightgear%2Fopenscenegraph/jobs/artifacts/next/download?job=windows_build'
+          $w3pUrl  = 'https://gitlab.com/api/v4/projects/flightgear%2Fwindows-3rd-party/jobs/artifacts/master/download?job=windows_build_msvc140'
+
+          Write-Host "Downloading OSG artifact..."
+          Invoke-WebRequest -Uri $osgUrl -OutFile "$env:DEPS_DIR\osg.zip"
+          Write-Host "Downloading windows-3rd-party artifact..."
+          Invoke-WebRequest -Uri $w3pUrl -OutFile "$env:DEPS_DIR\w3p.zip"
+
+          Write-Host "Extracting..."
+          # The producing GitLab jobs create osg-dist/ and msvc140/ as
+          # top-level paths in their working dir, so each zip extracts to
+          # ${DEPS_DIR}/{osg-dist,msvc140}.
+          Expand-Archive -Path "$env:DEPS_DIR\osg.zip" -DestinationPath $env:DEPS_DIR
+          Expand-Archive -Path "$env:DEPS_DIR\w3p.zip" -DestinationPath $env:DEPS_DIR
+          Remove-Item "$env:DEPS_DIR\osg.zip","$env:DEPS_DIR\w3p.zip"
+
+          Write-Host "Deps layout:"
+          Get-ChildItem $env:DEPS_DIR
+
+      - name: Configure
+        shell: pwsh
+        run: |
+          cmake -B build -S . -G "Ninja Multi-Config" --fresh `
+            -D CMAKE_INSTALL_PREFIX="${{ github.workspace }}/simgear-dist" `
+            -D CMAKE_PREFIX_PATH="$env:DEPS_DIR/osg-dist" `
+            -D MSVC_3RDPARTY_ROOT="$env:DEPS_DIR"
+
+      - name: Build
+        shell: pwsh
+        run: cmake --build build --config Release
+
+      - name: Install
+        shell: pwsh
+        run: cmake --build build --config Release --target install
