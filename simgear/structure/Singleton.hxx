@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2008 Tim Moore <timoore@redhat.com>
 
 #ifndef SIMGEAR_SINGLETON_HXX
 #define SIMGEAR_SINGLETON_HXX 1
-
-#include "singleton.hpp"
 
 namespace simgear
 {
@@ -20,8 +19,7 @@ protected:
 public:
     static Class* instance()
     {
-        Class& singleton
-            = boost::details::pool::singleton_default<Class>::instance();
+        static Class singleton;
         return &singleton;
     }
 };

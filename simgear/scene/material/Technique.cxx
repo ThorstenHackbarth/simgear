@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2008 Timothy Moore <timoore@redhat.com>
 
 #ifdef HAVE_CONFIG_H
 #  include <simgear_config.h>
@@ -137,7 +139,7 @@ Technique::processDrawables(const EffectGeode::DrawablesIterator& begin,
         = cv->getComputeNearFarMode() != CullVisitor::DO_NOT_COMPUTE_NEAR_FAR;
     for (int i = 0; i < NUM_DRAWABLES && itr != end; ++itr, ++i)
     {
-      Drawable* drawable = itr->get();
+      Drawable* drawable = itr->get()->asDrawable();
 
       const BoundingBox& bb = drawable->getBoundingBox();
       osg::Drawable::CullCallback* cull =
@@ -171,7 +173,7 @@ Technique::processDrawables(const EffectGeode::DrawablesIterator& begin,
         int i = 0;
         for (itr = begin; itr != drawablesEnd; ++itr, ++i) {
             if (depth[i] != FLT_MAX)
-                cv->addDrawableAndDepth(itr->get(), &matrix, depth[i]);
+                cv->addDrawableAndDepth(itr->get()->asDrawable(), &matrix, depth[i]);
         }
         cv->popStateSet();
     }

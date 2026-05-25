@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-FileCopyrightText: 2008 Till Busch <buti@bux.at>
+//
 // Copyright (C) 2008 Till Busch buti@bux.at
 //
 // This program is free software; you can redistribute it and/or
@@ -18,9 +21,6 @@
 #ifdef HAVE_CONFIG_H
 #  include <simgear_config.h>
 #endif
-
-#include <boost/algorithm/string.hpp>
-
 #include <osg/Version>
 #include <osg/PagedLOD>
 #include <osg/ProxyNode>
@@ -31,6 +31,7 @@
 #include <simgear/constants.h>
 #include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/misc/ResourceManager.hxx>
+#include <simgear/misc/strutils.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/scene/model/ModelRegistry.hxx>
@@ -107,7 +108,7 @@ osg::Node* loadFile(const string& path, SGReaderWriterOptions* options)
 {
     using namespace osg;
     using namespace osgDB;
-    if (boost::iends_with(path, ".ac")) {
+    if (simgear::strutils::iends_with(path, ".ac")) {
         options->setInstantiateEffects(true);
     }
 

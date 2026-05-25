@@ -182,5 +182,41 @@
   std::cerr << "failure: " << msg; \
   exit(1);
 
+// Asserts that evaluating 'expr' throws an exception of type 'ExceptionType'
+// (or a class derived from it). Fails if 'expr' throws a different type or
+// does not throw at all.
+//
+// Like the other macros in this file, the body expands to a bare '{ ... }'
+// block (not 'do { ... } while (0)'), to match the existing style. As a
+// consequence, the macro cannot be used naked after an 'if' without braces:
+//     if (cond) SG_CHECK_THROW(expr, Ex);            // dangles 'else'
+//     if (cond) { SG_CHECK_THROW(expr, Ex); }        // ok
+//
+// Note also the preprocessor footgun with template arguments: an unparenthesised
+// '<T, U>' in 'expr' is read as TWO macro arguments because the preprocessor
+// doesn't understand template syntax. Wrap such expressions in an extra pair of
+// parentheses:
+//     SG_CHECK_THROW(foo<T, U>(x), sg_exception);    // macro arg confusion
+//     SG_CHECK_THROW((foo<T, U>(x)), sg_exception);  // ok
+#define SG_CHECK_THROW(expr, ExceptionType) \
+    { \
+        bool _sg_caught = false; \
+        try { (void)(expr); } \
+        catch (const ExceptionType&) { _sg_caught = true; } \
+        catch (...) { \
+            std::cerr << "failed: " << #expr \
+                      << " threw an unexpected exception (expected " \
+                      << #ExceptionType << ")" << std::endl; \
+            std::cerr << "\tat " << __FILE__ << ":" << __LINE__ << std::endl; \
+            exit(1); \
+        } \
+        if (!_sg_caught) { \
+            std::cerr << "failed: " << #expr << " did not throw " \
+                      << #ExceptionType << std::endl; \
+            std::cerr << "\tat " << __FILE__ << ":" << __LINE__ << std::endl; \
+            exit(1); \
+        } \
+    }
+
 
 #endif // of SG_MISC_TEST_MACROS_HXX

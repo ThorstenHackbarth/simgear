@@ -1,23 +1,16 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2009 Tim Moore <timoore@redhat.com>
 
 #ifndef SIMGEAR_STRINGTABLE_HXX
 #define SIMGEAR_STRINGTABLE_HXX 1
 
-#include <string>
 #include <mutex>
-
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/identity.hpp>
+#include <string>
+#include <unordered_set>
 
 namespace simgear
 {
-typedef boost::multi_index_container<
-    std::string,
-    boost::multi_index::indexed_by<
-        boost::multi_index::hashed_unique<
-            boost::multi_index::identity<std::string> > > >
-StringContainer;
+typedef std::unordered_set<std::string> StringContainer;
 
 class StringTable
 {

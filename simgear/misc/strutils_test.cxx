@@ -176,15 +176,9 @@ public:
     std::ostringstream oss;
     aux_readNonNegativeInt_setUpOStringStream(oss, BASE);
     oss << 1 + static_cast<uintmax_t>(std::numeric_limits<T>::max());
-    bool gotException = false;
 
-    try {
-      strutils::readNonNegativeInt<T, BASE>(oss.str());
-    } catch (const sg_range_exception&) {
-      gotException = true;
-    }
-
-    SG_VERIFY(gotException);
+    SG_CHECK_THROW((strutils::readNonNegativeInt<T, BASE>(oss.str())),
+                   sg_range_exception);
   }
 };
 
@@ -275,45 +269,14 @@ void test_readNonNegativeInt()
     typeid(12LL));
 #endif
 
-  {
-    bool gotException = false;
-    try {
-      strutils::readNonNegativeInt<int>("");   // empty string: illegal
-    } catch (const sg_format_exception&) {
-      gotException = true;
-    }
-    SG_VERIFY(gotException);
-  }
-
-  {
-    bool gotException = false;
-    try {
-      strutils::readNonNegativeInt<int>("-1"); // non-digit character: illegal
-    } catch (const sg_format_exception&) {
-      gotException = true;
-    }
-    SG_VERIFY(gotException);
-  }
-
-  {
-    bool gotException = false;
-    try {
-      strutils::readNonNegativeInt<int>("+1"); // non-digit character: illegal
-    } catch (const sg_format_exception&) {
-      gotException = true;
-    }
-    SG_VERIFY(gotException);
-  }
-
-  {
-    bool gotException = false;
-    try {
-      strutils::readNonNegativeInt<int>("858efe"); // trailing garbage: illegal
-    } catch (const sg_format_exception&) {
-      gotException = true;
-    }
-    SG_VERIFY(gotException);
-  }
+  // empty string: illegal
+  SG_CHECK_THROW(strutils::readNonNegativeInt<int>(""), sg_format_exception);
+  // non-digit character: illegal
+  SG_CHECK_THROW(strutils::readNonNegativeInt<int>("-1"), sg_format_exception);
+  // non-digit character: illegal
+  SG_CHECK_THROW(strutils::readNonNegativeInt<int>("+1"), sg_format_exception);
+  // trailing garbage: illegal
+  SG_CHECK_THROW(strutils::readNonNegativeInt<int>("858efe"), sg_format_exception);
 
 #if 0
   {
@@ -327,15 +290,9 @@ void test_readNonNegativeInt()
   }
 #endif
 
-  {
-    bool gotException = false;
-    try {
-      strutils::readNonNegativeInt<int>("  858"); // leading whitespace/garbage:
-    } catch (const sg_format_exception&) {        // illegal too
-      gotException = true;
-    }
-    SG_VERIFY(gotException);
-  }
+  // leading whitespace/garbage: illegal too
+  SG_CHECK_THROW(strutils::readNonNegativeInt<int>("  858"),
+                 sg_format_exception);
 
   // Try to read a value that is 1 unit too large for the type. Check that it
   // raises an sg_range_exception in each case.

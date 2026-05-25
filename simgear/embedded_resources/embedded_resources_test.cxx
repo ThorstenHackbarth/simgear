@@ -60,10 +60,13 @@ std::size_t streamsizeToSize_t(std::streamsize n)
 // instance whose last character would be '\0' (followed in memory by the same
 // '\0' used as C-style string terminator this time!).
 static const char res1Array[] = "This is a simple embedded resource test.";
+// codespell:ignore-begin French text contains words codespell flags
 static const char res1frArray[] = "Ceci est un petit test de ressource "
                                   "embarquée.";
 static const char res1fr_FRArray[] = "Ceci est un petit test de ressource "
                                      "embarquée (variante fr_FR).";
+// codespell:ignore-end
+// codespell:ignore-begin Lorem ipsum contains words that codespell flags
 static const string lipsum = "\
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque congue ornare\n\
 congue. Mauris mollis est et porttitor condimentum. Vivamus laoreet blandit\n\
@@ -73,6 +76,7 @@ Praesent et luctus nunc. Mauris eros eros, rutrum at molestie quis, egestas et\n
 lorem. Ut nulla turpis, eleifend sed mauris ac, faucibus molestie nulla.\n\
 Quisque viverra vel turpis nec efficitur. Proin non rutrum velit. Nam sodales\n\
 metus felis, eu pharetra velit posuere ut.";
+// codespell:ignore-end
 // Should be enough to store the compressed lipsum (320 bytes are required
 // with zlib 1.2.8, keeping some room to account for possible future format
 // changes in the zlib output...). In any case, there is no risk of buffer
@@ -275,23 +279,10 @@ void test_getMissingResources()
   cout << "Testing the behavior of EmbeddedResourceManager when trying to "
     "fetch inexistent resources" << endl;
   const auto& resMgr = EmbeddedResourceManager::instance();
-  SG_VERIFY(!resMgr->getResourceOrNullPtr("/inexistant/resource"));
+  SG_VERIFY(!resMgr->getResourceOrNullPtr("/inexistent/resource"));
 
-  bool gotException = false;
-  try {
-    resMgr->getResource("/inexistant/resource");
-  } catch (const sg_exception&) {
-    gotException = true;
-  }
-  SG_VERIFY(gotException);
-
-  gotException = false;
-  try {
-    resMgr->getString("/other/inexistant/resource");
-  } catch (const sg_exception&) {
-    gotException = true;
-  }
-  SG_VERIFY(gotException);
+  SG_CHECK_THROW(resMgr->getResource("/inexistent/resource"), sg_exception);
+  SG_CHECK_THROW(resMgr->getString("/other/inexistent/resource"), sg_exception);
 }
 
 void test_addAlreadyExistingResource()
@@ -302,20 +293,17 @@ void test_addAlreadyExistingResource()
 
   for (const string locale: {"", "fr", "fr_FR"}) {
     // For these tests, we don't care about the resource contents -> no need
-    // to substract 1 from the result of sizeof() as we did above.
+    // to subtract 1 from the result of sizeof() as we did above.
     unique_ptr<const RawEmbeddedResource> someRes(
       new RawEmbeddedResource(res1fr_FRArray, sizeof(res1fr_FRArray)));
 
-    bool gotException = false;
-    try {
-      resMgr->addResource("/path/to/resource1", std::move(someRes), locale);
-    } catch (const sg_error&) {
-      gotException = true;
-    }
-    SG_VERIFY(gotException);
+    SG_CHECK_THROW(
+      resMgr->addResource("/path/to/resource1", std::move(someRes), locale),
+      sg_error);
   }
 }
 
+// codespell:ignore-begin French test strings contain words codespell flags
 void test_localeDependencyOfResourceFetching()
 {
   cout << "Testing the locale-dependency of resource fetching from "
@@ -329,7 +317,8 @@ void test_localeDependencyOfResourceFetching()
   // Switch to the 'fr_FR' locale (French from France)
   resMgr->selectLocale("fr_FR");
   SG_CHECK_EQUAL(resMgr->getString("/path/to/resource1"),
-                 "Ceci est un petit test de ressource embarquée (variante "
+                 "Ceci est un petit test de ressource "
+                 "embarquée (variante "
                  "fr_FR).");
 
   // This one is for the 'fr' “locale”, obtained as fallback since there is no
@@ -369,6 +358,7 @@ void test_localeDependencyOfResourceFetching()
   SG_CHECK_EQUAL(resMgr->getString("/path/to/resource1", ""),
                  "This is a simple embedded resource test.");
 }
+// codespell:ignore-end
 
 void test_getLocaleAndSelectLocale()
 {

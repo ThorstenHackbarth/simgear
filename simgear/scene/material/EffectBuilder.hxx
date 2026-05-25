@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2009 Tim Moore <timoore@redhat.com>
+
 ///@file
 /// Support classes for parsing effects.
 ///
@@ -28,17 +31,13 @@
 
 #include <osg/Object>
 #include <osgDB/Registry>
-
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/ordered_index.hpp>
-
 #include <simgear/props/AtomicChangeListener.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
-#include <simgear/structure/exception.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/structure/Singleton.hxx>
+#include <simgear/structure/exception.hxx>
+#include <type_traits>
 
 #include "Effect.hxx"
 
@@ -96,10 +95,7 @@ protected:
 // two-way map for building StateSets from property descriptions, and
 // vice versa. Mostly copied from the boost documentation.
 
-namespace effect
-{
-using boost::multi_index_container;
-using namespace boost::multi_index;
+namespace effect {
 
 // tags for accessing both sides of a bidirectional map
 
@@ -109,41 +105,98 @@ struct to{};
 template <typename T>
 struct EffectNameValue
 {
-    // Don't use std::pair because we want to use aggregate intialization.
+    // Don't use std::pair because we want to use aggregate initialization.
     const char* first;
     T second;
 };
 
 // The class template bidirectional_map wraps the specification
-// of a bidirectional map based on multi_index_container.
+// of a bidirectional map.
 
-template<typename FromType,typename ToType>
-struct bidirectional_map
-{
+// C++20 replacement for boost::multi_index bidirectional map.
+// Two std::maps provide O(log n) lookup in both directions.
+template <typename FromType, typename ToType>
+struct bidirectional_map {
 #if _MSC_VER >= 1600
     struct value_type {
         FromType first;
         ToType second;
-        value_type(FromType f, ToType s) : first(f),second(s){}
+        value_type(FromType f, ToType s) : first(f), second(s) {}
     };
 #else
-    typedef std::pair<FromType,ToType> value_type;
+    typedef std::pair<FromType, ToType> value_type;
 #endif
 
-    /* A bidirectional map can be simulated as a multi_index_container
-     * of pairs of (FromType,ToType) with two unique indices, one
-     * for each member of the pair.
-     */
-    typedef multi_index_container<
-        value_type,
-        indexed_by<
-            ordered_unique<
-                tag<from>, member<value_type, FromType, &value_type::first> >,
-            ordered_unique<
-                tag<to>,  member<value_type, ToType, &value_type::second> >
-            >
-        > type;
+    struct type {
+        using value_type = std::pair<FromType, ToType>;
+        using from_map_t = std::map<FromType, ToType>;
+        using to_map_t = std::map<ToType, FromType>;
+
+        // Default iterator: iterates over from-index (string -> T)
+        // itr->first = FromType,  itr->second = ToType
+        using iterator = typename from_map_t::const_iterator;
+
+        // to-index iterator: wraps to_map but presents pairs as (FromType, ToType)
+        // to match Boost multi_index semantics where *itr is the full value_type.
+        struct to_iterator {
+            typename to_map_t::const_iterator _it;
+
+            // arrow_proxy lets itr->first give FromType, itr->second give ToType
+            struct arrow_proxy {
+                FromType first;
+                ToType second;
+                const arrow_proxy* operator->() const { return this; }
+            };
+
+            arrow_proxy operator->() const { return {_it->second, _it->first}; }
+
+            bool operator==(const to_iterator& o) const { return _it == o._it; }
+            bool operator!=(const to_iterator& o) const { return _it != o._it; }
+        };
+
+        // index_iterator<Tag>::type – the iterator type for named index Tag
+        template <class Tag>
+        struct index_iterator {
+            using type = std::conditional_t<
+                std::is_same_v<Tag, from>, iterator, to_iterator>;
+        };
+
+        // Named index views returned by get<Tag>()
+        struct from_view {
+            const from_map_t* ref;
+            iterator find(const FromType& k) const { return ref->find(k); }
+            iterator end() const { return ref->end(); }
+        };
+
+        struct to_view {
+            const to_map_t* ref;
+            to_iterator find(const ToType& k) const { return {ref->find(k)}; }
+            to_iterator end() const { return {ref->end()}; }
+        };
+
+        template <class Tag>
+        auto get() const
+        {
+            if constexpr (std::is_same_v<Tag, from>)
+                return from_view{&_fmap};
+            else
+                return to_view{&_tmap};
+        }
+
+        // end() mirrors Boost container's end() (== from-index end)
+        iterator end() const { return _fmap.end(); }
+
+        void insert(const value_type& v)
+        {
+            _fmap.emplace(v.first, v.second);
+            _tmap.emplace(v.second, v.first);
+        }
+
+        from_map_t _fmap;
+        to_map_t _tmap;
+    };
 };
+
 
 template<typename T>
 struct EffectPropertyMap
@@ -185,7 +238,7 @@ public:
     BuilderException(const std::string& message, const std::string& = "");
     virtual ~BuilderException();
 };
-}
+} // namespace effect
 
 template<typename T>
 void findAttr(const effect::EffectPropertyMap<T>& pMap,
@@ -233,7 +286,7 @@ const T* findAttr(const effect::EffectPropertyMap<T>& pMap,
         = pMap._map.template get<from>().find(name);
     if (itr == pMap._map.end())
         return 0;
-    else 
+    else
         return &itr->second;
 }
 
@@ -246,7 +299,7 @@ const T* findAttr(const effect::SimplePropertyMap<T>& pMap,
         = pMap._map.find(name);
     if (itr == pMap._map.end())
         return 0;
-    else 
+    else
         return &itr->second;
 }
 
@@ -346,11 +399,11 @@ protected:
     struct PassAttrMapSingleton : public simgear::Singleton<PassAttrMapSingleton>
     {
         PassAttrMap passAttrMap;
-      
+
     };
 public:
     virtual ~PassAttributeBuilder(); // anchor into the compilation unit.
-  
+
     virtual void buildAttribute(Effect* effect, Pass* pass,
                                 const SGPropertyNode* prop,
                                 const SGReaderWriterOptions* options)

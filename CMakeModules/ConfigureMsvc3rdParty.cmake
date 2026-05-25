@@ -13,14 +13,12 @@
 # - path to an architecture specific subdir, eg -DMSVC_3RDPARTY_ROOT=C:\FGFS\windows-3rd-party\msvc140\3rdparty.x64
 
 set(_FOUND_3RDPARTY_DIR "NOTFOUND")
-set(_FOUND_BOOST_INCLUDE_DIR "NOTFOUND")
 
 # try various suffixes of a base directory, and
 # set the variables above on success
 function(_check_candidate_msvc_path pathToCheck)
     unset (_freeTypeHeader CACHE )
     unset (_zlibDll CACHE )
-    unset (_boostHeaders CACHE )
 
     find_path(_freeTypeHeader include/ft2build.h
         PATHS
@@ -42,18 +40,9 @@ function(_check_candidate_msvc_path pathToCheck)
         NO_DEFAULT_PATH
     )
 
-    find_path(_boostHeaders boost/atomic.hpp
-        PATHS
-            ${pathToCheck}
-        NO_DEFAULT_PATH
-    )
-
     if (_freeTypeHeader AND _zlibDll)
         set(_FOUND_3RDPARTY_DIR "${_freeTypeHeader}" PARENT_SCOPE)
 
-        if (_boostHeaders)
-            set(_FOUND_BOOST_INCLUDE_DIR "${_boostHeaders}" PARENT_SCOPE)
-        endif()
     endif()
 endfunction()
 
@@ -121,15 +110,4 @@ if (MSVC AND _FOUND_3RDPARTY_DIR)
     message(STATUS "3rdparty files located in ${_FOUND_3RDPARTY_DIR}")
     list(APPEND CMAKE_PREFIX_PATH ${_FOUND_3RDPARTY_DIR})
     set(FINAL_MSVC_3RDPARTY_DIR ${_FOUND_3RDPARTY_DIR})
-
-    if (CMAKE_CL_64)
-		set( BOOST_LIB lib64 )
-    else (CMAKE_CL_64)
-	    set( BOOST_LIB lib )
-    endif (CMAKE_CL_64)
-
-    if(NOT BOOST_INCLUDEDIR AND _FOUND_BOOST_INCLUDE_DIR)
-        set(BOOST_INCLUDEDIR ${_FOUND_BOOST_INCLUDE_DIR})
-        message(STATUS "found Boost headers at ${_FOUND_BOOST_INCLUDE_DIR}")
-      endif()
 endif ()

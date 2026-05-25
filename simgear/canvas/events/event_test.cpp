@@ -1,38 +1,42 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2014 Thomas Geymayer <tomgey@gmail.com>
 
-/// Unit tests for reference counting and smart pointer classes
-#define BOOST_TEST_MODULE structure
-#include <BoostTestTargetConfig.h>
-
-#include "MouseEvent.hxx"
 #include "CustomEvent.hxx"
+#include "MouseEvent.hxx"
+#include <simgear/misc/test_macros.hxx>
 
 namespace sc = simgear::canvas;
 
-BOOST_AUTO_TEST_CASE( canvas_event_types )
+void test_canvas_event_types()
 {
   // Register type
-  BOOST_REQUIRE_EQUAL( sc::Event::strToType("test"),
-                       sc::Event::UNKNOWN );
-  BOOST_REQUIRE_EQUAL( sc::Event::getOrRegisterType("test"),
-                       sc::Event::CUSTOM_EVENT );
-  BOOST_REQUIRE_EQUAL( sc::Event::strToType("test"),
-                       sc::Event::CUSTOM_EVENT );
-  BOOST_REQUIRE_EQUAL( sc::Event::typeToStr(sc::Event::CUSTOM_EVENT),
-                       "test" );
+  SG_CHECK_EQUAL_NOSTREAM(sc::Event::strToType("test"),
+                          sc::Event::UNKNOWN);
+  SG_CHECK_EQUAL_NOSTREAM(sc::Event::getOrRegisterType("test"),
+                          sc::Event::CUSTOM_EVENT);
+  SG_CHECK_EQUAL_NOSTREAM(sc::Event::strToType("test"),
+                          sc::Event::CUSTOM_EVENT);
+  SG_CHECK_EQUAL(sc::Event::typeToStr(sc::Event::CUSTOM_EVENT),
+                 std::string("test"));
 
   // Basic internal type
-  BOOST_REQUIRE_EQUAL( sc::Event::typeToStr(sc::Event::MOUSE_DOWN),
-                       "mousedown" );
-  BOOST_REQUIRE_EQUAL( sc::Event::strToType("mousedown"),
-                       sc::Event::MOUSE_DOWN );
+  SG_CHECK_EQUAL(sc::Event::typeToStr(sc::Event::MOUSE_DOWN),
+                 std::string("mousedown"));
+  SG_CHECK_EQUAL_NOSTREAM(sc::Event::strToType("mousedown"),
+                          sc::Event::MOUSE_DOWN);
 
   // Unknown type
-  BOOST_REQUIRE_EQUAL( sc::Event::typeToStr(123),
-                       "unknown" );
+  SG_CHECK_EQUAL(sc::Event::typeToStr(123),
+                 std::string("unknown"));
 
   // Register type through custom event instance
   sc::CustomEvent e("blub");
-  BOOST_REQUIRE_EQUAL( e.getTypeString(), "blub" );
-  BOOST_REQUIRE_NE( e.getType(), sc::Event::UNKNOWN );
+  SG_CHECK_EQUAL(e.getTypeString(), std::string("blub"));
+  SG_CHECK_NE_NOSTREAM(e.getType(), sc::Event::UNKNOWN);
+}
+
+int main()
+{
+  test_canvas_event_types();
+  return 0;
 }

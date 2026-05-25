@@ -15,8 +15,7 @@
 #include <simgear/structure/SGWeakReferenced.hxx>
 #include <simgear/structure/SGWeakPtr.hxx>
 
-#include <boost/call_traits.hpp>
-#include <boost/mpl/has_xxx.hpp>
+#include <simgear/misc/type_utils.hxx>
 
 #include <map>
 #include <memory>
@@ -138,8 +137,6 @@ namespace nasal
 
         virtual naRef createNasalObject(naContext c) = 0;
     };
-
-    BOOST_MPL_HAS_XXX_TRAIT_DEF(element_type)
   }
 
   /** @brief Destroy all ghost queued for deletion.
@@ -1201,7 +1198,7 @@ namespace nasal
       template<class Ret>
       getter_t to_getter(Ret (raw_type::*getter)() const)
       {
-        using param_type = typename boost::call_traits<Ret>::param_type;
+        using param_type = simgear::param_type_t<Ret>;
         naRef(*to_nasal_)(naContext, param_type) = &to_nasal;
 
         // Getter signature: naRef(raw_type&, naContext)
@@ -1528,17 +1525,22 @@ namespace nasal
   naGhostType
   Ghost<T, std::enable_if_t<is_strong_ref<T>::value>>::_ghost_type_weak;
 
+  template <class T, class = void>
+  struct has_element_type : std::false_type {
+  };
+
+  template <class T>
+  struct has_element_type<T, std::void_t<typename T::element_type>> : std::true_type {
+  };
+
 } // namespace nasal
 
 // Needs to be outside any namespace to make ADL work
 /**
  * Convert every shared pointer to a ghost.
  */
-template<class T>
-std::enable_if_t<
-  nasal::internal::has_element_type<std::remove_cvref_t<T>>::value,
-  naRef
->
+template <class T>
+std::enable_if_t<nasal::has_element_type<std::remove_cvref_t<T>>::value, naRef>
 to_nasal_helper(naContext c, T ptr)
 {
   using strong_ref = typename nasal::shared_ptr_traits<T>::strong_ref;
@@ -1548,11 +1550,8 @@ to_nasal_helper(naContext c, T ptr)
 /**
  * Convert nasal ghosts/hashes to shared pointer (of a ghost).
  */
-template<class T>
-std::enable_if_t<
-  nasal::internal::has_element_type<std::remove_cvref_t<T>>::value,
-  T
->
+template <class T>
+std::enable_if_t<nasal::has_element_type<std::remove_cvref_t<T>>::value, T>
 from_nasal_helper(naContext c, naRef ref, const T*)
 {
   using strong_ref = typename nasal::shared_ptr_traits<T>::strong_ref;

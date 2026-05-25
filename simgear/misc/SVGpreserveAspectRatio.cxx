@@ -13,7 +13,6 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/strutils.hxx>
 
-#include <boost/tokenizer.hpp>
 
 namespace simgear
 {
@@ -85,16 +84,9 @@ namespace simgear
       PARSE_error
     } parse_state = PARSE_defer;
 
-    typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
-    const boost::char_separator<char> del(" \t\n");
-
-    tokenizer tokens(str.begin(), str.end(), del);
-    for( tokenizer::const_iterator tok = tokens.begin();
-                                   tok != tokens.end()
-                                && parse_state != PARSE_error;
-                                 ++tok )
+    for( const auto& cur_tok : strutils::split_on_any_of(str, " \t\n") )
     {
-      const std::string& cur_tok = tok.current_token();
+      if( parse_state == PARSE_error ) break;
 
       switch( parse_state )
       {

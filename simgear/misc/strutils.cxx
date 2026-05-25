@@ -394,6 +394,19 @@ namespace simgear {
 	                    substr ) == 0;
 	}
 
+    bool
+    iends_with(const string& s, const string& substr)
+    {
+        if (substr.length() > s.length())
+            return false;
+        const char* sp = s.data() + s.length() - substr.length();
+        const char* ep = substr.data();
+        for (size_t i = 0; i < substr.length(); ++i)
+            if (tolower((unsigned char)sp[i]) != tolower((unsigned char)ep[i]))
+                return false;
+        return true;
+    }
+
     string simplify(const string& s)
     {
         string result; // reserve size of 's'?
@@ -714,7 +727,7 @@ bool iequals(const std::string& a, const std::string& b)
     const char* aPtr = a.data();
     const char* bPtr = b.data();
     for (size_t i = 0; i < lenA; ++i) {
-        if (tolower(*aPtr++) != tolower(*bPtr++)) return false;
+        if (tolower((unsigned char)*aPtr++) != tolower((unsigned char)*bPtr++)) return false;
     }
 
     return true;

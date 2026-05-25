@@ -137,6 +137,7 @@ bool starts_with(const std::string& s, const std::string& substr);
       * @return True, if s ends with substr, False otherwise
       */
 bool ends_with(const std::string& s, const std::string& substr);
+bool iends_with(const std::string& s, const std::string& substr);
 
 /**
       * Strip all leading/trailing whitespace, and transform all internal

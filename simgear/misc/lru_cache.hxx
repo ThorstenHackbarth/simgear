@@ -1,4 +1,4 @@
-// SPDX-License-Identifer: BSL-1.0
+// SPDX-License-Identifier: LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2013 Kyle Lutz <kyle.r.lutz@gmail.com>
 // SPDX-FileCopyrightText: 2019 Richar Harrison <rjh@zaretto.com>
 
@@ -18,10 +18,10 @@
 ///
 // Changes Copyright (C) 2019    Richard Harrison (rjh@zaretto.com)
 //
-// As the boost licence is lax and permissive see 
+// As the boost licence is lax and permissive see
 // (https://www.gnu.org/licenses/license-list.en.html#boost)
 // any changes to this module are covered under the GPL
-// 
+//
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
 // License as published by the Free Software Foundation; either
@@ -39,13 +39,12 @@
 #ifndef LRU_CACHE_HXX_
 #define LRU_CACHE_HXX_
 
-#include <map>
 #include <list>
-#include <utility>
+#include <map>
 #include <mutex>
-
-#include <boost/optional.hpp>
+#include <optional>
 #include <simgear/threads/SGThread.hxx>
+#include <utility>
 
 namespace simgear
 {
@@ -111,22 +110,22 @@ namespace simgear
                 m_map[key] = std::make_pair(value, m_list.begin());
             }
         }
-        boost::optional<key_type> findValue(const std::string &requiredValue)
+        std::optional<key_type> findValue(const std::string& requiredValue)
         {
             std::lock_guard<std::mutex> scopeLock(_mutex);
             for (typename map_type::iterator it = m_map.begin(); it != m_map.end(); ++it)
                 if (it->second.first == requiredValue)
                     return it->first;
-            return boost::none;
+            return std::nullopt;
         }
-        boost::optional<value_type> get(const key_type &key)
+        std::optional<value_type> get(const key_type& key)
         {
             std::lock_guard<std::mutex> scopeLock(_mutex);
             // lookup value in the cache
             typename map_type::iterator i = m_map.find(key);
             if (i == m_map.end()) {
                 // value not in cache
-                return boost::none;
+                return std::nullopt;
             }
 
             // return the value, but first update its place in the most

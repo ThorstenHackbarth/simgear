@@ -19,6 +19,7 @@
 
 #include "propertyObject.hxx"
 
+#include <simgear/misc/test_macros.hxx>
 #include <simgear/structure/exception.hxx>
 
 using std::cout;
@@ -190,21 +191,10 @@ void testSTLContainer()
 void testReadMissing()
 {
   PropertyObject<bool> b("not/found/honest");
-
-  try {
-    bool v = b;
-    assert(false && "read of missing property didn't throw");
-    (void) v; // don't warn about unused variable
-  } catch (sg_exception& e) {
-    // expected
-  }
+  SG_CHECK_THROW(static_cast<bool>(b), sg_exception);
 
   PropertyObject<std::string> s("also/missing");
-  try {
-    std::string s2 = s;
-  } catch (sg_exception& e) {
-    // expected
-  }
+  SG_CHECK_THROW(static_cast<std::string>(s), sg_exception);
 }
 
 void testCreate()

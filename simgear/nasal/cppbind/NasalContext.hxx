@@ -5,11 +5,10 @@
 #ifndef SG_NASAL_CONTEXT_HXX_
 #define SG_NASAL_CONTEXT_HXX_
 
-#include "cppbind_fwd.hxx"
 #include "NasalMe.hxx"
-
-#include <boost/call_traits.hpp>
+#include "cppbind_fwd.hxx"
 #include <initializer_list>
+#include <simgear/misc/type_utils.hxx>
 
 namespace nasal
 {
@@ -74,13 +73,13 @@ namespace nasal
       template<class Ret, class... Args>
       Ret callMethod( Me me,
                       naRef code,
-                      typename boost::call_traits<Args>::param_type ... args )
+                      simgear::param_type_t<Args> ... args )
       {
         // TODO warn if with Ret == void something different to nil is returned?
         return from_nasal<Ret>(callMethod(
           me,
           code,
-          { to_nasal<typename boost::call_traits<Args>::param_type>(args)... }
+          { to_nasal<simgear::param_type_t<Args>>(args)... }
         ));
       }
 

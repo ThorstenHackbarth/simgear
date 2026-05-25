@@ -20,7 +20,7 @@
 #include <unordered_map>
 #include <mutex>
 
-#include <boost/functional/hash.hpp>
+#include <simgear/misc/hash_utils.hxx>
 
 #include <osg/AlphaFunc>
 #include <osg/BlendFunc>
@@ -736,23 +736,36 @@ struct ProgramKey
 size_t hash_value(const ProgramKey& key)
 {
     size_t seed = 0;
-    boost::hash_range(seed, key.paths.begin(), key.paths.end());
-    boost::hash_range(seed, key.shaders.begin(), key.shaders.end());
-    boost::hash_range(seed, key.attributes.begin(), key.attributes.end());
+    simgear::hash_range(seed, key.paths.begin(), key.paths.end());
+    simgear::hash_range(seed, key.shaders.begin(), key.shaders.end());
+    simgear::hash_range(seed, key.attributes.begin(), key.attributes.end());
     return seed;
 }
+
+struct ProgramKeyHash {
+    size_t operator()(const ProgramKey& k) const noexcept { return hash_value(k); }
+};
 
 // XXX Should these be protected by a mutex? Probably
 
 typedef std::unordered_map<ProgramKey, ref_ptr<Program>,
-                           boost::hash<ProgramKey>, ProgramKey::EqualTo>
-ProgramMap;
+                           ProgramKeyHash, ProgramKey::EqualTo>
+    ProgramMap;
 ProgramMap programMap;
 ProgramMap resolvedProgramMap;  // map with resolved shader file names
 inline static std::mutex _programMap_mutex; // Protects the programMap and resolvedProgramMap for multi-threaded access
 
-typedef std::unordered_map<ShaderKey, ref_ptr<Shader>, boost::hash<ShaderKey> >
-ShaderMap;
+struct ShaderKeyHash {
+    size_t operator()(const ShaderKey& k) const noexcept
+    {
+        size_t seed = std::hash<std::string>{}(k.first);
+        simgear::hash_combine(seed, k.second);
+        return seed;
+    }
+};
+
+typedef std::unordered_map<ShaderKey, ref_ptr<Shader>, ShaderKeyHash>
+    ShaderMap;
 ShaderMap shaderMap;
 
 void reload_shaders()
@@ -1483,8 +1496,8 @@ size_t hash_value(const Effect::Key& key)
 {
     size_t seed = 0;
     if (key.unmerged.valid())
-        boost::hash_combine(seed, *key.unmerged);
-    boost::hash_range(seed, key.paths.begin(), key.paths.end());
+        simgear::hash_combine(seed, hash_value(*key.unmerged));
+    simgear::hash_range(seed, key.paths.begin(), key.paths.end());
     return seed;
 }
 

@@ -12,7 +12,7 @@
 #include <simgear/nasal/cppbind/cppbind_fwd.hxx>
 #include <simgear/std/type_traits.hxx>
 
-#include <boost/call_traits.hpp>
+#include <simgear/misc/type_utils.hxx>
 
 #include <any>
 #include <array>
@@ -194,7 +194,7 @@ namespace nasal
   {
     naRef hash = naNewHash(c);
 
-    typedef typename boost::call_traits<Value>::param_type param_type;
+    typedef simgear::param_type_t<Value> param_type;
     typedef typename std::map<std::string, Value>::const_iterator map_iterator;
 
     for( map_iterator it = map.begin(); it != map.end(); ++it )

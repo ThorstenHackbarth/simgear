@@ -37,22 +37,7 @@ install(FILES ${HEADERS} DESTINATION include/simgear/nasal/cppbind)
 target_sources(SimGearCore PRIVATE ${DETAIL_HEADERS})
 install(FILES ${DETAIL_HEADERS} DESTINATION include/simgear/nasal/cppbind/detail)
 
-add_boost_test(cppbind_ghost
-  SOURCES test/cppbind_test_ghost.cxx
-  LIBRARIES SimGearCore
-)
-
-add_boost_test(cppbind_misc
-  SOURCES test/cppbind_test.cxx
-  LIBRARIES SimGearCore
-)
-
-add_boost_test(nasal_gc_test
-  SOURCES test/nasal_gc_test.cxx
-  LIBRARIES SimGearCore
-)
-
-add_boost_test(nasal_num
-  SOURCES test/nasal_num_test.cxx
-  LIBRARIES SimGearCore
-)
+add_simgear_autotest(cppbind_ghost test/cppbind_test_ghost.cxx)
+add_simgear_autotest(cppbind_misc test/cppbind_test.cxx)
+add_simgear_autotest(nasal_gc_test test/nasal_gc_test.cxx)
+add_simgear_autotest(nasal_num test/nasal_num_test.cxx)

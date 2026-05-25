@@ -50,7 +50,7 @@ namespace nasal
   template<class Var>
   struct to_nasal_ptr
   {
-    typedef typename boost::call_traits<Var>::param_type param_type;
+    typedef simgear::param_type_t<Var> param_type;
     typedef naRef(*type)(naContext, param_type);
 
     static type get()

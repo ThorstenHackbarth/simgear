@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2012 Mathias Froehlich <Mathias.Froehlich@web.de>
+
 #ifndef SIMGEAR_OSGSINGLETON_HXX
 #define SIMGEAR_OSGSINGLETON_HXX 1
-
-#include <simgear/structure/Singleton.hxx>
 
 #include <osg/Referenced>
 #include <osg/ref_ptr>
@@ -18,8 +19,7 @@ public:
     }
     static RefClass* instance()
     {
-        SingletonRefPtr& singleton
-            = boost::details::pool::singleton_default<SingletonRefPtr>::instance();
+        static SingletonRefPtr singleton;
         return singleton.ptr.get();
     }
 private:

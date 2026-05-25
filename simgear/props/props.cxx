@@ -37,11 +37,8 @@
 # include <iostream>
 using std::cerr;
 #else
-# include <boost/algorithm/string/find_iterator.hpp>
-# include <boost/algorithm/string/predicate.hpp>
-# include <boost/functional/hash.hpp>
-# include <boost/range.hpp>
-
+# include <simgear/misc/hash_utils.hxx>
+# include <string_view>
 # include <simgear/compiler.h>
 # include <simgear/debug/logstream.hxx>
 # include <simgear/sg_inlines.h>
@@ -617,7 +614,7 @@ parse_name (const SGPropertyNode *node, const Range &path)
             {}, node->getLocation().str());
     }
   }
-  return Range(path.begin(), i);
+  return Range(path.begin(), static_cast<size_t>(i - path.begin()));
 }
 
 // Validate the name of a single node
@@ -814,13 +811,13 @@ find_child(SGPropertyLock& lock, Itr begin, Itr end, int index, const PropertyLi
       return i;
   }
 #else
-  boost::iterator_range<Itr> name(begin, end);
+  std::string_view name(begin, static_cast<size_t>(end - begin));
   for (size_t i = 0; i < nNodes; i++) {
     SGPropertyNode * node = nodes[i];
 
     // searching for a matching index is a lot less time consuming than
     // comparing two strings so do that first.
-    if (node->getIndex() == index && boost::equals(node->getNameString(), name))
+    if (node->getIndex() == index && node->getNameString() == name)
       return static_cast<int>(i);
   }
 #endif
@@ -2004,11 +2001,46 @@ struct SGPropertyNodeImpl
 };
 
 
+class SplitOnSlash {
+public:
+    using value_type = std::string_view;
+
+    SplitOnSlash() : _eof(true), _no_more(true) {}
+    explicit SplitOnSlash(std::string_view path) : _rest(path), _eof(false), _no_more(false)
+    { advance(); }
+
+    bool eof() const { return _eof; }
+    std::string_view operator*() const { return _current; }
+
+    struct proxy {
+        std::string_view val;
+        const std::string_view* operator->() const { return &val; }
+    };
+    proxy operator->() const { return {_current}; }
+
+    SplitOnSlash& operator++() { if (!_eof) advance(); return *this; }
+
+private:
+    std::string_view _rest, _current;
+    bool _eof, _no_more;
+
+    void advance() {
+        if (_no_more) { _eof = true; return; }
+        auto pos = _rest.find('/');
+        if (pos == std::string_view::npos) {
+            _current = _rest; _rest = {}; _no_more = true;
+        } else {
+            _current = _rest.substr(0, pos);
+            _rest    = _rest.substr(pos + 1);
+        }
+    }
+};
+
 template<typename SplitItr>
 SGPropertyNode*
 find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create, int last_index)
 {
-  typedef typename SplitItr::value_type Range;
+  using Range = std::string_view;
   // Run off the end of the list
   if (current == 0) {
     return 0;
@@ -2022,9 +2054,9 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create, int last_ind
   if (token.empty())
     return find_node_aux(current, ++itr, create, last_index);
   Range name = parse_name(current, token);
-  if (equals(name, "."))
+  if (name == ".")
     return find_node_aux(current, ++itr, create, last_index);
-  if (equals(name, "..")) {
+  if (name == "..") {
     SGPropertyNode* parent = current->getParent();
     if (!parent) {
         SG_LOG(SG_GENERAL, SG_ALERT, "attempt to move past root with '..' node " << current->getNameString());
@@ -2053,7 +2085,7 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create, int last_ind
     index = 0;
     if (name.end() != token.end()) {
       if (*name.end() == '[') {
-        typename Range::iterator i = name.end() + 1, end = token.end();
+        const char* i = name.end() + 1; const char* end = token.end();
         for (;i != end; ++i) {
           if (isdigit(*i)) {
             index = (index * 10) + (*i - '0');
@@ -2124,12 +2156,10 @@ find_node (SGPropertyNode * current,
   }
 }
 #else
-template <typename Range>
-SGPropertyNode *find_node(SGPropertyNode *current, const Range &path,
+SGPropertyNode *find_node(SGPropertyNode *current, std::string_view path,
                           bool create, int last_index = -1) {
-  using namespace boost;
-  auto itr = make_split_iterator(path, first_finder("/", is_equal()));
-  if (*path.begin() == '/')
+  SplitOnSlash itr(path);
+  if (!path.empty() && path.front() == '/')
     return find_node_aux(current->getRootNode(), itr, create, last_index);
   else
     return find_node_aux(current, itr, create, last_index);
@@ -3237,11 +3267,7 @@ SGPropertyNode::getNode (const char * relative_path, bool create)
   return find_node(this, components, 0, create);
 
 #else
-  return find_node(
-        this,
-        boost::make_iterator_range(relative_path, relative_path + strlen(relative_path)),
-        create
-        );
+  return find_node(this, std::string_view(relative_path), create);
 #endif
 }
 
@@ -3256,12 +3282,7 @@ SGPropertyNode::getNode (const char * relative_path, int index, bool create)
   return find_node(this, components, 0, create);
 
 #else
-  return find_node(
-        this,
-        boost::make_iterator_range(relative_path, relative_path + strlen(relative_path)),
-        create,
-        index
-        );
+  return find_node(this, std::string_view(relative_path), create, index);
 #endif
 }
 
@@ -4345,7 +4366,6 @@ template bool SGPropertyNode::tie(const SGRawValue<double> &rawValue, bool useDe
 #if !PROPS_STANDALONE
 size_t hash_value(const SGPropertyNode& node)
 {
-    using namespace boost;
     SGPropertyLockShared shared(node);
 
     if (node._children.empty()) {
@@ -4353,30 +4373,30 @@ size_t hash_value(const SGPropertyNode& node)
             case props::NONE:
                 return 0;
             case props::BOOL:
-                return boost::hash_value(SGPropertyNodeImpl::getBoolValue(shared, node));
+                return std::hash<bool>{}(SGPropertyNodeImpl::getBoolValue(shared, node));
             case props::INT:
-                return boost::hash_value(SGPropertyNodeImpl::getIntValue(shared, node));
+                return std::hash<int>{}(SGPropertyNodeImpl::getIntValue(shared, node));
             case props::LONG:
-                return boost::hash_value(SGPropertyNodeImpl::getLongValue(shared, node));
+                return std::hash<long>{}(SGPropertyNodeImpl::getLongValue(shared, node));
             case props::FLOAT:
-                return boost::hash_value(SGPropertyNodeImpl::getFloatValue(shared, node));
+                return std::hash<float>{}(SGPropertyNodeImpl::getFloatValue(shared, node));
             case props::DOUBLE:
-                return boost::hash_value(SGPropertyNodeImpl::getDoubleValue(shared, node));
+                return std::hash<double>{}(SGPropertyNodeImpl::getDoubleValue(shared, node));
             case props::STRING:
             case props::UNSPECIFIED:
             {
                 std::string val = SGPropertyNodeImpl::getStringValue(shared, node);
-                return boost::hash_range(val.begin(), val.end());
+                return simgear::hash_range(val.begin(), val.end());
             }
             case props::VEC3D:
             {
                 const SGVec3d val = node.getValue<SGVec3d>(shared);
-                return boost::hash_range(&val[0], &val[3]);
+                return simgear::hash_range(&val[0], &val[3]);
             }
             case props::VEC4D:
             {
                 const SGVec4d val = node.getValue<SGVec4d>(shared);
-                return hash_range(&val[0], &val[4]);
+                return simgear::hash_range(&val[0], &val[4]);
             }
             case props::ALIAS:      // XXX Should we look in aliases?
             default:
@@ -4390,9 +4410,9 @@ size_t hash_value(const SGPropertyNode& node)
                  end = children.end();
              itr != end;
              ++itr) {
-            hash_combine(seed, (*itr)->_name);
-            hash_combine(seed, (*itr)->_index);
-            hash_combine(seed, hash_value(**itr));
+            simgear::hash_combine(seed, (*itr)->_name);
+            simgear::hash_combine(seed, (*itr)->_index);
+            simgear::hash_combine(seed, hash_value(**itr));
         }
         return seed;
     }

@@ -8,7 +8,7 @@
 
 #include "CSSBorder.hxx"
 
-#include <boost/tokenizer.hpp>
+#include <simgear/misc/strutils.hxx>
 
 namespace simgear
 {
@@ -83,35 +83,23 @@ namespace simgear
     int c = 0;
     CSSBorder ret;
 
-    typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
-    const boost::char_separator<char> del(" \t\n");
-
-    tokenizer tokens(str.begin(), str.end(), del);
-    for( tokenizer::const_iterator tok = tokens.begin();
-         tok != tokens.end() && c < 4;
-         ++tok )
-    {
-      if( isalpha(*tok->begin()) )
-        ret.keyword = *tok;
-      else
-      {
-        bool rel = ret.types.rel[c] = (*tok->rbegin() == '%');
-        ret.offsets.val[c] =
-          // Negative values are not allowed and values bigger than the size of
-          // the image are interpreted as ‘100%’. TODO check max
-          std::max
-          (
-            0.f,
-            std::stof
-            (
-              rel ? std::string(tok->begin(), tok->end() - 1)
-                  : *tok
-            )
-            /
-            (rel ? 100 : 1)
-          );
-        ++c;
-      }
+    for (const auto& tok : strutils::split_on_any_of(str, " \t\n")) {
+        if (c >= 4) break;
+        if (isalpha(tok.front()))
+            ret.keyword = tok;
+        else {
+            bool rel = ret.types.rel[c] = (tok.back() == '%');
+            ret.offsets.val[c] =
+                // Negative values are not allowed and values bigger than the size of
+                // the image are interpreted as '100%'. TODO check max
+                std::max(
+                    0.f,
+                    std::stof(
+                        rel ? tok.substr(0, tok.size() - 1)
+                            : tok) /
+                        (rel ? 100 : 1));
+            ++c;
+        }
     }
 
     // When four values are specified, they set the offsets on the top, right,

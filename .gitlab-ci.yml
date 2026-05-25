@@ -197,7 +197,6 @@ windows-build:
 
     # relocate our upstream deps outside the source dir, otherwise
     # CMake gets sad.
-    - Move-Item -Path $CI_PROJECT_DIR\boost $WIN_FG_DIR\boost
     - Move-Item -Path $CI_PROJECT_DIR\msvc140 $WIN_FG_DIR\msvc140
     # This is for ccache.exe.
     - $Env:PATH += ";$CI_PROJECT_DIR"
@@ -243,7 +242,7 @@ macos-build:
   before_script:
     - export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
     - export HOMEBREW_NO_INSTALL_CLEANUP=1
-    - brew install ninja cmake boost c-ares ccache
+    - brew install ninja cmake c-ares ccache
     - !reference [.ccache-pre_non-windows, before_script]
   script:
     - >

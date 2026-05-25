@@ -20,5 +20,7 @@ if(ENABLE_TESTS)
 add_simgear_autotest(test_emesary test_emesary.cxx)
 set_target_properties(test_emesary PROPERTIES
   COMPILE_DEFINITIONS "SRC_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"" )
+# Test spawns hundreds of threads; avoid races with other parallel tests.
+set_tests_properties(test_emesary PROPERTIES RUN_SERIAL TRUE)
 
 endif(ENABLE_TESTS)

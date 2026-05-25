@@ -9,7 +9,6 @@
 #include <queue>
 #include <mutex>
 
-#include <boost/functional/hash.hpp>
 
 #include <osg/Object>
 #include <osg/observer_ptr>
@@ -121,9 +120,16 @@ protected:
         {
             bool operator()(const Key& lhs, const Key& rhs) const;
         };
+        struct Hash {
+            std::size_t operator()(const Key& k) const noexcept
+            {
+                return hash_value(k);
+            }
+        };
     };
     typedef std::unordered_map<Key, osg::observer_ptr<Effect>,
-                                    boost::hash<Key>, Key::EqualTo> Cache;
+                               Key::Hash, Key::EqualTo>
+        Cache;
     Cache* getCache()
     {
         if (!_cache)
@@ -140,7 +146,6 @@ protected:
     SGPath _effectFilePath;
 };
 
-// Automatic support for boost hash function
 size_t hash_value(const Effect::Key&);
 
 

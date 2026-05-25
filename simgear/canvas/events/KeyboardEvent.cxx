@@ -12,14 +12,8 @@
 
 #include <osgGA/GUIEventAdapter>
 
-#include <boost/version.hpp>
-#if BOOST_VERSION >= 104800
-# include <boost/container/flat_map.hpp>
-# include <boost/container/flat_set.hpp>
-#else
-# include <map>
-# include <set>
-#endif
+#include <map>
+#include <set>
 
 #include <iterator>
 
@@ -31,7 +25,7 @@ namespace canvas
 
   // TODO check Win/Mac keycode for altgr/ISO Level3 Shift
   const uint32_t KEY_AltGraph = 0xfe03;
-  
+
 
   //----------------------------------------------------------------------------
   KeyboardEvent::KeyboardEvent():
@@ -99,14 +93,8 @@ namespace canvas
     // system.
     typedef std::pair<const char*, uint8_t> InternalKeyInfo;
 
-#if BOOST_VERSION >= 104800
-    typedef boost::container::flat_map<int, InternalKeyInfo> InternalKeyMap;
-    typedef boost::container::flat_set<int> KeyList;
-#else
-#   warning "Use Boost >= 1.48 for faster and more memory efficient key lookup"
     typedef std::map<int, InternalKeyInfo> InternalKeyMap;
     typedef std::set<int> KeyList;
-#endif
 
     static InternalKeyMap key_map;
     static KeyList num_pad_keys;

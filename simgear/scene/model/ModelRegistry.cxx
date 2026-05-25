@@ -317,7 +317,7 @@ ModelRegistry::readImage(const string& fileName,
             //                    //                        can_compress = false;
             //                }
             //                SG_LOG(SG_IO, SG_INFO, absFileName << attr);
-            boost::optional<std::string> cachehash = filename_hash_cache.get(absFileName);
+            std::optional<std::string> cachehash = filename_hash_cache.get(absFileName);
             if (cachehash) {
                 hash = *cachehash;
             }
@@ -332,7 +332,7 @@ ModelRegistry::readImage(const string& fileName,
             }
             if (hash != std::string()) {
                 filename_hash_cache.insert(absFileName, hash);
-                boost::optional<std::string> cacheFilename = filename_hash_cache.findValue(hash);
+                std::optional<std::string> cacheFilename = filename_hash_cache.findValue(hash);
 
                 // possibly a shared texture - but warn the user to allow investigation.
                 if (cacheFilename && *cacheFilename != absFileName) {

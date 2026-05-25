@@ -6,27 +6,15 @@
  * @brief Testing canvas layout system
  */
 
-#define BOOST_TEST_MODULE canvas_layout
-#include <BoostTestTargetConfig.h>
-
 #include "BoxLayout.hxx"
 #include "GridLayout.hxx"
 #include "NasalWidget.hxx"
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/misc/test_macros.hxx>
 #include <simgear/nasal/cppbind/NasalContext.hxx>
 
 #include <cstdlib>
-
-//------------------------------------------------------------------------------
-struct SetLogLevelFixture
-{
-  SetLogLevelFixture()
-  {
-      //  sglog().set_log_priority(SG_DEBUG);
-  }
-};
-BOOST_GLOBAL_FIXTURE(SetLogLevelFixture);
 
 //------------------------------------------------------------------------------
 namespace sc = simgear::canvas;
@@ -105,28 +93,28 @@ class TestWidgetHFW:
 typedef SGSharedPtr<TestWidget> TestWidgetRef;
 
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( horizontal_layout )
+void test_horizontal_layout()
 {
   sc::BoxLayoutRef box_layout(new sc::BoxLayout(sc::BoxLayout::BottomToTop));
   box_layout->setSpacing(5);
 
-  BOOST_CHECK_EQUAL(box_layout->direction(), sc::BoxLayout::BottomToTop);
-  BOOST_CHECK_EQUAL(box_layout->spacing(), 5);
+  SG_CHECK_EQUAL_NOSTREAM(box_layout->direction(), sc::BoxLayout::BottomToTop);
+  SG_CHECK_EQUAL(box_layout->spacing(), 5);
 
   box_layout->setDirection(sc::BoxLayout::LeftToRight);
   box_layout->setSpacing(9);
 
-  BOOST_CHECK_EQUAL(box_layout->direction(), sc::BoxLayout::LeftToRight);
-  BOOST_CHECK_EQUAL(box_layout->spacing(), 9);
+  SG_CHECK_EQUAL_NOSTREAM(box_layout->direction(), sc::BoxLayout::LeftToRight);
+  SG_CHECK_EQUAL(box_layout->spacing(), 9);
 
   TestWidgetRef fixed_size_widget( new TestWidget( SGVec2i(16, 16),
                                                    SGVec2i(16, 16),
                                                    SGVec2i(16, 16) ) );
   box_layout->addItem(fixed_size_widget);
 
-  BOOST_CHECK_EQUAL(box_layout->minimumSize(), SGVec2i(16, 16));
-  BOOST_CHECK_EQUAL(box_layout->sizeHint(), SGVec2i(16, 16));
-  BOOST_CHECK_EQUAL(box_layout->maximumSize(), SGVec2i(16, 16));
+  SG_CHECK_EQUAL(box_layout->minimumSize(), SGVec2i(16, 16));
+  SG_CHECK_EQUAL(box_layout->sizeHint(), SGVec2i(16, 16));
+  SG_CHECK_EQUAL(box_layout->maximumSize(), SGVec2i(16, 16));
 
   TestWidgetRef limited_resize_widget( new TestWidget( SGVec2i(16, 16),
                                                        SGVec2i(32, 32),
@@ -134,22 +122,22 @@ BOOST_AUTO_TEST_CASE( horizontal_layout )
   box_layout->addItem(limited_resize_widget);
 
   // Combined sizes of both widget plus the padding between them
-  BOOST_CHECK_EQUAL(box_layout->minimumSize(), SGVec2i(41, 16));
-  BOOST_CHECK_EQUAL(box_layout->sizeHint(), SGVec2i(57, 32));
-  BOOST_CHECK_EQUAL(box_layout->maximumSize(), SGVec2i(281, 64));
+  SG_CHECK_EQUAL(box_layout->minimumSize(), SGVec2i(41, 16));
+  SG_CHECK_EQUAL(box_layout->sizeHint(), SGVec2i(57, 32));
+  SG_CHECK_EQUAL(box_layout->maximumSize(), SGVec2i(281, 64));
 
   // Test with different spacing/padding
   box_layout->setSpacing(5);
 
-  BOOST_CHECK_EQUAL(box_layout->minimumSize(), SGVec2i(37, 16));
-  BOOST_CHECK_EQUAL(box_layout->sizeHint(), SGVec2i(53, 32));
-  BOOST_CHECK_EQUAL(box_layout->maximumSize(), SGVec2i(277, 64));
+  SG_CHECK_EQUAL(box_layout->minimumSize(), SGVec2i(37, 16));
+  SG_CHECK_EQUAL(box_layout->sizeHint(), SGVec2i(53, 32));
+  SG_CHECK_EQUAL(box_layout->maximumSize(), SGVec2i(277, 64));
 
   box_layout->setGeometry(SGRecti(0, 0, 128, 32));
 
   // Fixed size for first widget and remaining space goes to second widget
-  BOOST_CHECK_EQUAL(fixed_size_widget->geometry(), SGRecti(0, 8, 16, 16));
-  BOOST_CHECK_EQUAL(limited_resize_widget->geometry(), SGRecti(21, 0, 107, 32));
+  SG_CHECK_EQUAL(fixed_size_widget->geometry(), SGRecti(0, 8, 16, 16));
+  SG_CHECK_EQUAL(limited_resize_widget->geometry(), SGRecti(21, 0, 107, 32));
 
   TestWidgetRef stretch_widget( new TestWidget( SGVec2i(16, 16),
                                                 SGVec2i(32, 32),
@@ -157,15 +145,15 @@ BOOST_AUTO_TEST_CASE( horizontal_layout )
   box_layout->addItem(stretch_widget, 1);
   box_layout->update();
 
-  BOOST_CHECK_EQUAL(box_layout->minimumSize(), SGVec2i(58, 16));
-  BOOST_CHECK_EQUAL(box_layout->sizeHint(), SGVec2i(90, 32));
-  BOOST_CHECK_EQUAL(box_layout->maximumSize(), SGVec2i(410, 64));
+  SG_CHECK_EQUAL(box_layout->minimumSize(), SGVec2i(58, 16));
+  SG_CHECK_EQUAL(box_layout->sizeHint(), SGVec2i(90, 32));
+  SG_CHECK_EQUAL(box_layout->maximumSize(), SGVec2i(410, 64));
 
   // Due to the stretch factor only the last widget gets additional space. All
   // other widgets get the preferred size.
-  BOOST_CHECK_EQUAL(fixed_size_widget->geometry(), SGRecti(0, 8, 16, 16));
-  BOOST_CHECK_EQUAL(limited_resize_widget->geometry(), SGRecti(21, 0, 32, 32));
-  BOOST_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(58, 0, 70, 32));
+  SG_CHECK_EQUAL(fixed_size_widget->geometry(), SGRecti(0, 8, 16, 16));
+  SG_CHECK_EQUAL(limited_resize_widget->geometry(), SGRecti(21, 0, 32, 32));
+  SG_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(58, 0, 70, 32));
 
   // Test stretch factor
   TestWidgetRef fast_stretch( new TestWidget(*stretch_widget) );
@@ -178,19 +166,19 @@ BOOST_AUTO_TEST_CASE( horizontal_layout )
 
   box_layout_stretch->setGeometry(SGRecti(0,0,128,32));
 
-  BOOST_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(0, 0, 41, 32));
-  BOOST_CHECK_EQUAL(fast_stretch->geometry(), SGRecti(46, 0, 82, 32));
+  SG_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(0, 0, 41, 32));
+  SG_CHECK_EQUAL(fast_stretch->geometry(), SGRecti(46, 0, 82, 32));
 
   box_layout_stretch->setGeometry(SGRecti(0,0,256,32));
 
-  BOOST_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(0, 0, 123, 32));
-  BOOST_CHECK_EQUAL(fast_stretch->geometry(), SGRecti(128, 0, 128, 32));
+  SG_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(0, 0, 123, 32));
+  SG_CHECK_EQUAL(fast_stretch->geometry(), SGRecti(128, 0, 128, 32));
 
   // Test superfluous space to padding
   box_layout_stretch->setGeometry(SGRecti(0,0,512,32));
 
-  BOOST_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(83, 0, 128, 32));
-  BOOST_CHECK_EQUAL(fast_stretch->geometry(), SGRecti(300, 0, 128, 32));
+  SG_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(83, 0, 128, 32));
+  SG_CHECK_EQUAL(fast_stretch->geometry(), SGRecti(300, 0, 128, 32));
 
   // ...and now with alignment
   //
@@ -203,33 +191,33 @@ BOOST_AUTO_TEST_CASE( horizontal_layout )
   // Right widget: maximum size and positioned on the right
   stretch_widget->setAlignment(sc::AlignLeft);
   box_layout_stretch->update();
-  BOOST_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(0, 0, 32, 32));
-  BOOST_CHECK_EQUAL(fast_stretch->geometry(), SGRecti(384, 0, 128, 32));
+  SG_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(0, 0, 32, 32));
+  SG_CHECK_EQUAL(fast_stretch->geometry(), SGRecti(384, 0, 128, 32));
 
   // Left widget: align right
   stretch_widget->setAlignment(sc::AlignRight);
   box_layout_stretch->update();
-  BOOST_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(347, 0, 32, 32));
-  BOOST_CHECK_EQUAL(fast_stretch->geometry(), SGRecti(384, 0, 128, 32));
+  SG_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(347, 0, 32, 32));
+  SG_CHECK_EQUAL(fast_stretch->geometry(), SGRecti(384, 0, 128, 32));
 
   // Left widget: size hint and positioned on the right
   // Right widget: size hint and positioned on the left of the right half
   fast_stretch->setAlignment(sc::AlignLeft);
   box_layout_stretch->update();
-  BOOST_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(221, 0, 32, 32));
-  BOOST_CHECK_EQUAL(fast_stretch->geometry(), SGRecti(258, 0, 32, 32));
+  SG_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(221, 0, 32, 32));
+  SG_CHECK_EQUAL(fast_stretch->geometry(), SGRecti(258, 0, 32, 32));
 
   // Also check vertical alignment
   stretch_widget->setAlignment(sc::AlignLeft | sc::AlignTop);
   fast_stretch->setAlignment(sc::AlignLeft | sc::AlignBottom);
   box_layout_stretch->setGeometry(SGRecti(0,0,512,64));
-  BOOST_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(0, 0, 32, 32));
-  BOOST_CHECK_EQUAL(fast_stretch->geometry(), SGRecti(258, 32, 32, 32));
+  SG_CHECK_EQUAL(stretch_widget->geometry(), SGRecti(0, 0, 32, 32));
+  SG_CHECK_EQUAL(fast_stretch->geometry(), SGRecti(258, 32, 32, 32));
 }
 
 //------------------------------------------------------------------------------
 // Test more space then preferred, but less than maximum
-BOOST_AUTO_TEST_CASE( hbox_pref_to_max )
+void test_hbox_pref_to_max()
 {
   sc::BoxLayoutRef hbox(new sc::HBoxLayout());
   TestWidgetRef w1( new TestWidget( SGVec2i(16,   16),
@@ -242,32 +230,32 @@ BOOST_AUTO_TEST_CASE( hbox_pref_to_max )
 
   hbox->setGeometry( SGRecti(0, 0, 256, 32) );
 
-  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0,   0, 126, 32));
-  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(131, 0, 125, 32));
+  SG_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 126, 32));
+  SG_CHECK_EQUAL(w2->geometry(), SGRecti(131, 0, 125, 32));
 
   hbox->setStretch(0, 1);
   hbox->setStretch(1, 1);
 
-  BOOST_CHECK_EQUAL(hbox->stretch(0), 1);
-  BOOST_CHECK_EQUAL(hbox->stretch(1), 1);
+  SG_CHECK_EQUAL(hbox->stretch(0), 1);
+  SG_CHECK_EQUAL(hbox->stretch(1), 1);
 
   hbox->update();
 
-  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0,   0, 125, 32));
-  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(130, 0, 126, 32));
+  SG_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 125, 32));
+  SG_CHECK_EQUAL(w2->geometry(), SGRecti(130, 0, 126, 32));
 
-  BOOST_REQUIRE( hbox->setStretchFactor(w1, 2) );
-  BOOST_REQUIRE( hbox->setStretchFactor(w2, 3) );
-  BOOST_CHECK_EQUAL(hbox->stretch(0), 2);
-  BOOST_CHECK_EQUAL(hbox->stretch(1), 3);
+  SG_VERIFY(hbox->setStretchFactor(w1, 2));
+  SG_VERIFY(hbox->setStretchFactor(w2, 3));
+  SG_CHECK_EQUAL(hbox->stretch(0), 2);
+  SG_CHECK_EQUAL(hbox->stretch(1), 3);
 
   hbox->removeItem(w1);
 
-  BOOST_CHECK( !hbox->setStretchFactor(w1, 0) );
+  SG_VERIFY(!hbox->setStretchFactor(w1, 0));
 }
 
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( spacer_layouting )
+void test_spacer_layouting()
 {
   sc::HBoxLayout hbox;
   TestWidgetRef w1( new TestWidget( SGVec2i(16, 16),
@@ -279,31 +267,31 @@ BOOST_AUTO_TEST_CASE( spacer_layouting )
   hbox.addItem(w2);
   hbox.addStretch(1);
 
-  BOOST_CHECK_EQUAL(hbox.minimumSize(), SGVec2i(37, 16));
-  BOOST_CHECK_EQUAL(hbox.sizeHint(), SGVec2i(69, 32));
-  BOOST_CHECK_EQUAL(hbox.maximumSize(), sc::LayoutItem::MAX_SIZE);
+  SG_CHECK_EQUAL(hbox.minimumSize(), SGVec2i(37, 16));
+  SG_CHECK_EQUAL(hbox.sizeHint(), SGVec2i(69, 32));
+  SG_CHECK_EQUAL(hbox.maximumSize(), sc::LayoutItem::MAX_SIZE);
 
   hbox.setGeometry(SGRecti(0, 0, 256, 40));
 
-  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0,  0, 32, 40));
-  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(37, 0, 32, 40));
+  SG_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 32, 40));
+  SG_CHECK_EQUAL(w2->geometry(), SGRecti(37, 0, 32, 40));
 
   // now center with increased spacing between both widgets
   hbox.insertStretch(0, 1);
   hbox.insertSpacing(2, 10);
 
-  BOOST_CHECK_EQUAL(hbox.minimumSize(), SGVec2i(47, 16));
-  BOOST_CHECK_EQUAL(hbox.sizeHint(), SGVec2i(79, 32));
-  BOOST_CHECK_EQUAL(hbox.maximumSize(), sc::LayoutItem::MAX_SIZE);
+  SG_CHECK_EQUAL(hbox.minimumSize(), SGVec2i(47, 16));
+  SG_CHECK_EQUAL(hbox.sizeHint(), SGVec2i(79, 32));
+  SG_CHECK_EQUAL(hbox.maximumSize(), sc::LayoutItem::MAX_SIZE);
 
   hbox.update();
 
-  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(88,  0, 32, 40));
-  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(135, 0, 32, 40));
+  SG_CHECK_EQUAL(w1->geometry(), SGRecti(88, 0, 32, 40));
+  SG_CHECK_EQUAL(w2->geometry(), SGRecti(135, 0, 32, 40));
 }
 
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( vertical_layout)
+void test_vertical_layout()
 {
   sc::BoxLayout vbox(sc::BoxLayout::TopToBottom);
   vbox.setSpacing(7);
@@ -318,26 +306,26 @@ BOOST_AUTO_TEST_CASE( vertical_layout)
   vbox.addItem(fixed_size_widget);
   vbox.addItem(limited_resize_widget);
 
-  BOOST_CHECK_EQUAL(vbox.minimumSize(), SGVec2i(16, 39));
-  BOOST_CHECK_EQUAL(vbox.sizeHint(), SGVec2i(32, 55));
-  BOOST_CHECK_EQUAL(vbox.maximumSize(), SGVec2i(256, 87));
+  SG_CHECK_EQUAL(vbox.minimumSize(), SGVec2i(16, 39));
+  SG_CHECK_EQUAL(vbox.sizeHint(), SGVec2i(32, 55));
+  SG_CHECK_EQUAL(vbox.maximumSize(), SGVec2i(256, 87));
 
   vbox.setGeometry(SGRecti(10, 20, 16, 55));
 
-  BOOST_CHECK_EQUAL(fixed_size_widget->geometry(), SGRecti(10, 20, 16, 16));
-  BOOST_CHECK_EQUAL(limited_resize_widget->geometry(), SGRecti(10, 43, 16, 32));
+  SG_CHECK_EQUAL(fixed_size_widget->geometry(), SGRecti(10, 20, 16, 16));
+  SG_CHECK_EQUAL(limited_resize_widget->geometry(), SGRecti(10, 43, 16, 32));
 
   vbox.setDirection(sc::BoxLayout::BottomToTop);
 }
 
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( boxlayout_insert_remove )
+void test_boxlayout_insert_remove()
 {
   sc::BoxLayoutRef hbox( new sc::HBoxLayout );
 
-  BOOST_CHECK_EQUAL(hbox->count(), 0);
-  BOOST_CHECK(!hbox->itemAt(0));
-  BOOST_CHECK(!hbox->takeAt(0));
+  SG_CHECK_EQUAL(hbox->count(), 0);
+  SG_VERIFY(!hbox->itemAt(0));
+  SG_VERIFY(!hbox->takeAt(0));
 
   TestWidgetRef w1( new TestWidget( SGVec2i(16,   16),
                                     SGVec2i(32,   32),
@@ -345,33 +333,33 @@ BOOST_AUTO_TEST_CASE( boxlayout_insert_remove )
                 w2( new TestWidget(*w1) );
 
   hbox->addItem(w1);
-  BOOST_CHECK_EQUAL(hbox->count(), 1);
-  BOOST_CHECK_EQUAL(hbox->itemAt(0), w1);
-  BOOST_CHECK_EQUAL(w1->getParent(), hbox);
+  SG_CHECK_EQUAL(hbox->count(), 1);
+  SG_CHECK_EQUAL_NOSTREAM(hbox->itemAt(0), w1);
+  SG_CHECK_EQUAL_NOSTREAM(w1->getParent(), hbox);
 
   hbox->insertItem(0, w2);
-  BOOST_CHECK_EQUAL(hbox->count(), 2);
-  BOOST_CHECK_EQUAL(hbox->itemAt(0), w2);
-  BOOST_CHECK_EQUAL(hbox->itemAt(1), w1);
-  BOOST_CHECK_EQUAL(w2->getParent(), hbox);
+  SG_CHECK_EQUAL(hbox->count(), 2);
+  SG_CHECK_EQUAL_NOSTREAM(hbox->itemAt(0), w2);
+  SG_CHECK_EQUAL_NOSTREAM(hbox->itemAt(1), w1);
+  SG_CHECK_EQUAL_NOSTREAM(w2->getParent(), hbox);
 
   hbox->removeItem(w2);
-  BOOST_CHECK_EQUAL(hbox->count(), 1);
-  BOOST_CHECK_EQUAL(hbox->itemAt(0), w1);
-  BOOST_CHECK( !w2->getParent() );
+  SG_CHECK_EQUAL(hbox->count(), 1);
+  SG_CHECK_EQUAL_NOSTREAM(hbox->itemAt(0), w1);
+  SG_VERIFY(!w2->getParent());
 
   hbox->addItem(w2);
-  BOOST_CHECK_EQUAL(hbox->count(), 2);
-  BOOST_CHECK_EQUAL(w2->getParent(), hbox);
+  SG_CHECK_EQUAL(hbox->count(), 2);
+  SG_CHECK_EQUAL_NOSTREAM(w2->getParent(), hbox);
 
   hbox->clear();
-  BOOST_CHECK_EQUAL(hbox->count(), 0);
-  BOOST_CHECK( !w1->getParent() );
-  BOOST_CHECK( !w2->getParent() );
+  SG_CHECK_EQUAL(hbox->count(), 0);
+  SG_VERIFY(!w1->getParent());
+  SG_VERIFY(!w2->getParent());
 }
 
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( boxlayout_visibility )
+void test_boxlayout_visibility()
 {
   sc::BoxLayoutRef hbox( new sc::HBoxLayout );
   TestWidgetRef w1( new TestWidget( SGVec2i(16, 16),
@@ -383,67 +371,67 @@ BOOST_AUTO_TEST_CASE( boxlayout_visibility )
   hbox->addItem(w2);
   hbox->addItem(w3);
 
-  BOOST_REQUIRE_EQUAL(hbox->sizeHint().x(), 3 * 32 + 2 * hbox->spacing());
+  SG_CHECK_EQUAL(hbox->sizeHint().x(), 3 * 32 + 2 * hbox->spacing());
 
   hbox->setGeometry(SGRecti(0, 0, 69, 32));
 
-  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0,  0, 20, 32));
-  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(25, 0, 20, 32));
-  BOOST_CHECK_EQUAL(w3->geometry(), SGRecti(50, 0, 19, 32));
+  SG_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 20, 32));
+  SG_CHECK_EQUAL(w2->geometry(), SGRecti(25, 0, 20, 32));
+  SG_CHECK_EQUAL(w3->geometry(), SGRecti(50, 0, 19, 32));
 
   w2->setVisible(false);
 
-  BOOST_REQUIRE(hbox->isVisible());
-  BOOST_REQUIRE(w1->isVisible());
-  BOOST_REQUIRE(!w2->isVisible());
-  BOOST_REQUIRE(w2->isExplicitlyHidden());
-  BOOST_REQUIRE(w3->isVisible());
+  SG_VERIFY(hbox->isVisible());
+  SG_VERIFY(w1->isVisible());
+  SG_VERIFY(!w2->isVisible());
+  SG_VERIFY(w2->isExplicitlyHidden());
+  SG_VERIFY(w3->isVisible());
 
-  BOOST_CHECK_EQUAL(hbox->sizeHint().x(), 2 * 32 + 1 * hbox->spacing());
+  SG_CHECK_EQUAL(hbox->sizeHint().x(), 2 * 32 + 1 * hbox->spacing());
 
   hbox->update();
 
-  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0,  0, 32, 32));
-  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(0,  0,  0,  0));
-  BOOST_CHECK_EQUAL(w3->geometry(), SGRecti(37, 0, 32, 32));
+  SG_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 32, 32));
+  SG_CHECK_EQUAL(w2->geometry(), SGRecti(0, 0, 0, 0));
+  SG_CHECK_EQUAL(w3->geometry(), SGRecti(37, 0, 32, 32));
 
   hbox->setVisible(false);
 
-  BOOST_REQUIRE(!hbox->isVisible());
-  BOOST_REQUIRE(hbox->isExplicitlyHidden());
-  BOOST_REQUIRE(!w1->isVisible());
-  BOOST_REQUIRE(!w1->isExplicitlyHidden());
-  BOOST_REQUIRE(!w2->isVisible());
-  BOOST_REQUIRE(w2->isExplicitlyHidden());
-  BOOST_REQUIRE(!w3->isVisible());
-  BOOST_REQUIRE(!w3->isExplicitlyHidden());
+  SG_VERIFY(!hbox->isVisible());
+  SG_VERIFY(hbox->isExplicitlyHidden());
+  SG_VERIFY(!w1->isVisible());
+  SG_VERIFY(!w1->isExplicitlyHidden());
+  SG_VERIFY(!w2->isVisible());
+  SG_VERIFY(w2->isExplicitlyHidden());
+  SG_VERIFY(!w3->isVisible());
+  SG_VERIFY(!w3->isExplicitlyHidden());
 
-  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 0, 0));
-  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(0, 0, 0, 0));
-  BOOST_CHECK_EQUAL(w3->geometry(), SGRecti(0, 0, 0, 0));
+  SG_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 0, 0));
+  SG_CHECK_EQUAL(w2->geometry(), SGRecti(0, 0, 0, 0));
+  SG_CHECK_EQUAL(w3->geometry(), SGRecti(0, 0, 0, 0));
 
   w2->setVisible(true);
 
-  BOOST_REQUIRE(!w2->isVisible());
-  BOOST_REQUIRE(!w2->isExplicitlyHidden());
+  SG_VERIFY(!w2->isVisible());
+  SG_VERIFY(!w2->isExplicitlyHidden());
 
   hbox->setVisible(true);
 
-  BOOST_REQUIRE(hbox->isVisible());
-  BOOST_REQUIRE(w1->isVisible());
-  BOOST_REQUIRE(w2->isVisible());
-  BOOST_REQUIRE(w3->isVisible());
+  SG_VERIFY(hbox->isVisible());
+  SG_VERIFY(w1->isVisible());
+  SG_VERIFY(w2->isVisible());
+  SG_VERIFY(w3->isVisible());
 
   hbox->update();
 
-  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0,  0, 20, 32));
-  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(25, 0, 20, 32));
-  BOOST_CHECK_EQUAL(w3->geometry(), SGRecti(50, 0, 19, 32));
+  SG_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 20, 32));
+  SG_CHECK_EQUAL(w2->geometry(), SGRecti(25, 0, 20, 32));
+  SG_CHECK_EQUAL(w3->geometry(), SGRecti(50, 0, 19, 32));
 }
 
 
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE(boxlayout_equal)
+void test_boxlayout_equal()
 {
     sc::BoxLayoutRef hbox( new sc::HBoxLayout );
     TestWidgetRef w1(new TestWidget(SGVec2i(16, 16),
@@ -464,70 +452,70 @@ BOOST_AUTO_TEST_CASE(boxlayout_equal)
     hbox->setEqualsItem(w2);
     hbox->setStretchFactor(w3, 1);
 
-    BOOST_CHECK_EQUAL(hbox->minimumSize(), SGVec2i(106, 16));
-    BOOST_CHECK_EQUAL(hbox->sizeHint(), SGVec2i(162, 40));
+    SG_CHECK_EQUAL(hbox->minimumSize(), SGVec2i(106, 16));
+    SG_CHECK_EQUAL(hbox->sizeHint(), SGVec2i(162, 40));
 
     hbox->setGeometry(SGRecti(0, 0, 256, 40));
 
-    BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 60, 40));
-    BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(65, 0, 60, 40));
-    BOOST_CHECK_EQUAL(w3->geometry(), SGRecti(130, 0, 126, 40));
+    SG_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 60, 40));
+    SG_CHECK_EQUAL(w2->geometry(), SGRecti(65, 0, 60, 40));
+    SG_CHECK_EQUAL(w3->geometry(), SGRecti(130, 0, 126, 40));
 
-  // visibility
+    // visibility
     w2->setVisible(false);
 
-    BOOST_CHECK_EQUAL(hbox->minimumSize(), SGVec2i(37, 16));
-    BOOST_CHECK_EQUAL(hbox->sizeHint(), SGVec2i(69, 32));
+    SG_CHECK_EQUAL(hbox->minimumSize(), SGVec2i(37, 16));
+    SG_CHECK_EQUAL(hbox->sizeHint(), SGVec2i(69, 32));
 }
 
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( boxlayout_contents_margins )
+void test_boxlayout_contents_margins()
 {
   sc::Margins m;
 
-  BOOST_REQUIRE(m.isNull());
+  SG_VERIFY(m.isNull());
 
   m = sc::Margins(5);
 
-  BOOST_REQUIRE_EQUAL(m.l, 5);
-  BOOST_REQUIRE_EQUAL(m.t, 5);
-  BOOST_REQUIRE_EQUAL(m.r, 5);
-  BOOST_REQUIRE_EQUAL(m.b, 5);
+  SG_CHECK_EQUAL(m.l, 5);
+  SG_CHECK_EQUAL(m.t, 5);
+  SG_CHECK_EQUAL(m.r, 5);
+  SG_CHECK_EQUAL(m.b, 5);
 
   m = sc::Margins(6, 7);
 
-  BOOST_REQUIRE_EQUAL(m.l, 6);
-  BOOST_REQUIRE_EQUAL(m.t, 7);
-  BOOST_REQUIRE_EQUAL(m.r, 6);
-  BOOST_REQUIRE_EQUAL(m.b, 7);
+  SG_CHECK_EQUAL(m.l, 6);
+  SG_CHECK_EQUAL(m.t, 7);
+  SG_CHECK_EQUAL(m.r, 6);
+  SG_CHECK_EQUAL(m.b, 7);
 
-  BOOST_REQUIRE_EQUAL(m.horiz(), 12);
-  BOOST_REQUIRE_EQUAL(m.vert(), 14);
-  BOOST_REQUIRE(!m.isNull());
+  SG_CHECK_EQUAL(m.horiz(), 12);
+  SG_CHECK_EQUAL(m.vert(), 14);
+  SG_VERIFY(!m.isNull());
 
   m = sc::Margins(1, 2, 3, 4);
 
-  BOOST_REQUIRE_EQUAL(m.l, 1);
-  BOOST_REQUIRE_EQUAL(m.t, 2);
-  BOOST_REQUIRE_EQUAL(m.r, 3);
-  BOOST_REQUIRE_EQUAL(m.b, 4);
+  SG_CHECK_EQUAL(m.l, 1);
+  SG_CHECK_EQUAL(m.t, 2);
+  SG_CHECK_EQUAL(m.r, 3);
+  SG_CHECK_EQUAL(m.b, 4);
 
-  BOOST_REQUIRE_EQUAL(m.horiz(), 4);
-  BOOST_REQUIRE_EQUAL(m.vert(), 6);
-  BOOST_REQUIRE_EQUAL(m.size(), SGVec2i(4, 6));
+  SG_CHECK_EQUAL(m.horiz(), 4);
+  SG_CHECK_EQUAL(m.vert(), 6);
+  SG_CHECK_EQUAL(m.size(), SGVec2i(4, 6));
 
   sc::BoxLayoutRef hbox( new sc::HBoxLayout );
 
   hbox->setContentsMargins(5, 10, 15, 20);
 
-  BOOST_CHECK_EQUAL(hbox->minimumSize(), SGVec2i(20, 30));
-  BOOST_CHECK_EQUAL(hbox->sizeHint(),    SGVec2i(20, 30));
-  BOOST_CHECK_EQUAL(hbox->maximumSize(), SGVec2i(20, 30));
+  SG_CHECK_EQUAL(hbox->minimumSize(), SGVec2i(20, 30));
+  SG_CHECK_EQUAL(hbox->sizeHint(), SGVec2i(20, 30));
+  SG_CHECK_EQUAL(hbox->maximumSize(), SGVec2i(20, 30));
 
   hbox->setGeometry(SGRecti(0, 0, 30, 40));
 
-  BOOST_CHECK_EQUAL(hbox->geometry(), SGRecti(0, 0, 30, 40));
-  BOOST_CHECK_EQUAL(hbox->contentsRect(), SGRecti(5, 10, 10, 10));
+  SG_CHECK_EQUAL(hbox->geometry(), SGRecti(0, 0, 30, 40));
+  SG_CHECK_EQUAL(hbox->contentsRect(), SGRecti(5, 10, 10, 10));
 
   TestWidgetRef w1( new TestWidget( SGVec2i(16, 16),
                                     SGVec2i(32, 32) ) ),
@@ -538,57 +526,57 @@ BOOST_AUTO_TEST_CASE( boxlayout_contents_margins )
   w2->setContentsMargin(6);
   w3->setContentsMargin(7);
 
-  BOOST_CHECK_EQUAL(w1->minimumSize(), SGVec2i(26, 26));
-  BOOST_CHECK_EQUAL(w1->sizeHint(),    SGVec2i(42, 42));
-  BOOST_CHECK_EQUAL(w1->maximumSize(), sc::LayoutItem::MAX_SIZE);
+  SG_CHECK_EQUAL(w1->minimumSize(), SGVec2i(26, 26));
+  SG_CHECK_EQUAL(w1->sizeHint(), SGVec2i(42, 42));
+  SG_CHECK_EQUAL(w1->maximumSize(), sc::LayoutItem::MAX_SIZE);
 
-  BOOST_CHECK_EQUAL(w2->minimumSize(), SGVec2i(28, 28));
-  BOOST_CHECK_EQUAL(w2->sizeHint(),    SGVec2i(44, 44));
-  BOOST_CHECK_EQUAL(w2->maximumSize(), sc::LayoutItem::MAX_SIZE);
+  SG_CHECK_EQUAL(w2->minimumSize(), SGVec2i(28, 28));
+  SG_CHECK_EQUAL(w2->sizeHint(), SGVec2i(44, 44));
+  SG_CHECK_EQUAL(w2->maximumSize(), sc::LayoutItem::MAX_SIZE);
 
-  BOOST_CHECK_EQUAL(w3->minimumSize(), SGVec2i(30, 30));
-  BOOST_CHECK_EQUAL(w3->sizeHint(),    SGVec2i(46, 46));
-  BOOST_CHECK_EQUAL(w3->maximumSize(), sc::LayoutItem::MAX_SIZE);
+  SG_CHECK_EQUAL(w3->minimumSize(), SGVec2i(30, 30));
+  SG_CHECK_EQUAL(w3->sizeHint(), SGVec2i(46, 46));
+  SG_CHECK_EQUAL(w3->maximumSize(), sc::LayoutItem::MAX_SIZE);
 
   hbox->addItem(w1);
   hbox->addItem(w2);
   hbox->addItem(w3);
 
-  BOOST_CHECK_EQUAL(hbox->minimumSize(), SGVec2i(114, 60));
-  BOOST_CHECK_EQUAL(hbox->sizeHint(),    SGVec2i(162, 76));
-  BOOST_CHECK_EQUAL(hbox->maximumSize(), sc::LayoutItem::MAX_SIZE);
+  SG_CHECK_EQUAL(hbox->minimumSize(), SGVec2i(114, 60));
+  SG_CHECK_EQUAL(hbox->sizeHint(), SGVec2i(162, 76));
+  SG_CHECK_EQUAL(hbox->maximumSize(), sc::LayoutItem::MAX_SIZE);
 
   hbox->setGeometry(SGRecti(0, 0, hbox->sizeHint().x(), hbox->sizeHint().y()));
 
-  BOOST_CHECK_EQUAL(hbox->contentsRect(), SGRecti(5, 10, 142, 46));
+  SG_CHECK_EQUAL(hbox->contentsRect(), SGRecti(5, 10, 142, 46));
 
-  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(5,   10, 42, 46));
-  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(52,  10, 44, 46));
-  BOOST_CHECK_EQUAL(w3->geometry(), SGRecti(101, 10, 46, 46));
+  SG_CHECK_EQUAL(w1->geometry(), SGRecti(5, 10, 42, 46));
+  SG_CHECK_EQUAL(w2->geometry(), SGRecti(52, 10, 44, 46));
+  SG_CHECK_EQUAL(w3->geometry(), SGRecti(101, 10, 46, 46));
 
-  BOOST_CHECK_EQUAL(w1->contentsRect(), SGRecti(10,  15, 32, 36));
-  BOOST_CHECK_EQUAL(w2->contentsRect(), SGRecti(58,  16, 32, 34));
-  BOOST_CHECK_EQUAL(w3->contentsRect(), SGRecti(108, 17, 32, 32));
+  SG_CHECK_EQUAL(w1->contentsRect(), SGRecti(10, 15, 32, 36));
+  SG_CHECK_EQUAL(w2->contentsRect(), SGRecti(58, 16, 32, 34));
+  SG_CHECK_EQUAL(w3->contentsRect(), SGRecti(108, 17, 32, 32));
 }
 
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( boxlayout_hfw )
+void test_boxlayout_hfw()
 {
   TestWidgetRef w1( new TestWidgetHFW( SGVec2i(16,   16),
                                        SGVec2i(32,   32) ) ),
                 w2( new TestWidgetHFW( SGVec2i(24,   24),
                                        SGVec2i(48,   48) ) );
 
-  BOOST_CHECK_EQUAL(w1->heightForWidth(16), 64);
-  BOOST_CHECK_EQUAL(w1->minimumHeightForWidth(16), 16);
-  BOOST_CHECK_EQUAL(w2->heightForWidth(24), 96);
-  BOOST_CHECK_EQUAL(w2->minimumHeightForWidth(24), 24);
+  SG_CHECK_EQUAL(w1->heightForWidth(16), 64);
+  SG_CHECK_EQUAL(w1->minimumHeightForWidth(16), 16);
+  SG_CHECK_EQUAL(w2->heightForWidth(24), 96);
+  SG_CHECK_EQUAL(w2->minimumHeightForWidth(24), 24);
 
   TestWidgetRef w_no_hfw( new TestWidget( SGVec2i(16,   16),
                                           SGVec2i(32,   32) ) );
-  BOOST_CHECK(!w_no_hfw->hasHeightForWidth());
-  BOOST_CHECK_EQUAL(w_no_hfw->heightForWidth(16), -1);
-  BOOST_CHECK_EQUAL(w_no_hfw->minimumHeightForWidth(16), -1);
+  SG_VERIFY(!w_no_hfw->hasHeightForWidth());
+  SG_CHECK_EQUAL(w_no_hfw->heightForWidth(16), -1);
+  SG_CHECK_EQUAL(w_no_hfw->minimumHeightForWidth(16), -1);
 
   // horizontal
   sc::HBoxLayout hbox;
@@ -596,21 +584,21 @@ BOOST_AUTO_TEST_CASE( boxlayout_hfw )
   hbox.addItem(w1);
   hbox.addItem(w2);
 
-  BOOST_CHECK_EQUAL(hbox.heightForWidth(45), w2->heightForWidth(24));
-  BOOST_CHECK_EQUAL(hbox.heightForWidth(85), w2->heightForWidth(48));
+  SG_CHECK_EQUAL(hbox.heightForWidth(45), w2->heightForWidth(24));
+  SG_CHECK_EQUAL(hbox.heightForWidth(85), w2->heightForWidth(48));
 
   hbox.addItem(w_no_hfw);
 
-  BOOST_CHECK_EQUAL(hbox.heightForWidth(66), 96);
-  BOOST_CHECK_EQUAL(hbox.heightForWidth(122), 48);
-  BOOST_CHECK_EQUAL(hbox.minimumHeightForWidth(66), 24);
-  BOOST_CHECK_EQUAL(hbox.minimumHeightForWidth(122), 16);
+  SG_CHECK_EQUAL(hbox.heightForWidth(66), 96);
+  SG_CHECK_EQUAL(hbox.heightForWidth(122), 48);
+  SG_CHECK_EQUAL(hbox.minimumHeightForWidth(66), 24);
+  SG_CHECK_EQUAL(hbox.minimumHeightForWidth(122), 16);
 
   hbox.setGeometry(SGRecti(0, 0, 66, 24));
 
-  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0,  16, 24));
-  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(21, 0, 24, 24));
-  BOOST_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(50, 0, 16, 24));
+  SG_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 16, 24));
+  SG_CHECK_EQUAL(w2->geometry(), SGRecti(21, 0, 24, 24));
+  SG_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(50, 0, 16, 24));
 
   // vertical
   sc::VBoxLayout vbox;
@@ -618,52 +606,52 @@ BOOST_AUTO_TEST_CASE( boxlayout_hfw )
   vbox.addItem(w1);
   vbox.addItem(w2);
 
-  BOOST_CHECK_EQUAL(vbox.heightForWidth(24), 143);
-  BOOST_CHECK_EQUAL(vbox.heightForWidth(48), 74);
-  BOOST_CHECK_EQUAL(vbox.minimumHeightForWidth(24), 39);
-  BOOST_CHECK_EQUAL(vbox.minimumHeightForWidth(48), 22);
+  SG_CHECK_EQUAL(vbox.heightForWidth(24), 143);
+  SG_CHECK_EQUAL(vbox.heightForWidth(48), 74);
+  SG_CHECK_EQUAL(vbox.minimumHeightForWidth(24), 39);
+  SG_CHECK_EQUAL(vbox.minimumHeightForWidth(48), 22);
 
   vbox.addItem(w_no_hfw);
 
-  BOOST_CHECK_EQUAL(vbox.heightForWidth(24), 180);
-  BOOST_CHECK_EQUAL(vbox.heightForWidth(48), 111);
-  BOOST_CHECK_EQUAL(vbox.minimumHeightForWidth(24), 60);
-  BOOST_CHECK_EQUAL(vbox.minimumHeightForWidth(48), 43);
+  SG_CHECK_EQUAL(vbox.heightForWidth(24), 180);
+  SG_CHECK_EQUAL(vbox.heightForWidth(48), 111);
+  SG_CHECK_EQUAL(vbox.minimumHeightForWidth(24), 60);
+  SG_CHECK_EQUAL(vbox.minimumHeightForWidth(48), 43);
 
   SGVec2i min_size = vbox.minimumSize(),
           size_hint = vbox.sizeHint();
 
-  BOOST_CHECK_EQUAL(min_size, SGVec2i(24, 66));
-  BOOST_CHECK_EQUAL(size_hint, SGVec2i(48, 122));
+  SG_CHECK_EQUAL(min_size, SGVec2i(24, 66));
+  SG_CHECK_EQUAL(size_hint, SGVec2i(48, 122));
 
   vbox.setGeometry(SGRecti(0, 0, 24, 122));
 
-  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0,  24, 33));
-  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(0, 38, 24, 47));
-  BOOST_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(0, 90, 24, 32));
+  SG_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 24, 33));
+  SG_CHECK_EQUAL(w2->geometry(), SGRecti(0, 38, 24, 47));
+  SG_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(0, 90, 24, 32));
 
   // Vertical layout modifies size hints, so check if they are correctly
   // restored
-  BOOST_CHECK_EQUAL(min_size, vbox.minimumSize());
-  BOOST_CHECK_EQUAL(size_hint, vbox.sizeHint());
+  SG_CHECK_EQUAL(min_size, vbox.minimumSize());
+  SG_CHECK_EQUAL(size_hint, vbox.sizeHint());
 
   vbox.setGeometry(SGRecti(0, 0, 50, 122));
 
-  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0,  50, 25));
-  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(0, 30, 50, 51));
-  BOOST_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(0, 86, 50, 36));
+  SG_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 50, 25));
+  SG_CHECK_EQUAL(w2->geometry(), SGRecti(0, 30, 50, 51));
+  SG_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(0, 86, 50, 36));
 
   // Same geometry as before -> should get same widget geometry
   // (check internal size hint cache updates correctly)
   vbox.setGeometry(SGRecti(0, 0, 24, 122));
 
-  BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0,  24, 33));
-  BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(0, 38, 24, 47));
-  BOOST_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(0, 90, 24, 32));
+  SG_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 24, 33));
+  SG_CHECK_EQUAL(w2->geometry(), SGRecti(0, 38, 24, 47));
+  SG_CHECK_EQUAL(w_no_hfw->geometry(), SGRecti(0, 90, 24, 32));
 }
 
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( item_alignment_rect )
+void test_item_alignment_rect()
 {
   TestWidgetRef w1( new TestWidget( SGVec2i(16, 16),
                                     SGVec2i(32, 32) ) );
@@ -671,41 +659,41 @@ BOOST_AUTO_TEST_CASE( item_alignment_rect )
   const SGRecti r(10, 10, 64, 64);
 
   // Default: AlignFill -> fill up to maximum size
-  BOOST_CHECK_EQUAL(w1->alignmentRect(r), r);
+  SG_CHECK_EQUAL(w1->alignmentRect(r), r);
 
   // Horizontal
 
   // AlignLeft -> width from size hint, positioned on the left
   w1->setAlignment(sc::AlignLeft);
-  BOOST_CHECK_EQUAL(w1->alignmentRect(r), SGRecti(10, 10, 32, 64));
+  SG_CHECK_EQUAL(w1->alignmentRect(r), SGRecti(10, 10, 32, 64));
 
   // AlignRight -> width from size hint, positioned on the left
   w1->setAlignment(sc::AlignRight);
-  BOOST_CHECK_EQUAL(w1->alignmentRect(r), SGRecti(42, 10, 32, 64));
+  SG_CHECK_EQUAL(w1->alignmentRect(r), SGRecti(42, 10, 32, 64));
 
   // AlignHCenter -> width from size hint, positioned in the center
   w1->setAlignment(sc::AlignHCenter);
-  BOOST_CHECK_EQUAL(w1->alignmentRect(r), SGRecti(26, 10, 32, 64));
+  SG_CHECK_EQUAL(w1->alignmentRect(r), SGRecti(26, 10, 32, 64));
 
 
   // Vertical
 
   // AlignTop -> height from size hint, positioned on the top
   w1->setAlignment(sc::AlignTop);
-  BOOST_CHECK_EQUAL(w1->alignmentRect(r), SGRecti(10, 10, 64, 32));
+  SG_CHECK_EQUAL(w1->alignmentRect(r), SGRecti(10, 10, 64, 32));
 
   // AlignBottom -> height from size hint, positioned on the bottom
   w1->setAlignment(sc::AlignBottom);
-  BOOST_CHECK_EQUAL(w1->alignmentRect(r), SGRecti(10, 42, 64, 32));
+  SG_CHECK_EQUAL(w1->alignmentRect(r), SGRecti(10, 42, 64, 32));
 
   // AlignVCenter -> height from size hint, positioned in the center
   w1->setAlignment(sc::AlignVCenter);
-  BOOST_CHECK_EQUAL(w1->alignmentRect(r), SGRecti(10, 26, 64, 32));
+  SG_CHECK_EQUAL(w1->alignmentRect(r), SGRecti(10, 26, 64, 32));
 
 
   // Vertical + Horizontal
   w1->setAlignment(sc::AlignCenter);
-  BOOST_CHECK_EQUAL(w1->alignmentRect(r), SGRecti(26, 26, 32, 32));
+  SG_CHECK_EQUAL(w1->alignmentRect(r), SGRecti(26, 26, 32, 32));
 }
 
 //------------------------------------------------------------------------------
@@ -721,7 +709,7 @@ static naRef f_Widget_visibilityChanged(nasal::CallContext ctx)
 }
 
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( nasal_widget )
+void test_nasal_widget()
 {
   nasal::Context c;
   nasal::Hash globals = c.newHash();
@@ -735,49 +723,49 @@ BOOST_AUTO_TEST_CASE( nasal_widget )
   sc::NasalWidgetRef w( new sc::NasalWidget(me.get_naRef()) );
 
   // Default layout sizes (no user set values)
-  BOOST_CHECK_EQUAL(w->minimumSize(), SGVec2i(16, 16));
-  BOOST_CHECK_EQUAL(w->sizeHint(),    SGVec2i(32, 32));
-  BOOST_CHECK_EQUAL(w->maximumSize(), sc::LayoutItem::MAX_SIZE);
+  SG_CHECK_EQUAL(w->minimumSize(), SGVec2i(16, 16));
+  SG_CHECK_EQUAL(w->sizeHint(), SGVec2i(32, 32));
+  SG_CHECK_EQUAL(w->maximumSize(), sc::LayoutItem::MAX_SIZE);
 
   // Changed layout sizes
   w->setLayoutMinimumSize( SGVec2i(2, 12) );
   w->setLayoutSizeHint(    SGVec2i(3, 13) );
   w->setLayoutMaximumSize( SGVec2i(4, 14) );
 
-  BOOST_CHECK_EQUAL(w->minimumSize(), SGVec2i(2, 12));
-  BOOST_CHECK_EQUAL(w->sizeHint(),    SGVec2i(3, 13));
-  BOOST_CHECK_EQUAL(w->maximumSize(), SGVec2i(4, 14));
+  SG_CHECK_EQUAL(w->minimumSize(), SGVec2i(2, 12));
+  SG_CHECK_EQUAL(w->sizeHint(), SGVec2i(3, 13));
+  SG_CHECK_EQUAL(w->maximumSize(), SGVec2i(4, 14));
 
   // User set values (overwrite layout sizes)
   w->setMinimumSize( SGVec2i(15, 16) );
   w->setSizeHint(    SGVec2i(17, 18) );
   w->setMaximumSize( SGVec2i(19, 20) );
 
-  BOOST_CHECK_EQUAL(w->minimumSize(), SGVec2i(15, 16));
-  BOOST_CHECK_EQUAL(w->sizeHint(),    SGVec2i(17, 18));
-  BOOST_CHECK_EQUAL(w->maximumSize(), SGVec2i(19, 20));
+  SG_CHECK_EQUAL(w->minimumSize(), SGVec2i(15, 16));
+  SG_CHECK_EQUAL(w->sizeHint(), SGVec2i(17, 18));
+  SG_CHECK_EQUAL(w->maximumSize(), SGVec2i(19, 20));
 
   // Only vertical user set values (layout/default for horizontal hints)
   w->setMinimumSize( SGVec2i(0, 21) );
   w->setSizeHint(    SGVec2i(0, 22) );
   w->setMaximumSize( SGVec2i(SGLimits<int>::max(), 23) );
 
-  BOOST_CHECK_EQUAL(w->minimumSize(), SGVec2i(2, 21));
-  BOOST_CHECK_EQUAL(w->sizeHint(),    SGVec2i(3, 22));
-  BOOST_CHECK_EQUAL(w->maximumSize(), SGVec2i(4, 23));
+  SG_CHECK_EQUAL(w->minimumSize(), SGVec2i(2, 21));
+  SG_CHECK_EQUAL(w->sizeHint(), SGVec2i(3, 22));
+  SG_CHECK_EQUAL(w->maximumSize(), SGVec2i(4, 23));
 
   w->setVisible(false);
-  BOOST_CHECK_EQUAL(w->geometry(), SGRecti(0, 0, -1, -1));
+  SG_CHECK_EQUAL(w->geometry(), SGRecti(0, 0, -1, -1));
 }
 
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE(gridlayout_layout)
+void test_gridlayout_layout()
 {
     sc::GridLayoutRef grid(new sc::GridLayout);
 
-    BOOST_CHECK_EQUAL(grid->count(), 0);
-    BOOST_CHECK(!grid->itemAt(0));
-    BOOST_CHECK(!grid->takeAt(0));
+    SG_CHECK_EQUAL(grid->count(), 0);
+    SG_VERIFY(!grid->itemAt(0));
+    SG_VERIFY(!grid->takeAt(0));
 
     TestWidgetRef w1(new TestWidget(SGVec2i(16, 16),
                                     SGVec2i(32, 32),
@@ -788,9 +776,9 @@ BOOST_AUTO_TEST_CASE(gridlayout_layout)
 
     w1->setMaxSize({9999, 32});
     grid->addItem(w1);
-    BOOST_CHECK_EQUAL(grid->count(), 1);
-    BOOST_CHECK_EQUAL(grid->itemAt(0), w1);
-    BOOST_CHECK_EQUAL(w1->getParent(), grid);
+    SG_CHECK_EQUAL(grid->count(), 1);
+    SG_CHECK_EQUAL_NOSTREAM(grid->itemAt(0), w1);
+    SG_CHECK_EQUAL_NOSTREAM(w1->getParent(), grid);
 
     grid->addItem(w2, 1, 1);
     grid->addItem(w3, 2, 1);
@@ -798,15 +786,15 @@ BOOST_AUTO_TEST_CASE(gridlayout_layout)
 
     grid->setGeometry(SGRecti(0, 0, 160, 130));
 
-    BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 4, 50, 32));
-    BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(55, 45, 50, 40));
+    SG_CHECK_EQUAL(w1->geometry(), SGRecti(0, 4, 50, 32));
+    SG_CHECK_EQUAL(w2->geometry(), SGRecti(55, 45, 50, 40));
 
     // check width includes padding of spanned columns
-    BOOST_CHECK_EQUAL(w4->geometry(), SGRecti(0, 90, 160, 40));
+    SG_CHECK_EQUAL(w4->geometry(), SGRecti(0, 90, 160, 40));
 }
 
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE(gridlayout_min_size_layout)
+void test_gridlayout_min_size_layout()
 {
     sc::GridLayoutRef grid(new sc::GridLayout);
     grid->setSpacing(4);
@@ -832,13 +820,13 @@ BOOST_AUTO_TEST_CASE(gridlayout_min_size_layout)
 
     grid->setGeometry(SGRecti(0, 0, 248, 148));
 
-    BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 85, 96));
-    BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(89, 18, 109, 78));
-    BOOST_CHECK_EQUAL(w4->geometry(), SGRecti(0, 100, 198, 46));
+    SG_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 85, 96));
+    SG_CHECK_EQUAL(w2->geometry(), SGRecti(89, 18, 109, 78));
+    SG_CHECK_EQUAL(w4->geometry(), SGRecti(0, 100, 198, 46));
 }
 
 //------------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE(gridlayout_stretch)
+void test_gridlayout_stretch()
 {
     sc::GridLayoutRef grid(new sc::GridLayout);
     grid->setSpacing(4);
@@ -870,8 +858,27 @@ BOOST_AUTO_TEST_CASE(gridlayout_stretch)
 
     grid->setGeometry(SGRecti(0, 0, 248, 224));
 
-    BOOST_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 32, 168));
-    BOOST_CHECK_EQUAL(w2->geometry(), SGRecti(36, 56, 80, 112));
-    BOOST_CHECK_EQUAL(w4->geometry(), SGRecti(0, 172, 116, 52));
-    BOOST_CHECK_EQUAL(w5->geometry(), SGRecti(120, 0, 128, 52));
+    SG_CHECK_EQUAL(w1->geometry(), SGRecti(0, 0, 32, 168));
+    SG_CHECK_EQUAL(w2->geometry(), SGRecti(36, 56, 80, 112));
+    SG_CHECK_EQUAL(w4->geometry(), SGRecti(0, 172, 116, 52));
+    SG_CHECK_EQUAL(w5->geometry(), SGRecti(120, 0, 128, 52));
+}
+
+int main()
+{
+  test_horizontal_layout();
+  test_hbox_pref_to_max();
+  test_spacer_layouting();
+  test_vertical_layout();
+  test_boxlayout_insert_remove();
+  test_boxlayout_visibility();
+  test_boxlayout_equal();
+  test_boxlayout_contents_margins();
+  test_boxlayout_hfw();
+  test_item_alignment_rect();
+  test_nasal_widget();
+  test_gridlayout_layout();
+  test_gridlayout_min_size_layout();
+  test_gridlayout_stretch();
+  return 0;
 }

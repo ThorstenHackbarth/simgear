@@ -231,12 +231,7 @@ int parseTest()
     // test variants
     SG_CHECK_EQUAL(p2->parentIdForVariant(0), std::string());
 
-    try {
-        p2->indexOfVariant("fofofo");
-        SG_TEST_FAIL("lookup of non-existent variant did not throw");
-    } catch (sg_exception& e) {
-      // expected
-    }
+    SG_CHECK_THROW(p2->indexOfVariant("fofofo"), sg_exception);
 
     unsigned int skisVariantFull = p2->indexOfVariant("org.flightgear.test.catalog1.c172p-skis");
     SG_VERIFY(skisVariantFull > 0);

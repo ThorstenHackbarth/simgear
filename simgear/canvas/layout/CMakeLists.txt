@@ -25,7 +25,4 @@ if (TARGET SimGearScene)
     install(FILES ${HEADERS} DESTINATION include/simgear/canvas/layout)
 endif()
 
-add_boost_test(canvas_layout
-  SOURCES canvas_layout_test.cxx
-  LIBRARIES SimGearScene
-)
+add_simgear_scene_autotest(canvas_layout canvas_layout_test.cxx)

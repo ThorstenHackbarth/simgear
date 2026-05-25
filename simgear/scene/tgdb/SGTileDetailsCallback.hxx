@@ -6,17 +6,15 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // SPDX-FileCopyrightText: 1997 Curtis L. Olson
 
+#include <algorithm>
 #include <osg/LOD>
-
-#include <boost/foreach.hpp>
-
+#include <simgear/debug/ErrorReportingCallback.hxx>
 #include <simgear/scene/material/matmodel.hxx>
 #include <simgear/scene/model/SGOffsetTransform.hxx>
-#include <simgear/scene/util/QuadTreeBuilder.hxx>
-#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/OptionsReadFileCallback.hxx>
+#include <simgear/scene/util/QuadTreeBuilder.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
-#include <simgear/debug/ErrorReportingCallback.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 #include "SGNodeTriangles.hxx"
 #include "SGLightBin.hxx"
@@ -632,17 +630,20 @@ public:
             bool found = false;
             TreeBin* bin = NULL;
 
-            BOOST_FOREACH(bin, randomForest)
             {
-                if ((bin->texture           == mat->get_tree_texture()  ) &&
-                    (bin->teffect           == mat->get_tree_effect()   ) &&
-                    (bin->texture_varieties == mat->get_tree_varieties()) &&
-                    (bin->range             == mat->get_tree_range()    ) &&
-                    (bin->width             == mat->get_tree_width()    ) &&
-                    (bin->height            == mat->get_tree_height()   )   ) {
+                auto it = std::find_if(randomForest.begin(), randomForest.end(),
+                    [&](TreeBin* b) {
+                        return b->texture           == mat->get_tree_texture()
+                            && b->teffect           == mat->get_tree_effect()
+                            && b->texture_varieties == mat->get_tree_varieties()
+                            && b->range             == mat->get_tree_range()
+                            && b->width             == mat->get_tree_width()
+                            && b->height            == mat->get_tree_height();
+                    });
+                if (it != randomForest.end()) {
                     found = true;
-                break;
-                    }
+                    bin = *it;
+                }
             }
 
             if (!found) {

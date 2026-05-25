@@ -7,6 +7,7 @@ set(HEADERS
     ResourceManager.hxx
     SVGpreserveAspectRatio.hxx
     argparse.hxx
+    hash_utils.hxx
     inputvalue.hxx
     inputcolor.hxx
     make_new.hxx
@@ -15,6 +16,7 @@ set(HEADERS
     stdint.hxx
     strutils.hxx
     test_macros.hxx
+    type_utils.hxx
     )
 
 set(SOURCES
@@ -53,15 +55,10 @@ add_simgear_autotest(test_CSSBorder CSSBorder_test.cxx)
 add_simgear_autotest(test_strutils strutils_test.cxx)
 add_simgear_autotest(test_path path_test.cxx )
 add_simgear_autotest(test_sg_dir sg_dir_test.cxx)
+add_simgear_autotest(test_hash_utils hash_utils_test.cxx)
+add_simgear_autotest(test_type_utils type_utils_test.cxx)
 
 endif(ENABLE_TESTS)
 
-add_boost_test(SVGpreserveAspectRatio
-  SOURCES SVGpreserveAspectRatio_test.cxx
-  LIBRARIES SimGearCore
-)
-
-add_boost_test(utf8tolatin1
-  SOURCES utf8tolatin1_test.cxx
-  LIBRARIES SimGearCore
-)
+add_simgear_autotest(SVGpreserveAspectRatio SVGpreserveAspectRatio_test.cxx)
+add_simgear_autotest(utf8tolatin1 utf8tolatin1_test.cxx)

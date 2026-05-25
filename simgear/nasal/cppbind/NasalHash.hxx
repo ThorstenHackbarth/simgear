@@ -5,12 +5,10 @@
 #ifndef SG_NASAL_HASH_HXX_
 #define SG_NASAL_HASH_HXX_
 
-#include <boost/mpl/if.hpp>
-
 #include "from_nasal.hxx"
 #include "to_nasal.hxx"
 
-#include <boost/iterator/iterator_facade.hpp>
+#include <iterator>
 #include <simgear/std/type_traits.hxx>
 #include <simgear/structure/map.hxx>
 #include <type_traits>
@@ -197,61 +195,56 @@ namespace nasal
 
       /// Hash iterator
       template<bool is_const>
-      class Iterator:
-        public boost::iterator_facade<
-          Iterator<is_const>,
-          Entry<is_const>,
-          boost::bidirectional_traversal_tag,
-          Entry<is_const>
-        >
+      class Iterator
       {
         public:
+          using iterator_category = std::bidirectional_iterator_tag;
+          using value_type        = Entry<is_const>;
+          using difference_type   = std::ptrdiff_t;
+          using pointer           = void;
+          using reference         = Entry<is_const>;
+
           typedef typename Entry<is_const>::HashPtr HashPtr;
-          typedef Entry<is_const>                   value_type;
 
-          Iterator():
-            _hash(NULL),
-            _index(0)
-          {}
+          Iterator() : _hash(nullptr), _index(0) {}
+          Iterator(HashPtr hash, int index) : _hash(hash), _index(index) {}
 
-          Iterator(HashPtr hash, int index):
-            _hash(hash),
-            _index(index)
-          {}
-
-          /**
-           * Convert from iterator to const_iterator or copy within same type
-           */
+          /// Convert from iterator to const_iterator or copy within same type
           template<bool is_other_const>
           Iterator( Iterator<is_other_const> const& other,
-                    typename std::enable_if< is_const || !is_other_const,
-                                             void*
-                                           >::type = NULL ):
+                    std::enable_if_t<is_const || !is_other_const, void*> = nullptr ):
             _hash(other._hash),
             _index(other._index)
           {}
 
+          reference operator*() const
+          {
+            return {_hash, naVec_get(_hash->get_naRefKeys(), _index)};
+          }
+
+          // arrow_proxy needed because reference is a proxy value, not a real ref
+          struct ArrowProxy {
+            value_type val;
+            value_type* operator->() noexcept { return &val; }
+          };
+          ArrowProxy operator->() const { return {**this}; }
+
+          Iterator& operator++() { ++_index; return *this; }
+          Iterator  operator++(int) { auto t = *this; ++_index; return t; }
+          Iterator& operator--() { --_index; return *this; }
+          Iterator  operator--(int) { auto t = *this; --_index; return t; }
+
+          template<bool is_other_const>
+          bool operator==(Iterator<is_other_const> const& other) const
+          {
+            return _hash == other._hash && _index == other._index;
+          }
+
         private:
-          friend class boost::iterator_core_access;
-          template <bool> friend class Iterator;
+          template<bool> friend class Iterator;
 
           HashPtr _hash;
           int _index;
-
-          template<bool is_other_const>
-          bool equal(Iterator<is_other_const> const& other) const
-          {
-            return _hash == other._hash
-                && _index == other._index;
-          }
-
-          void increment() { ++_index; }
-          void decrement() { --_index; }
-
-          value_type dereference() const
-          {
-            return value_type(_hash, naVec_get(_hash->get_naRefKeys(), _index));
-          }
       };
 
     protected:

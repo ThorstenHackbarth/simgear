@@ -143,9 +143,8 @@ endif()
 
 find_package(Threads REQUIRED)
 
-find_package(Boost REQUIRED)
-set (BOOST_CXX_FLAGS "-DBOOST_BIMAP_DISABLE_SERIALIZATION -DBOOST_NO_STDLIB_CONFIG -DBOOST_NO_AUTO_PTR -DBOOST_NO_CXX98_BINDERS")
-include(BoostTestTargets)
+include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+
 
 set(SG_SOUND_USES_OPENALSOFT OFF) # default to off
 
@@ -190,6 +189,7 @@ else()
     include(CreateOSGImportedTargets)
 endif(SIMGEAR_HEADLESS)
 
+if(NOT SIMGEAR_HEADLESS)
 # Ensure that we are using the right version of OSG
 # This should probably be done by modifying FindOpenSceneGraph.cmake, but this
 # is easier/faster and only requires minimal changes to OSG.
@@ -237,6 +237,7 @@ if (NOT SIMGEAR_OSG_CORRECT_VERSION)
         "Please ensure that you are using the correct branch of the OSG fork."
     )
 endif()
+endif(NOT SIMGEAR_HEADLESS)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "OpenBSD")
     # As of 2020-08-01, OpenBSD's system zlib is slightly old, but it's usable
@@ -444,7 +445,7 @@ endif()
 
 # TODO: should this be special-cased for multi-config as well?
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS_C} ${MSVC_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS_CXX} ${MSVC_FLAGS} ${BOOST_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS_CXX} ${MSVC_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MSVC_LD_FLAGS}")
 
 include(CheckCXXFeatures)

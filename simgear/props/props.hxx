@@ -1588,7 +1588,6 @@ namespace simgear
   }
 }
 
-// For boost::hash
 size_t hash_value(const SGPropertyNode& node);
 
 // Helper comparison and hash functions for common cases

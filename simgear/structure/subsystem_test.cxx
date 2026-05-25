@@ -250,11 +250,9 @@ void testRegistrationNoMocking()
 
     static SGSharedPtr<MockSub> mockInstance = new MockSub();
 
-    try {
-        manager->mockSubsystem(MockSub::staticSubsystemClassId(), []() { return mockInstance; });
-        SG_TEST_FAIL("mocking should not be allowed without mockable=true");
-    } catch (const std::exception&) {
-    }
+    SG_CHECK_THROW(
+        manager->mockSubsystem(MockSub::staticSubsystemClassId(), []() { return mockInstance; }),
+        std::exception);
 }
 
 

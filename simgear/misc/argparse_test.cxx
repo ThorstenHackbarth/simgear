@@ -551,15 +551,7 @@ void aux_invalidOptionOrMissingArgument_checkRaiseExcecption(
   const simgear::argparse::ArgumentParser& parser,
   const vector<const char*>& v)
 {
-  bool gotException = false;
-
-  try {
-    parser.parseArgs(v.size(), &v[0]);
-  } catch (const simgear::argparse::Error&) {
-    gotException = true;
-  }
-
-  SG_VERIFY(gotException);
+  SG_CHECK_THROW(parser.parseArgs(v.size(), &v[0]), simgear::argparse::Error);
 }
 
 void test_invalidOptionOrMissingArgument()

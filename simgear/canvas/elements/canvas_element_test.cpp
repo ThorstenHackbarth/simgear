@@ -1,20 +1,19 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2014 Thomas Geymayer <tomgey@gmail.com>
 
 /// Unit tests for canvas::Element
-#define BOOST_TEST_MODULE canvas
-#include <BoostTestTargetConfig.h>
-
 #include "CanvasElement.hxx"
 #include "CanvasGroup.hxx"
+#include <simgear/misc/test_macros.hxx>
 
 namespace sc = simgear::canvas;
 
-BOOST_AUTO_TEST_CASE( attr_data )
+void test_attr_data()
 {
   // http://www.w3.org/TR/html5/dom.html#attr-data-*
 
-#define SG_CHECK_ATTR2PROP(attr, prop)\
-  BOOST_CHECK_EQUAL(sc::Element::attrToDataPropName(attr), prop)
+#define SG_CHECK_ATTR2PROP(attr, prop) \
+    SG_CHECK_EQUAL(sc::Element::attrToDataPropName(attr), std::string(prop))
 
   // If name starts with "data-", for each "-" (U+002D) character in the name
   // that is followed by a lowercase ASCII letter, remove the "-" (U+002D)
@@ -28,8 +27,8 @@ BOOST_AUTO_TEST_CASE( attr_data )
 
 #undef SG_CHECK_ATTR2PROP
 
-#define SG_CHECK_PROP2ATTR(prop, attr)\
-  BOOST_CHECK_EQUAL(sc::Element::dataPropToAttrName(prop), attr)
+#define SG_CHECK_PROP2ATTR(prop, attr) \
+    SG_CHECK_EQUAL(sc::Element::dataPropToAttrName(prop), std::string(attr))
 
   // If name contains a "-" (U+002D) character followed by a lowercase ASCII
   // letter, throw a SyntaxError exception (empty string) and abort these steps.
@@ -51,18 +50,24 @@ BOOST_AUTO_TEST_CASE( attr_data )
     sc::Element::create<sc::Group>(sc::CanvasWeakPtr(), node);
 
   el->setDataProp("myData", 3);
-  BOOST_CHECK_EQUAL( el->getDataProp<int>("myData"), 3 );
-  BOOST_CHECK_EQUAL( node->getIntValue("data-my-data"), 3 );
+  SG_CHECK_EQUAL(el->getDataProp<int>("myData"), 3);
+  SG_CHECK_EQUAL(node->getIntValue("data-my-data"), 3);
 
   SGPropertyNode* prop = el->getDataProp<SGPropertyNode*>("notExistingProp");
-  BOOST_CHECK( !prop );
+  SG_VERIFY(!prop);
   prop = el->getDataProp<SGPropertyNode*>("myData");
-  BOOST_CHECK(  prop );
-  BOOST_CHECK_EQUAL( prop->getParent(), node );
-  BOOST_CHECK_EQUAL( prop->getIntValue(), 3 );
+  SG_VERIFY(prop);
+  SG_CHECK_EQUAL(prop->getParent(), node);
+  SG_CHECK_EQUAL(prop->getIntValue(), 3);
 
-  BOOST_CHECK( el->hasDataProp("myData") );
+  SG_VERIFY(el->hasDataProp("myData"));
   el->removeDataProp("myData");
-  BOOST_CHECK( !el->hasDataProp("myData") );
-  BOOST_CHECK_EQUAL( el->getDataProp("myData", 5), 5 );
+  SG_VERIFY(!el->hasDataProp("myData"));
+  SG_CHECK_EQUAL(el->getDataProp("myData", 5), 5);
+}
+
+int main()
+{
+  test_attr_data();
+  return 0;
 }

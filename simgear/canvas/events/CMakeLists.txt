@@ -20,10 +20,7 @@ if (TARGET SimGearScene)
     install(FILES ${HEADERS} DESTINATION include/simgear/canvas/events)
 endif()
 
-add_boost_test(canvas_event
-  SOURCES event_test.cpp
-  LIBRARIES SimGearScene
-)
+add_simgear_scene_autotest(canvas_event event_test.cpp)
 
 add_simgear_test(input_event_demo input_event_demo.cxx)
 target_link_libraries(input_event_demo

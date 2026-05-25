@@ -11,7 +11,6 @@ set(HEADERS
     SGWeakPtr.hxx
     SGWeakReferenced.hxx
     SGPerfMon.hxx
-    singleton.hpp
     Singleton.hxx
     callback.hxx
     commands.hxx
@@ -56,7 +55,4 @@ if(ENABLE_TESTS)
   add_simgear_autotest(test_typeid test_typeid.cxx)
 endif(ENABLE_TESTS)
 
-add_boost_test(function_list
-  SOURCES function_list_test.cxx
-  LIBRARIES SimGearCore
-)
+add_simgear_autotest(function_list function_list_test.cxx)

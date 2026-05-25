@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-FileCopyrightText: 2008 Timothy Moore <timoore@redhat.com>
+//
 // Copyright (C) 2008  Timothy Moore timoore@redhat.com
 //
 // This program is free software; you can redistribute it and/or
@@ -18,9 +21,6 @@
 #define SIMGEAR_EFFECT_GEODE_HXX 1
 
 #include <osg/Geode>
-
-#include <boost/iterator/iterator_adaptor.hpp>
-
 #include "Effect.hxx"
 #include "mat.hxx"
 
@@ -29,35 +29,7 @@ namespace simgear
 class EffectGeode : public osg::Geode
 {
   public:
-
-    class DrawablesIterator:
-      public boost::iterator_adaptor<
-        DrawablesIterator,
-        osg::NodeList::iterator,
-        osg::ref_ptr<osg::Drawable>,
-        boost::use_default,
-        osg::ref_ptr<osg::Drawable> // No reference as Reference type.
-                                    // The child list does not contain Drawable
-                                    // ref_ptr so we can not return any
-                                    // references to them.
-      >
-    {
-      public:
-
-        DrawablesIterator()
-        {}
-
-        explicit DrawablesIterator(osg::NodeList::iterator const& node_it):
-          DrawablesIterator::iterator_adaptor_(node_it)
-        {}
-
-      private:
-        friend class boost::iterator_core_access;
-        osg::ref_ptr<osg::Drawable> dereference() const
-        {
-          return base_reference()->get()->asDrawable();
-        }
-    };
+    using DrawablesIterator = osg::NodeList::iterator;
 
     EffectGeode();
     EffectGeode(const EffectGeode& rhs,

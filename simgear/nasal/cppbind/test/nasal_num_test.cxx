@@ -1,58 +1,65 @@
-#define BOOST_TEST_MODULE nasal
-#include <BoostTestTargetConfig.h>
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// SPDX-FileCopyrightText: 2014 Thomas Geymayer <tomgey@gmail.com>
 
 #include "TestContext.hxx"
+#include <cmath>
+#include <simgear/misc/test_macros.hxx>
 
 static void runNumTests( double (TestContext::*test_double)(const std::string&),
                          int (TestContext::*test_int)(const std::string&) )
 {
   TestContext c;
+  const double eps = 1e-5;
 
-  BOOST_CHECK_CLOSE((c.*test_double)("0.5"), 0.5, 1e-5);
-  BOOST_CHECK_CLOSE((c.*test_double)(".6"),  0.6, 1e-5);
-  BOOST_CHECK_CLOSE((c.*test_double)("-.7"), -0.7, 1e-5);
-  BOOST_CHECK_CLOSE((c.*test_double)("-0.8"), -0.8, 1e-5);
-  BOOST_CHECK_SMALL((c.*test_double)("0.0"), 1e-5);
-  BOOST_CHECK_SMALL((c.*test_double)("-.0"), 1e-5);
+  SG_CHECK_EQUAL_EP2((c.*test_double)("0.5"), 0.5, eps);
+  SG_CHECK_EQUAL_EP2((c.*test_double)(".6"), 0.6, eps);
+  SG_CHECK_EQUAL_EP2((c.*test_double)("-.7"), -0.7, eps);
+  SG_CHECK_EQUAL_EP2((c.*test_double)("-0.8"), -0.8, eps);
+  SG_VERIFY(std::abs((c.*test_double)("0.0")) < eps);
+  SG_VERIFY(std::abs((c.*test_double)("-.0")) < eps);
 
-  BOOST_CHECK_CLOSE((c.*test_double)("1.23e4"),  1.23e4, 1e-5);
-  BOOST_CHECK_CLOSE((c.*test_double)("1.23e-4"), 1.23e-4, 1e-5);
-  BOOST_CHECK_CLOSE((c.*test_double)("-1.23e4"),  -1.23e4, 1e-5);
-  BOOST_CHECK_CLOSE((c.*test_double)("-1.23e-4"), -1.23e-4, 1e-5);
-  BOOST_CHECK_CLOSE((c.*test_double)("1e-4"), 1e-4, 1e-5);
-  BOOST_CHECK_CLOSE((c.*test_double)("-1e-4"), -1e-4, 1e-5);
+  SG_CHECK_EQUAL_EP2((c.*test_double)("1.23e4"), 1.23e4, eps);
+  SG_CHECK_EQUAL_EP2((c.*test_double)("1.23e-4"), 1.23e-4, 1e-9);
+  SG_CHECK_EQUAL_EP2((c.*test_double)("-1.23e4"), -1.23e4, eps);
+  SG_CHECK_EQUAL_EP2((c.*test_double)("-1.23e-4"), -1.23e-4, 1e-9);
+  SG_CHECK_EQUAL_EP2((c.*test_double)("1e-4"), 1e-4, 1e-9);
+  SG_CHECK_EQUAL_EP2((c.*test_double)("-1e-4"), -1e-4, 1e-9);
 
-  BOOST_CHECK_EQUAL((c.*test_int)("123"), 123);
-  BOOST_CHECK_EQUAL((c.*test_int)("-958"), -958);
+  SG_CHECK_EQUAL((c.*test_int)("123"), 123);
+  SG_CHECK_EQUAL((c.*test_int)("-958"), -958);
 
-  BOOST_CHECK_CLOSE((c.*test_int)("-1e7"), -1e7, 1e-5);
-  BOOST_CHECK_CLOSE((c.*test_int)("2E07"), 2e07, 1e-5);
+  SG_CHECK_EQUAL_EP2((c.*test_int)("-1e7"), -1e7, eps);
+  SG_CHECK_EQUAL_EP2((c.*test_int)("2E07"), 2e7, eps);
 
-  BOOST_CHECK_EQUAL((c.*test_int)("0755"), 755);
-  BOOST_CHECK_EQUAL((c.*test_int)("0055"), 55);
-  BOOST_CHECK_EQUAL((c.*test_int)("-0155"), -155);
+  SG_CHECK_EQUAL((c.*test_int)("0755"), 755);
+  SG_CHECK_EQUAL((c.*test_int)("0055"), 55);
+  SG_CHECK_EQUAL((c.*test_int)("-0155"), -155);
 
-  BOOST_CHECK_EQUAL((c.*test_int)("0o755"), 0755);
-  BOOST_CHECK_EQUAL((c.*test_int)("0o055"), 055);
-  BOOST_CHECK_EQUAL((c.*test_int)("-0o155"), -0155);
+  SG_CHECK_EQUAL((c.*test_int)("0o755"), 0755);
+  SG_CHECK_EQUAL((c.*test_int)("0o055"), 055);
+  SG_CHECK_EQUAL((c.*test_int)("-0o155"), -0155);
 
-  BOOST_CHECK_EQUAL((c.*test_int)("0x755"), 0x755);
-  BOOST_CHECK_EQUAL((c.*test_int)("0x055"), 0x55);
-  BOOST_CHECK_EQUAL((c.*test_int)("-0x155"), -0x155);
-  
-  BOOST_CHECK_CLOSE((c.*test_double)("2.000000953656983160"),
-  2.000000953656983160, 1e-5);
-  /* this value has bit pattern 0x400000007fff6789L,
-  * so will look like a pointer if the endianness is set wrong
-  * (see naref.h, data.h)*/
+  SG_CHECK_EQUAL((c.*test_int)("0x755"), 0x755);
+  SG_CHECK_EQUAL((c.*test_int)("0x055"), 0x55);
+  SG_CHECK_EQUAL((c.*test_int)("-0x155"), -0x155);
+
+  SG_CHECK_EQUAL_EP2((c.*test_double)("2.000000953656983160"),
+                     2.000000953656983160, eps);
 }
 
-BOOST_AUTO_TEST_CASE( parse_num )
+void test_parse_num()
 {
   runNumTests(&TestContext::convert<double>, &TestContext::convert<int>);
 }
 
-BOOST_AUTO_TEST_CASE( lex_num )
+void test_lex_num()
 {
   runNumTests(&TestContext::exec<double>, &TestContext::exec<int>);
+}
+
+int main()
+{
+  test_parse_num();
+  test_lex_num();
+  return 0;
 }
