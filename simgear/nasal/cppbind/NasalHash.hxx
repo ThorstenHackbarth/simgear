@@ -194,54 +194,72 @@ namespace nasal
       };
 
       /// Hash iterator
-      template<bool is_const>
+      template <bool is_const>
       class Iterator
       {
         public:
-          using iterator_category = std::bidirectional_iterator_tag;
-          using value_type        = Entry<is_const>;
-          using difference_type   = std::ptrdiff_t;
-          using pointer           = void;
-          using reference         = Entry<is_const>;
+            using iterator_category = std::bidirectional_iterator_tag;
+            using value_type = Entry<is_const>;
+            using difference_type = std::ptrdiff_t;
+            using pointer = void;
+            using reference = Entry<is_const>;
 
-          typedef typename Entry<is_const>::HashPtr HashPtr;
+            typedef typename Entry<is_const>::HashPtr HashPtr;
 
-          Iterator() : _hash(nullptr), _index(0) {}
-          Iterator(HashPtr hash, int index) : _hash(hash), _index(index) {}
+            Iterator() : _hash(nullptr), _index(0) {}
+            Iterator(HashPtr hash, int index) : _hash(hash), _index(index) {}
 
-          /// Convert from iterator to const_iterator or copy within same type
-          template<bool is_other_const>
-          Iterator( Iterator<is_other_const> const& other,
-                    std::enable_if_t<is_const || !is_other_const, void*> = nullptr ):
-            _hash(other._hash),
-            _index(other._index)
-          {}
+            /// Convert from iterator to const_iterator or copy within same type
+            template <bool is_other_const>
+            Iterator(Iterator<is_other_const> const& other,
+                     std::enable_if_t<is_const || !is_other_const, void*> = nullptr) : _hash(other._hash),
+                                                                                       _index(other._index)
+            {}
 
-          reference operator*() const
-          {
-            return {_hash, naVec_get(_hash->get_naRefKeys(), _index)};
+            reference operator*() const
+            {
+                return {_hash, naVec_get(_hash->get_naRefKeys(), _index)};
+            }
+
+            // arrow_proxy needed because reference is a proxy value, not a real ref
+            struct ArrowProxy {
+                value_type val;
+                value_type* operator->() noexcept { return &val; }
+            };
+            ArrowProxy operator->() const { return {**this}; }
+
+            Iterator& operator++()
+            {
+                ++_index;
+                return *this;
+            }
+            Iterator operator++(int)
+            {
+                auto t = *this;
+                ++_index;
+                return t;
+            }
+            Iterator& operator--()
+            {
+                --_index;
+                return *this;
+            }
+            Iterator operator--(int)
+            {
+                auto t = *this;
+                --_index;
+                return t;
+            }
+
+            template <bool is_other_const>
+            bool operator==(Iterator<is_other_const> const& other) const
+            {
+                return _hash == other._hash && _index == other._index;
           }
 
-          // arrow_proxy needed because reference is a proxy value, not a real ref
-          struct ArrowProxy {
-            value_type val;
-            value_type* operator->() noexcept { return &val; }
-          };
-          ArrowProxy operator->() const { return {**this}; }
-
-          Iterator& operator++() { ++_index; return *this; }
-          Iterator  operator++(int) { auto t = *this; ++_index; return t; }
-          Iterator& operator--() { --_index; return *this; }
-          Iterator  operator--(int) { auto t = *this; --_index; return t; }
-
-          template<bool is_other_const>
-          bool operator==(Iterator<is_other_const> const& other) const
-          {
-            return _hash == other._hash && _index == other._index;
-          }
-
-        private:
-          template<bool> friend class Iterator;
+      private:
+          template <bool>
+          friend class Iterator;
 
           HashPtr _hash;
           int _index;

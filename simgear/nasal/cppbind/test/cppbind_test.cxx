@@ -604,9 +604,9 @@ void test_nasal_code()
 
 int main()
 {
-  test_cppbind_arrays();
-  test_cppbind_misc_testing();
-  test_cppbind_context();
-  test_nasal_code();
-  return 0;
+    test_cppbind_arrays();
+    test_cppbind_misc_testing();
+    test_cppbind_context();
+    test_nasal_code();
+    return 0;
 }

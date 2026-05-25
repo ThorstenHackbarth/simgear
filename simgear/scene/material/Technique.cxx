@@ -139,17 +139,15 @@ Technique::processDrawables(const EffectGeode::DrawablesIterator& begin,
         = cv->getComputeNearFarMode() != CullVisitor::DO_NOT_COMPUTE_NEAR_FAR;
     for (int i = 0; i < NUM_DRAWABLES && itr != end; ++itr, ++i)
     {
-      Drawable* drawable = itr->get()->asDrawable();
+        Drawable* drawable = itr->get()->asDrawable();
 
-      const BoundingBox& bb = drawable->getBoundingBox();
-      osg::Drawable::CullCallback* cull =
-        dynamic_cast<osg::Drawable::CullCallback*>(drawable->getCullCallback());
+        const BoundingBox& bb = drawable->getBoundingBox();
+        osg::Drawable::CullCallback* cull =
+            dynamic_cast<osg::Drawable::CullCallback*>(drawable->getCullCallback());
 
-      if(   (cull && cull->cull(cv, drawable, &cv->getRenderInfo()))
-         || (isCullingActive && cv->isCulled(bb)) )
-      {
-        depth[i] = FLT_MAX;
-        continue;
+        if ((cull && cull->cull(cv, drawable, &cv->getRenderInfo())) || (isCullingActive && cv->isCulled(bb))) {
+            depth[i] = FLT_MAX;
+            continue;
       }
 
       if( computeNearFar && bb.valid() )

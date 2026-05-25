@@ -48,6 +48,6 @@ void test_parse_attribute()
 
 int main()
 {
-  test_parse_attribute();
-  return 0;
+    test_parse_attribute();
+    return 0;
 }

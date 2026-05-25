@@ -198,24 +198,26 @@
 // parentheses:
 //     SG_CHECK_THROW(foo<T, U>(x), sg_exception);    // macro arg confusion
 //     SG_CHECK_THROW((foo<T, U>(x)), sg_exception);  // ok
-#define SG_CHECK_THROW(expr, ExceptionType) \
-    { \
-        bool _sg_caught = false; \
-        try { (void)(expr); } \
-        catch (const ExceptionType&) { _sg_caught = true; } \
-        catch (...) { \
-            std::cerr << "failed: " << #expr \
-                      << " threw an unexpected exception (expected " \
-                      << #ExceptionType << ")" << std::endl; \
+#define SG_CHECK_THROW(expr, ExceptionType)                                   \
+    {                                                                         \
+        bool _sg_caught = false;                                              \
+        try {                                                                 \
+            (void)(expr);                                                     \
+        } catch (const ExceptionType&) {                                      \
+            _sg_caught = true;                                                \
+        } catch (...) {                                                       \
+            std::cerr << "failed: " << #expr                                  \
+                      << " threw an unexpected exception (expected "          \
+                      << #ExceptionType << ")" << std::endl;                  \
             std::cerr << "\tat " << __FILE__ << ":" << __LINE__ << std::endl; \
-            exit(1); \
-        } \
-        if (!_sg_caught) { \
-            std::cerr << "failed: " << #expr << " did not throw " \
-                      << #ExceptionType << std::endl; \
+            exit(1);                                                          \
+        }                                                                     \
+        if (!_sg_caught) {                                                    \
+            std::cerr << "failed: " << #expr << " did not throw "             \
+                      << #ExceptionType << std::endl;                         \
             std::cerr << "\tat " << __FILE__ << ":" << __LINE__ << std::endl; \
-            exit(1); \
-        } \
+            exit(1);                                                          \
+        }                                                                     \
     }
 
 

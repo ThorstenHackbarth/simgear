@@ -12,13 +12,13 @@
 
 #include <simgear_config.h>
 
-#include <cstdlib>              // EXIT_SUCCESS
+#include <cstdlib> // EXIT_SUCCESS
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <simgear/misc/test_macros.hxx>
 #include "hash_utils.hxx"
+#include <simgear/misc/test_macros.hxx>
 
 using std::string;
 

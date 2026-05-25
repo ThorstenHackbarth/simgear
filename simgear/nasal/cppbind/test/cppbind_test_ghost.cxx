@@ -189,9 +189,8 @@ void test_storage_traits()
 
   DerivedWeakPtr* d_weak = nasal::shared_ptr_storage<DerivedWeakPtr>::ref(d);
   SG_CHECK_EQUAL(
-    nasal::shared_ptr_storage<DerivedWeakPtr>::get<Derived*>(d_weak),
-    d_raw
-  );
+      nasal::shared_ptr_storage<DerivedWeakPtr>::get<Derived*>(d_weak),
+      d_raw);
 
   d.reset();
   SG_CHECK_EQUAL(Derived::count(d_raw), 1);
@@ -279,11 +278,11 @@ void test_bind_named_args_methods()
 int main()
 {
 #ifndef __OpenBSD__
-  test_ghost_weak_strong_nasal_conversion();
-  test_ghost_casting_storage();
-  test_storage_traits();
-  test_bind_methods();
-  test_bind_named_args_methods();
+    test_ghost_weak_strong_nasal_conversion();
+    test_ghost_casting_storage();
+    test_storage_traits();
+    test_bind_methods();
+    test_bind_named_args_methods();
 #endif
-  return 0;
+    return 0;
 }

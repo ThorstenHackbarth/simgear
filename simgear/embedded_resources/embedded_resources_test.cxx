@@ -292,14 +292,14 @@ void test_addAlreadyExistingResource()
   const auto& resMgr = EmbeddedResourceManager::instance();
 
   for (const string locale: {"", "fr", "fr_FR"}) {
-    // For these tests, we don't care about the resource contents -> no need
-    // to subtract 1 from the result of sizeof() as we did above.
-    unique_ptr<const RawEmbeddedResource> someRes(
-      new RawEmbeddedResource(res1fr_FRArray, sizeof(res1fr_FRArray)));
+      // For these tests, we don't care about the resource contents -> no need
+      // to subtract 1 from the result of sizeof() as we did above.
+      unique_ptr<const RawEmbeddedResource> someRes(
+          new RawEmbeddedResource(res1fr_FRArray, sizeof(res1fr_FRArray)));
 
-    SG_CHECK_THROW(
-      resMgr->addResource("/path/to/resource1", std::move(someRes), locale),
-      sg_error);
+      SG_CHECK_THROW(
+          resMgr->addResource("/path/to/resource1", std::move(someRes), locale),
+          sg_error);
   }
 }
 

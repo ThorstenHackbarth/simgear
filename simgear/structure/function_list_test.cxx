@@ -79,6 +79,6 @@ void test_create_and_call()
 
 int main()
 {
-  test_create_and_call();
-  return 0;
+    test_create_and_call();
+    return 0;
 }

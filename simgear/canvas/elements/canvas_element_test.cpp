@@ -68,6 +68,6 @@ void test_attr_data()
 
 int main()
 {
-  test_attr_data();
-  return 0;
+    test_attr_data();
+    return 0;
 }

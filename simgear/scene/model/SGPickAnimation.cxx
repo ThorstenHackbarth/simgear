@@ -200,7 +200,7 @@ osg::Vec2d eventToWindowCoords(const osgGA::GUIEventAdapter& ea)
      if (!eg) return;
      for (simgear::EffectGeode::DrawablesIterator di = eg->drawablesBegin();
           di != eg->drawablesEnd(); di++) {
-       touchDrawable(*(*di)->asDrawable());
+         touchDrawable(*(*di)->asDrawable());
      }
      // Now see whether the EffectGeode has an Effect
      simgear::Effect *e = eg->getEffect();

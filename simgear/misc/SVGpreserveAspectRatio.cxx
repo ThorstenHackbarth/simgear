@@ -84,12 +84,10 @@ namespace simgear
       PARSE_error
     } parse_state = PARSE_defer;
 
-    for( const auto& cur_tok : strutils::split_on_any_of(str, " \t\n") )
-    {
-      if( parse_state == PARSE_error ) break;
+    for (const auto& cur_tok : strutils::split_on_any_of(str, " \t\n")) {
+        if (parse_state == PARSE_error) break;
 
-      switch( parse_state )
-      {
+        switch (parse_state) {
         case PARSE_defer:
           if( cur_tok == "defer" )
           {

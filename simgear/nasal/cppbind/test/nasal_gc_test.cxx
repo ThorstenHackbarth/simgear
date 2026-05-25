@@ -114,7 +114,7 @@ void test_object_holder_gc()
 
 int main()
 {
-  test_ghost_gc();
-  test_object_holder_gc();
-  return 0;
+    test_ghost_gc();
+    test_object_holder_gc();
+    return 0;
 }

@@ -866,19 +866,19 @@ void test_gridlayout_stretch()
 
 int main()
 {
-  test_horizontal_layout();
-  test_hbox_pref_to_max();
-  test_spacer_layouting();
-  test_vertical_layout();
-  test_boxlayout_insert_remove();
-  test_boxlayout_visibility();
-  test_boxlayout_equal();
-  test_boxlayout_contents_margins();
-  test_boxlayout_hfw();
-  test_item_alignment_rect();
-  test_nasal_widget();
-  test_gridlayout_layout();
-  test_gridlayout_min_size_layout();
-  test_gridlayout_stretch();
-  return 0;
+    test_horizontal_layout();
+    test_hbox_pref_to_max();
+    test_spacer_layouting();
+    test_vertical_layout();
+    test_boxlayout_insert_remove();
+    test_boxlayout_visibility();
+    test_boxlayout_equal();
+    test_boxlayout_contents_margins();
+    test_boxlayout_hfw();
+    test_item_alignment_rect();
+    test_nasal_widget();
+    test_gridlayout_layout();
+    test_gridlayout_min_size_layout();
+    test_gridlayout_stretch();
+    return 0;
 }

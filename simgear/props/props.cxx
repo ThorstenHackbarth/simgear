@@ -37,14 +37,14 @@
 # include <iostream>
 using std::cerr;
 #else
-# include <simgear/misc/hash_utils.hxx>
-# include <string_view>
-# include <simgear/compiler.h>
-# include <simgear/debug/logstream.hxx>
-# include <simgear/sg_inlines.h>
-# include <simgear/structure/exception.hxx>
-# include "PropertyInterpolationMgr.hxx"
-# include "vectorPropTemplates.hxx"
+        #include "PropertyInterpolationMgr.hxx"
+        #include "vectorPropTemplates.hxx"
+        #include <simgear/compiler.h>
+        #include <simgear/debug/logstream.hxx>
+        #include <simgear/misc/hash_utils.hxx>
+        #include <simgear/sg_inlines.h>
+        #include <simgear/structure/exception.hxx>
+        #include <string_view>
 
 #endif
 
@@ -818,7 +818,7 @@ find_child(SGPropertyLock& lock, Itr begin, Itr end, int index, const PropertyLi
     // searching for a matching index is a lot less time consuming than
     // comparing two strings so do that first.
     if (node->getIndex() == index && node->getNameString() == name)
-      return static_cast<int>(i);
+        return static_cast<int>(i);
   }
 #endif
   return -1;
@@ -2001,13 +2001,16 @@ struct SGPropertyNodeImpl
 };
 
 
-class SplitOnSlash {
+class SplitOnSlash
+{
 public:
     using value_type = std::string_view;
 
     SplitOnSlash() : _eof(true), _no_more(true) {}
     explicit SplitOnSlash(std::string_view path) : _rest(path), _eof(false), _no_more(false)
-    { advance(); }
+    {
+        advance();
+    }
 
     bool eof() const { return _eof; }
     std::string_view operator*() const { return _current; }
@@ -2018,20 +2021,30 @@ public:
     };
     proxy operator->() const { return {_current}; }
 
-    SplitOnSlash& operator++() { if (!_eof) advance(); return *this; }
+    SplitOnSlash& operator++()
+    {
+        if (!_eof) advance();
+        return *this;
+    }
 
 private:
     std::string_view _rest, _current;
     bool _eof, _no_more;
 
-    void advance() {
-        if (_no_more) { _eof = true; return; }
+    void advance()
+    {
+        if (_no_more) {
+            _eof = true;
+            return;
+        }
         auto pos = _rest.find('/');
         if (pos == std::string_view::npos) {
-            _current = _rest; _rest = {}; _no_more = true;
+            _current = _rest;
+            _rest = {};
+            _no_more = true;
         } else {
             _current = _rest.substr(0, pos);
-            _rest    = _rest.substr(pos + 1);
+            _rest = _rest.substr(pos + 1);
         }
     }
 };
@@ -2040,10 +2053,10 @@ template<typename SplitItr>
 SGPropertyNode*
 find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create, int last_index)
 {
-  using Range = std::string_view;
-  // Run off the end of the list
-  if (current == 0) {
-    return 0;
+    using Range = std::string_view;
+    // Run off the end of the list
+    if (current == 0) {
+        return 0;
   }
 
   // Success! This is the one we want.
@@ -2055,14 +2068,14 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create, int last_ind
     return find_node_aux(current, ++itr, create, last_index);
   Range name = parse_name(current, token);
   if (name == ".")
-    return find_node_aux(current, ++itr, create, last_index);
+      return find_node_aux(current, ++itr, create, last_index);
   if (name == "..") {
-    SGPropertyNode* parent = current->getParent();
-    if (!parent) {
-        SG_LOG(SG_GENERAL, SG_ALERT, "attempt to move past root with '..' node " << current->getNameString());
-        return nullptr;
-    }
-    return find_node_aux(parent, ++itr, create, last_index);
+      SGPropertyNode* parent = current->getParent();
+      if (!parent) {
+          SG_LOG(SG_GENERAL, SG_ALERT, "attempt to move past root with '..' node " << current->getNameString());
+          return nullptr;
+      }
+      return find_node_aux(parent, ++itr, create, last_index);
   }
   int index = -1;
   if (last_index >= 0) {
@@ -2085,13 +2098,14 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create, int last_ind
     index = 0;
     if (name.end() != token.end()) {
       if (*name.end() == '[') {
-        const char* i = name.end() + 1; const char* end = token.end();
-        for (;i != end; ++i) {
-          if (isdigit(*i)) {
-            index = (index * 10) + (*i - '0');
-          } else {
-            break;
-          }
+          const char* i = name.end() + 1;
+          const char* end = token.end();
+          for (; i != end; ++i) {
+              if (isdigit(*i)) {
+                  index = (index * 10) + (*i - '0');
+              } else {
+                  break;
+              }
         }
         if (i == token.end() || *i != ']')
             throw sg_format_exception("unterminated index (looking for ']')", {}, current->getLocation().str());
@@ -2156,15 +2170,16 @@ find_node (SGPropertyNode * current,
   }
 }
 #else
-SGPropertyNode *find_node(SGPropertyNode *current, std::string_view path,
-                          bool create, int last_index = -1) {
-  SplitOnSlash itr(path);
-  if (!path.empty() && path.front() == '/')
-    return find_node_aux(current->getRootNode(), itr, create, last_index);
-  else
-    return find_node_aux(current, itr, create, last_index);
+SGPropertyNode* find_node(SGPropertyNode* current, std::string_view path,
+                          bool create, int last_index = -1)
+{
+    SplitOnSlash itr(path);
+    if (!path.empty() && path.front() == '/')
+        return find_node_aux(current->getRootNode(), itr, create, last_index);
+    else
+        return find_node_aux(current, itr, create, last_index);
 }
-#endif
+    #endif
 
 ////////////////////////////////////////////////////////////////////////
 // Private methods from SGPropertyNode (may be inlined for speed).
@@ -3267,8 +3282,8 @@ SGPropertyNode::getNode (const char * relative_path, bool create)
   return find_node(this, components, 0, create);
 
 #else
-  return find_node(this, std::string_view(relative_path), create);
-#endif
+    return find_node(this, std::string_view(relative_path), create);
+    #endif
 }
 
 SGPropertyNode *
@@ -3282,8 +3297,8 @@ SGPropertyNode::getNode (const char * relative_path, int index, bool create)
   return find_node(this, components, 0, create);
 
 #else
-  return find_node(this, std::string_view(relative_path), create, index);
-#endif
+    return find_node(this, std::string_view(relative_path), create, index);
+    #endif
 }
 
 SGPropertyNode * SGPropertyNode::getNode (const std::string& relative_path, int index, bool create)
@@ -4418,7 +4433,7 @@ size_t hash_value(const SGPropertyNode& node)
     }
 }
 
-#endif
+    #endif
 
 // end of props.cxx
 

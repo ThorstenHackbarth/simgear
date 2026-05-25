@@ -20,39 +20,40 @@
 #ifndef SIMGEAR_EFFECT_GEODE_HXX
 #define SIMGEAR_EFFECT_GEODE_HXX 1
 
-#include <osg/Geode>
 #include "Effect.hxx"
 #include "mat.hxx"
+#include <osg/Geode>
 
 namespace simgear
 {
 class EffectGeode : public osg::Geode
 {
   public:
-    using DrawablesIterator = osg::NodeList::iterator;
+      using DrawablesIterator = osg::NodeList::iterator;
 
-    EffectGeode();
-    EffectGeode(const EffectGeode& rhs,
-                const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
-    META_Node(simgear,EffectGeode);
-    Effect* getEffect() const { return _effect.get(); }
-    void setEffect(Effect* effect);
-    SGMaterial* getMaterial() const { return _material; }
-    void setMaterial(SGMaterial* mat) { _material = mat; }
-    SGPropertyNode_ptr getEffectPropTree() { return _effectPropTree; }
-    void setEffectPropTree(SGPropertyNode_ptr effectPropTree) { _effectPropTree = effectPropTree; }
-    virtual void resizeGLObjectBuffers(unsigned int maxSize);
-    virtual void releaseGLObjects(osg::State* = 0) const;
+      EffectGeode();
+      EffectGeode(const EffectGeode& rhs,
+                  const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
+      META_Node(simgear, EffectGeode);
+      Effect* getEffect() const { return _effect.get(); }
+      void setEffect(Effect* effect);
+      SGMaterial* getMaterial() const { return _material; }
+      void setMaterial(SGMaterial* mat) { _material = mat; }
+      SGPropertyNode_ptr getEffectPropTree() { return _effectPropTree; }
+      void setEffectPropTree(SGPropertyNode_ptr effectPropTree) { _effectPropTree = effectPropTree; }
+      virtual void resizeGLObjectBuffers(unsigned int maxSize);
+      virtual void releaseGLObjects(osg::State* = 0) const;
 
 
-    DrawablesIterator drawablesBegin() { return DrawablesIterator(_children.begin()); }
-    DrawablesIterator drawablesEnd() { return DrawablesIterator(_children.end()); }
+      DrawablesIterator drawablesBegin() { return DrawablesIterator(_children.begin()); }
+      DrawablesIterator drawablesEnd() { return DrawablesIterator(_children.end()); }
 
-    void runGenerators(osg::Geometry *geometry);
-private:
-    osg::ref_ptr<Effect> _effect;
-    SGMaterial* _material;
-    SGPropertyNode_ptr _effectPropTree;
+      void runGenerators(osg::Geometry* geometry);
+
+  private:
+      osg::ref_ptr<Effect> _effect;
+      SGMaterial* _material;
+      SGPropertyNode_ptr _effectPropTree;
 };
 }
 #endif

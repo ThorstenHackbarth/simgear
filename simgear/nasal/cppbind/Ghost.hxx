@@ -1198,13 +1198,13 @@ namespace nasal
       template<class Ret>
       getter_t to_getter(Ret (raw_type::*getter)() const)
       {
-        using param_type = simgear::param_type_t<Ret>;
-        naRef(*to_nasal_)(naContext, param_type) = &to_nasal;
+          using param_type = simgear::param_type_t<Ret>;
+          naRef (*to_nasal_)(naContext, param_type) = &to_nasal;
 
-        // Getter signature: naRef(raw_type&, naContext)
-        return std::bind(to_nasal_,
-                         std::placeholders::_2,
-                         std::bind(getter, std::placeholders::_1));
+          // Getter signature: naRef(raw_type&, naContext)
+          return std::bind(to_nasal_,
+                           std::placeholders::_2,
+                           std::bind(getter, std::placeholders::_1));
       }
 
       template<class Param>

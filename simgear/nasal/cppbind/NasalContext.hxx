@@ -70,17 +70,16 @@ namespace nasal
 
       naRef callMethod(Me me, naRef code, std::initializer_list<naRef> args);
 
-      template<class Ret, class... Args>
-      Ret callMethod( Me me,
-                      naRef code,
-                      simgear::param_type_t<Args> ... args )
+      template <class Ret, class... Args>
+      Ret callMethod(Me me,
+                     naRef code,
+                     simgear::param_type_t<Args>... args)
       {
         // TODO warn if with Ret == void something different to nil is returned?
         return from_nasal<Ret>(callMethod(
-          me,
-          code,
-          { to_nasal<simgear::param_type_t<Args>>(args)... }
-        ));
+            me,
+            code,
+            {to_nasal<simgear::param_type_t<Args>>(args)...}));
       }
 
     protected:

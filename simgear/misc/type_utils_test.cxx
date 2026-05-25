@@ -12,7 +12,7 @@
 
 #include <simgear_config.h>
 
-#include <cstdlib>              // EXIT_SUCCESS
+#include <cstdlib> // EXIT_SUCCESS
 #include <string>
 #include <type_traits>
 
@@ -24,7 +24,8 @@ struct ClassType {
     int x;
 };
 
-enum class EnumType { A, B };
+enum class EnumType { A,
+                      B };
 
 // Scalars: passed by value (T → T).
 static_assert(std::is_same_v<simgear::param_type_t<int>, int>);

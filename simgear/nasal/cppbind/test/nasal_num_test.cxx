@@ -59,7 +59,7 @@ void test_lex_num()
 
 int main()
 {
-  test_parse_num();
-  test_lex_num();
-  return 0;
+    test_parse_num();
+    test_lex_num();
+    return 0;
 }

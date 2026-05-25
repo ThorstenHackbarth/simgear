@@ -22,6 +22,6 @@ void test_utf8_latin1_conversion()
 
 int main()
 {
-  test_utf8_latin1_conversion();
-  return 0;
+    test_utf8_latin1_conversion();
+    return 0;
 }

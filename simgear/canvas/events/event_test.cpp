@@ -37,6 +37,6 @@ void test_canvas_event_types()
 
 int main()
 {
-  test_canvas_event_types();
-  return 0;
+    test_canvas_event_types();
+    return 0;
 }
