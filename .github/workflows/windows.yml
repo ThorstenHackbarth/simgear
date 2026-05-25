@@ -7,11 +7,6 @@ on: [push, pull_request]
 jobs:
   windows-build:
     runs-on: windows-2022
-    env:
-      # Dependencies are extracted here, *outside* the source dir, because
-      # CMake errors on INTERFACE_INCLUDE_DIRECTORIES pointing inside the
-      # source tree (same workaround as the GitLab CI Windows job).
-      DEPS_DIR: ${{ runner.temp }}/deps
     steps:
       - uses: actions/checkout@v4
 
@@ -21,6 +16,18 @@ jobs:
         with:
           arch: amd64
 
+      # Export DEPS_DIR for later steps. Has to be done in a step (not in
+      # the job-level env:) because the runner context isn't evaluated at
+      # job parse time. Dependencies live *outside* the source dir to avoid
+      # CMake's INTERFACE_INCLUDE_DIRECTORIES warning (same workaround as
+      # the GitLab CI Windows job).
+      - name: Set DEPS_DIR
+        shell: pwsh
+        run: |
+          $deps = "${{ runner.temp }}\deps"
+          New-Item -ItemType Directory -Force -Path $deps | Out-Null
+          "DEPS_DIR=$deps" | Out-File -FilePath $env:GITHUB_ENV -Append
+
       # Pull the FG-forked OSG (built by flightgear/openscenegraph CI, branch
       # 'next') and the windows-3rd-party blob (built by flightgear/windows-3rd-party
       # CI, branch 'master') straight from GitLab's artifact API. Public
@@ -28,8 +35,6 @@ jobs:
       - name: Fetch dependencies
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path $env:DEPS_DIR | Out-Null
-
           $osgUrl  = 'https://gitlab.com/api/v4/projects/flightgear%2Fopenscenegraph/jobs/artifacts/next/download?job=windows_build'
           $w3pUrl  = 'https://gitlab.com/api/v4/projects/flightgear%2Fwindows-3rd-party/jobs/artifacts/master/download?job=windows_build_msvc140'
 
