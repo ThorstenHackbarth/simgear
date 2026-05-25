@@ -614,7 +614,10 @@ parse_name (const SGPropertyNode *node, const Range &path)
             {}, node->getLocation().str());
     }
   }
-  return Range(path.begin(), static_cast<size_t>(i - path.begin()));
+  // Use path.data() (always const char*) rather than path.begin() — on MSVC
+  // string_view::iterator is a wrapper that does not implicitly convert to
+  // const char*, so the (const char*, size_t) constructor wouldn't bind.
+  return Range(path.data(), static_cast<size_t>(i - path.begin()));
 }
 
 // Validate the name of a single node
