@@ -108,10 +108,8 @@ namespace nasal
        * @param name    Member name
        */
       template<class Sig, class Key>
-      typename std::enable_if< std::is_function<Sig>::value,
-                               std::function<Sig>
-                             >::type
-      get(const Key& name) const
+        requires std::is_function_v<Sig>
+      std::function<Sig> get(const Key& name) const
       {
         static_assert(( std::is_convertible<Key, naRef>::value
                            || std::is_convertible<Key, std::string>::value
@@ -211,9 +209,9 @@ namespace nasal
 
             /// Convert from iterator to const_iterator or copy within same type
             template <bool is_other_const>
-            Iterator(Iterator<is_other_const> const& other,
-                     std::enable_if_t<is_const || !is_other_const, void*> = nullptr) : _hash(other._hash),
-                                                                                       _index(other._index)
+              requires (is_const || !is_other_const)
+            Iterator(Iterator<is_other_const> const& other) : _hash(other._hash),
+                                                              _index(other._index)
             {}
 
             reference operator*() const

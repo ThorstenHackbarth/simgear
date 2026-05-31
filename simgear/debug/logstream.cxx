@@ -16,6 +16,7 @@
 #include <cstring>
 #include <iostream>
 #include <mutex>
+#include <ranges>
 
 #include <simgear/sg_inlines.h>
 #include <simgear/structure/exception.hxx>
@@ -329,10 +330,9 @@ public:
     void removeCallback(simgear::LogCallback* cb)
     {
         PauseThread pause(this);
-        auto it = std::find(m_callbacks.begin(), m_callbacks.end(), cb);
-        if (it != m_callbacks.end()) {
+        auto it = std::ranges::find(m_callbacks, cb);
+        if (it != m_callbacks.end())
             m_callbacks.erase(it);
-        }
     }
 
     void removeCallbacks()
