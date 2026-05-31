@@ -4,7 +4,9 @@
 #ifndef SGVec3_H
 #define SGVec3_H
 
+#include <compare>
 #include <iosfwd>
+#include <span>
 
 #include <simgear/math/SGVec2.hxx>
 #include <simgear/math/SGGeodesy.hxx>
@@ -46,6 +48,9 @@ public:
   /// make sure it has at least 3 elements
   explicit SGVec3(const T* d)
   { _data = d ? simd4_t<T,3>(d) : simd4_t<T,3>(T(0)); }
+  /// Constructor from a contiguous span of exactly 3 elements.
+  explicit SGVec3(std::span<const T, 3> d)
+  { _data = simd4_t<T,3>(d.data()); }
   template<typename S>
   explicit SGVec3(const SGVec3<S>& d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; }
@@ -114,15 +119,11 @@ public:
   { _data*=(1/T(s)); return *this; }
 
   /// Return an all zero vector
-  static SGVec3 zeros(void)
-  { return SGVec3(0, 0, 0); }
+  static SGVec3 zeros() { return SGVec3(0, 0, 0); }
   /// Return unit vectors
-  static SGVec3 e1(void)
-  { return SGVec3(1, 0, 0); }
-  static SGVec3 e2(void)
-  { return SGVec3(0, 1, 0); }
-  static SGVec3 e3(void)
-  { return SGVec3(0, 0, 1); }
+  static SGVec3 e1() { return SGVec3(1, 0, 0); }
+  static SGVec3 e2() { return SGVec3(0, 1, 0); }
+  static SGVec3 e3() { return SGVec3(0, 0, 1); }
 
   /// Constructor. Initialize by a geodetic coordinate
   /// Note that this conversion is relatively expensive to compute
@@ -368,54 +369,20 @@ normalize(const SGVec3<T>& v)
 
 /// Return true if exactly the same
 template<typename T>
-inline
-bool
+inline bool
 operator==(const SGVec3<T>& v1, const SGVec3<T>& v2)
 { return v1(0) == v2(0) && v1(1) == v2(1) && v1(2) == v2(2); }
 
-/// Return true if not exactly the same
+/// Lexicographic ordering — suitable for std::map/std::set keys.
+/// Returns partial_ordering because floating-point NaN breaks total order.
 template<typename T>
-inline
-bool
-operator!=(const SGVec3<T>& v1, const SGVec3<T>& v2)
-{ return ! (v1 == v2); }
-
-/// Return true if smaller, good for putting that into a std::map
-template<typename T>
-inline
-bool
-operator<(const SGVec3<T>& v1, const SGVec3<T>& v2)
+inline std::partial_ordering
+operator<=>(const SGVec3<T>& v1, const SGVec3<T>& v2)
 {
-  if (v1(0) < v2(0)) return true;
-  else if (v2(0) < v1(0)) return false;
-  else if (v1(1) < v2(1)) return true;
-  else if (v2(1) < v1(1)) return false;
-  else return (v1(2) < v2(2));
+  if (auto c = v1(0) <=> v2(0); c != 0) return c;
+  if (auto c = v1(1) <=> v2(1); c != 0) return c;
+  return v1(2) <=> v2(2);
 }
-
-template<typename T>
-inline
-bool
-operator<=(const SGVec3<T>& v1, const SGVec3<T>& v2)
-{
-  if (v1(0) < v2(0)) return true;
-  else if (v2(0) < v1(0)) return false;
-  else if (v1(1) < v2(1)) return true;
-  else if (v2(1) < v1(1)) return false;
-  else return (v1(2) <= v2(2));
-}
-
-template<typename T>
-inline
-bool
-operator>(const SGVec3<T>& v1, const SGVec3<T>& v2)
-{ return operator<(v2, v1); }
-
-template<typename T>
-inline
-bool
-operator>=(const SGVec3<T>& v1, const SGVec3<T>& v2)
-{ return operator<=(v2, v1); }
 
 /// Return true if equal to the relative tolerance tol
 template<typename T>

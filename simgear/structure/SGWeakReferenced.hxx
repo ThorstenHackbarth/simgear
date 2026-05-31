@@ -4,6 +4,7 @@
 #ifndef SGWeakReferenced_HXX
 #define SGWeakReferenced_HXX
 
+#include <concepts>
 #include "SGReferenced.hxx"
 #include "SGSharedPtr.hxx"
 
@@ -99,21 +100,13 @@ private:
 
     /// Upcast in a class hierarchy with a virtual base class
     template<class T>
-    static
-    typename std::enable_if<
-      std::is_base_of<SGVirtualWeakReferenced, T>::value,
-      T*
-    >::type
-    up_cast(SGWeakReferenced* ptr);
+      requires std::derived_from<T, SGVirtualWeakReferenced>
+    static T* up_cast(SGWeakReferenced* ptr);
 
     /// Upcast in a non-virtual class hierarchy
     template<class T>
-    static
-    typename std::enable_if<
-      !std::is_base_of<SGVirtualWeakReferenced, T>::value,
-      T*
-    >::type
-    up_cast(SGWeakReferenced* ptr)
+      requires (!std::derived_from<T, SGVirtualWeakReferenced>)
+    static T* up_cast(SGWeakReferenced* ptr)
     {
       return static_cast<T*>(ptr);
     }
@@ -164,11 +157,8 @@ class SGVirtualWeakReferenced:
 /// Upcast in a class hierarchy with a virtual base class
 // We (clang) need the definition of SGVirtualWeakReferenced for the static_cast
 template<class T>
-typename std::enable_if<
-  std::is_base_of<SGVirtualWeakReferenced, T>::value,
-  T*
->::type
-SGWeakReferenced::WeakData::up_cast(SGWeakReferenced* ptr)
+  requires std::derived_from<T, SGVirtualWeakReferenced>
+T* SGWeakReferenced::WeakData::up_cast(SGWeakReferenced* ptr)
 {
   // First get the virtual base class, which then can be used to further
   // upcast.

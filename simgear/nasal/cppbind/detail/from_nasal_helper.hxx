@@ -132,8 +132,8 @@ namespace nasal
    * Convert a Nasal number to a C++ numeric type
    */
   template<class T>
-  std::enable_if_t<std::is_arithmetic<T>::value, T>
-  from_nasal_helper(naContext c, naRef ref, const T*)
+    requires std::is_arithmetic_v<T>
+  T from_nasal_helper(naContext c, naRef ref, const T*)
   {
     naRef num = naNumValue(ref);
     if( !naIsNum(num) )
@@ -188,18 +188,17 @@ namespace nasal
    * Convert a Nasal vector of 2 elements to a 2d vector
    */
   template<class Vec2>
-  std::enable_if_t<is_vec2<Vec2>::value, Vec2>
-  from_nasal_helper(naContext c, naRef ref, const Vec2*)
+    requires is_vec2<Vec2>::value
+  Vec2 from_nasal_helper(naContext c, naRef ref, const Vec2*)
   {
     auto vec =
       from_nasal_helper(c, ref, static_cast<std::array<double, 2>*>(0));
-
     return Vec2(vec[0], vec[1]);
   }
 
   template<class Vec4>
-  std::enable_if_t<is_vec4<Vec4>::value, Vec4>
-  from_nasal_helper(naContext c, naRef ref, const Vec4*)
+    requires is_vec4<Vec4>::value
+  Vec4 from_nasal_helper(naContext c, naRef ref, const Vec4*)
   {
     auto vec = from_nasal_helper(c, ref, static_cast<std::array<double, 4>*>(0));
     return Vec4(vec[0], vec[1], vec[2], vec[3]);

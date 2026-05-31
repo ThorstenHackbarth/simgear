@@ -128,32 +128,23 @@ SG_MAKE_TRAIT(<>, osg::Vec4f, is_vec4)
     }
 
     template<class U>
-    static
-    std::enable_if_t<std::is_same<U, element_type*>::value, element_type*>
-    get(storage_type* ptr)
+      requires std::is_same_v<U, element_type*>
+    static element_type* get(storage_type* ptr)
     {
       return get_pointer(*ptr);
     }
 
     template<class U>
-    static
-    std::enable_if_t<
-          std::is_same<U, strong_ref>::value
-      || (std::is_same<U, weak_ref>::value && supports_weak_ref<U>::value),
-      U
-    >
-    get(storage_type* ptr)
+      requires (std::is_same_v<U, strong_ref>
+             || (std::is_same_v<U, weak_ref> && supports_weak_ref<U>::value))
+    static U get(storage_type* ptr)
     {
       return U(*ptr);
     }
 
     template<class U>
-    static
-    std::enable_if_t<
-      std::is_same<U, weak_ref>::value && !supports_weak_ref<U>::value,
-      U
-    >
-    get(storage_type* ptr)
+      requires (std::is_same_v<U, weak_ref> && !supports_weak_ref<U>::value)
+    static U get(storage_type* ptr)
     {
       return U();
     }
@@ -170,32 +161,23 @@ SG_MAKE_TRAIT(<>, osg::Vec4f, is_vec4)
       using weak_ref        = typename shared_ptr_traits<T>::weak_ref;
 
       template<class U>
-      static
-      std::enable_if_t<std::is_same<U, element_type*>::value, element_type*>
-      get(storage_type* ptr)
+        requires std::is_same_v<U, element_type*>
+      static element_type* get(storage_type* ptr)
       {
         return ptr;
       }
 
       template<class U>
-      static
-      std::enable_if_t<
-            std::is_same<U, strong_ref>::value
-        || (std::is_same<U, weak_ref>::value && supports_weak_ref<U>::value),
-        U
-      >
-      get(storage_type* ptr)
+        requires (std::is_same_v<U, strong_ref>
+               || (std::is_same_v<U, weak_ref> && supports_weak_ref<U>::value))
+      static U get(storage_type* ptr)
       {
         return U(ptr);
       }
 
       template<class U>
-      static
-      std::enable_if_t<
-        std::is_same<U, weak_ref>::value && !supports_weak_ref<U>::value,
-        U
-      >
-      get(storage_type* ptr)
+        requires (std::is_same_v<U, weak_ref> && !supports_weak_ref<U>::value)
+      static U get(storage_type* ptr)
       {
         return U();
       }
