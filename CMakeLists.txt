@@ -191,11 +191,8 @@ endif(SIMGEAR_HEADLESS)
 
 if(NOT SIMGEAR_HEADLESS)
 # Ensure that we are using the right version of OSG
-# This should probably be done by modifying FindOpenSceneGraph.cmake, but this
-# is easier/faster and only requires minimal changes to OSG.
 set(CMAKE_REQUIRED_INCLUDES ${OPENSCENEGRAPH_INCLUDE_DIRS})
 
-# Force CMake to rerun the compile tests
 unset(SIMGEAR_OSG_USE_FG_FORK CACHE)
 unset(SIMGEAR_OSG_CORRECT_VERSION CACHE)
 
@@ -217,12 +214,11 @@ if (NOT SIMGEAR_OSG_USE_FG_FORK)
     )
 endif()
 
-# For now do an exact version match
 check_cxx_source_compiles(
     "
     #include <osg/Version>
-    #if !(OPENSCENEGRAPH_FG_MAJOR_VERSION == ${SIMGEAR_MAJOR_VERSION} && \
-          OPENSCENEGRAPH_FG_MINOR_VERSION == ${SIMGEAR_MINOR_VERSION} && \
+    #if !(OPENSCENEGRAPH_FG_MAJOR_VERSION == ${SIMGEAR_MAJOR_VERSION} && \\
+          OPENSCENEGRAPH_FG_MINOR_VERSION == ${SIMGEAR_MINOR_VERSION} && \\
           OPENSCENEGRAPH_FG_PATCH_VERSION == ${SIMGEAR_PATCH_VERSION})
     #error Incorrect OSG version
     #endif
@@ -240,8 +236,6 @@ endif()
 endif(NOT SIMGEAR_HEADLESS)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "OpenBSD")
-    # As of 2020-08-01, OpenBSD's system zlib is slightly old, but it's usable
-    # with a workaround in simgear/io/iostreams/gzfstream.cxx.
     find_package(ZLIB 1.2.3 REQUIRED)
 else()
     find_package(ZLIB 1.2.4 REQUIRED)
@@ -273,13 +267,11 @@ if(ENABLE_GDAL)
     find_package(GDAL 2.0.0 REQUIRED)
 endif(ENABLE_GDAL)
 
-# ensure this always has a value
 set(SIMGEAR_USE_FFMPEG OFF)
 
 if (ENABLE_VIDEO_RECORD)
   find_package(FFmpeg COMPONENTS AVCODEC AVFORMAT AVUTIL SWSCALE)
   if (FFmpeg_FOUND)
-  # set this so it's picked up in simgear_config.h
     set(SG_FFMPEG 1)
     set(SIMGEAR_USE_FFMPEG ON)
     include(CreateFFmpegImportedTargets)
@@ -296,24 +288,15 @@ SET(CMAKE_RELEASE_POSTFIX "" CACHE STRING "add a postfix, usually empty on windo
 SET(CMAKE_RELWITHDEBINFO_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
 SET(CMAKE_MINSIZEREL_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
 
-# Check if the <regex> implementation in the C++ standard library is usable.
-# This is necessary because g++ 4.8 lies about its C++11 compliance: its
-# <regex> is utterly unusable, cf. [1].
-# The big preprocessor test essentially comes from [2], and gcc upstream devs
-# appear to back it (see comments following [2], as well as [3]).
-#
-#   [1] https://stackoverflow.com/a/12665408/4756009
-#   [2] https://stackoverflow.com/a/41186162/4756009
-#   [3] https://gcc.gnu.org/bugzilla/show_bug.cgi?id=78905
 check_cxx_source_compiles(
     "#include <regex>
 
      int main() {
-       #if __cplusplus >= 201103L &&                             \
-           (!defined(__GLIBCXX__)                         ||     \
-            (__cplusplus >= 201402L)                      ||     \
-            defined(_GLIBCXX_REGEX_DFS_QUANTIFIERS_LIMIT) ||     \
-            defined(_GLIBCXX_REGEX_STATE_LIMIT)           ||     \
+       #if __cplusplus >= 201103L &&                             \\
+           (!defined(__GLIBCXX__)                         ||     \\
+            (__cplusplus >= 201402L)                      ||     \\
+            defined(_GLIBCXX_REGEX_DFS_QUANTIFIERS_LIMIT) ||     \\
+            defined(_GLIBCXX_REGEX_STATE_LIMIT)           ||     \\
             (defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE > 4))
        #else
          nullptr = void; // intentionally trigger a compilation error
@@ -329,8 +312,6 @@ if(CMAKE_COMPILER_IS_GNUCXX)
         set(SIMD_COMPILER_FLAGS "-msse2 -mfpmath=sse -ftree-vectorize -ftree-slp-vectorize")
     endif()
 
-    # certain GCC versions don't provide the atomic builds, and hence
-    # require is to provide them in SGAtomic.cxx
     set(CMAKE_REQUIRED_INCLUDES ${CMAKE_INCLUDE_PATH})
     check_cxx_source_compiles(
        "int main() { unsigned mValue; return __sync_add_and_fetch(&mValue, 1); }"
@@ -343,17 +324,12 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 if (CLANG)
     message(STATUS "CMAKE_OSX_ARCHITECTURES has value: ${CMAKE_OSX_ARCHITECTURES}")
 
-    # Boost redeclares class members
-    # OSG doesn't use override but we subclass from it, so we will
-    # have inconsistent overrides until it's fixed
     set(WARNING_FLAGS_CXX "-Wall -fPIC -Wno-overloaded-virtual -Wno-redeclared-class-member -Wno-inconsistent-missing-override")
     set(WARNING_FLAGS_C   "-Wall -fPIC")
 
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
     set(CMAKE_C_FLAGS_RELWITHDEBINFO  "-O3 -g -DNDEBUG")
 
-    # special case for macOS cross-compilation: use the values in CMAKE_OSX_ARCHITECTURES,
-    # rather than the CMake properties which reflect the host system.
     if(CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
       set(SIMD_COMPILER_FLAGS "-msse2 -mfpmath=sse")
     elseif(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
@@ -369,8 +345,6 @@ if (ENABLE_ASAN)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
-
-  # needed for check_cxx_source_compiles
   set(CMAKE_REQUIRED_LINK_OPTIONS "-fsanitize=address")
   if (ENABLE_TSAN)
     message(FATAL_ERROR  "ENABLE_ASAN=ON incompatible with ENABLE_TSAN=ON")
@@ -382,14 +356,11 @@ else ()
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=thread")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=thread")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=thread")
-
-    # needed for check_cxx_source_compiles
     set(CMAKE_REQUIRED_LINK_OPTIONS "-fsanitize=thread")
   endif()
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-# boost goes haywire wrt static asserts
     check_cxx_compiler_flag(-Wno-unused-local-typedefs HAS_NOWARN_UNUSED_TYPEDEFS)
     if(HAS_NOWARN_UNUSED_TYPEDEFS)
         set(WARNING_FLAGS_CXX " ${WARNING_FLAGS_CXX} -Wno-unused-local-typedefs")
@@ -403,21 +374,16 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 endif()
 
 if(WIN32)
-
     if(MINGW)
         add_definitions(-D_WIN32_WINNT=0x501)
     endif()
-
     if(MSVC)
         set(MSVC_FLAGS "-DWIN32 -DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS /MP /bigobj")
         if (X86)
           set(SIMD_COMPILER_FLAGS "/arch:SSE /arch:SSE2")
         endif()
     endif(MSVC)
-
-    # assumed on Windows
     set(HAVE_GETLOCALTIME 1)
-
     set( WINSOCK_LIBRARY "ws2_32.lib" )
     set( SHLWAPI_LIBRARY "Shlwapi.lib" )
     set( RT_LIBRARY "winmm" )
@@ -427,12 +393,10 @@ if (ENABLE_SIMD)
   message(STATUS "SIMD flags are ${SIMD_COMPILER_FLAGS}")
 endif()
 
-# append flags, but ensure we don't duplicate them for multi-config generators
 if (CMAKE_CONFIGURATION_TYPES)
   if (ENABLE_SIMD)
     set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${SIMD_COMPILER_FLAGS}")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${SIMD_COMPILER_FLAGS}")
-
     set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} ${SIMD_COMPILER_FLAGS}")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${SIMD_COMPILER_FLAGS}")
   endif()
@@ -443,7 +407,6 @@ else()
   endif()
 endif()
 
-# TODO: should this be special-cased for multi-config as well?
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS_C} ${MSVC_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS_CXX} ${MSVC_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MSVC_LD_FLAGS}")
@@ -452,13 +415,10 @@ include(CheckCXXFeatures)
 
 add_definitions(-DHAVE_CONFIG_H)
 
-# configure a header file to pass some of the CMake settings
-# to the source code
 configure_file (
   "${PROJECT_SOURCE_DIR}/simgear/simgear_config_cmake.h.in"
   "${PROJECT_BINARY_DIR}/simgear/simgear_config.h"
   )
-# Do the same thing to pass the version string
 configure_file(
   "${PROJECT_SOURCE_DIR}/simgear/version.h.in"
   "${PROJECT_BINARY_DIR}/simgear/version.h"
@@ -467,8 +427,11 @@ configure_file(
 enable_testing()
 include(AddSimGearTest) # helper to setup a test
 
-if(ENABLE_TESTS)
+option(ENABLE_BENCHMARKS "Build Google Benchmark micro-benchmarks" ON)
+
+if(ENABLE_TESTS OR ENABLE_BENCHMARKS)
     include(FetchContent)
+
     FetchContent_Declare(
         httplib
         GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
@@ -477,6 +440,19 @@ if(ENABLE_TESTS)
     )
     set(HTTPLIB_COMPILE OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(httplib)
+
+    if(ENABLE_BENCHMARKS)
+        set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+        set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+        set(BENCHMARK_DOWNLOAD_DEPENDENCIES ON CACHE BOOL "" FORCE)
+        FetchContent_Declare(
+            googlebenchmark
+            GIT_REPOSITORY https://github.com/google/benchmark.git
+            GIT_TAG        v1.9.1
+            GIT_SHALLOW    TRUE
+        )
+        FetchContent_MakeAvailable(googlebenchmark)
+    endif()
 endif()
 
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
@@ -486,10 +462,6 @@ set(SIMGEAR_USING_CARES_DNS 1)
 
 add_subdirectory(3rdparty)
 add_subdirectory(simgear)
-
-#-----------------------------------------------------------------------------
-### Export stuff, see https://cmake.org/cmake/help/v3.2/manual/cmake-packages.7.html#creating-packages
-#-----------------------------------------------------------------------------
 
 set(ConfigPackageLocation ${CMAKE_INSTALL_LIBDIR}/cmake/SimGear)
 
@@ -523,16 +495,11 @@ install(
   COMPONENT Devel
 )
 
-# helper files needed when importing
 install (FILES
     CMakeModules/CreateOSGImportedTargets.cmake
     CMakeModules/CreateFFmpegImportedTargets.cmake
          DESTINATION ${ConfigPackageLocation})
 
-
-#-----------------------------------------------------------------------------
-### uninstall target
-#-----------------------------------------------------------------------------
 CONFIGURE_FILE(
   "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/cmake_uninstall.cmake.in"
   "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"

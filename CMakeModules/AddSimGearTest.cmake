@@ -1,3 +1,13 @@
+# Add a Google Benchmark executable linked to SimGearCore.
+# Usage: add_simgear_benchmark(bench_foo bench_foo.cxx)
+function(add_simgear_benchmark _name _sources)
+    if(NOT ENABLE_BENCHMARKS OR NOT TARGET benchmark::benchmark)
+        return()
+    endif()
+    add_executable(${_name} ${_sources})
+    target_link_libraries(${_name} SimGearCore benchmark::benchmark Threads::Threads)
+    target_include_directories(${_name} PRIVATE ${PROJECT_BINARY_DIR}/simgear)
+endfunction()
 
 function(add_simgear_test _name _sources)
     add_executable(${_name} ${_sources})
