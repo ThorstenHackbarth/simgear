@@ -38,9 +38,7 @@ if (TARGET SimGearScene)
 endif()
 
 
-if(ENABLE_TESTS)
-
-add_simgear_autotest(test_parseBlendFunc parseBlendFunc_test.cxx )
-target_link_libraries(test_parseBlendFunc SimGearScene)
-
-endif(ENABLE_TESTS)
+if(TARGET SimGearScene AND ENABLE_TESTS)
+  add_simgear_autotest(test_parseBlendFunc parseBlendFunc_test.cxx)
+  target_link_libraries(test_parseBlendFunc SimGearScene)
+endif()

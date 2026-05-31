@@ -62,3 +62,5 @@ endif(ENABLE_TESTS)
 
 add_simgear_autotest(SVGpreserveAspectRatio SVGpreserveAspectRatio_test.cxx)
 add_simgear_autotest(utf8tolatin1 utf8tolatin1_test.cxx)
+
+add_simgear_benchmark(bench_lru_cache bench_lru_cache.cxx)

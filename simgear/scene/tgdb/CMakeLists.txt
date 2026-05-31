@@ -60,6 +60,6 @@ if (TARGET SimGearScene)
     install(FILES ${HEADERS} DESTINATION include/simgear/scene/tgdb)
 endif()
 
-if(ENABLE_TESTS)
+if(TARGET SimGearScene AND ENABLE_TESTS)
   add_simgear_scene_autotest(BucketBoxTest BucketBoxTest.cxx)
-endif(ENABLE_TESTS)
+endif()

@@ -77,9 +77,7 @@ if (TARGET SimGearScene)
     install(FILES ${HEADERS} DESTINATION include/simgear/scene/util)
 endif()
 
-if(ENABLE_TESTS)
-
-add_simgear_autotest(test_parse_color parse_color_test.cxx )
-target_link_libraries(test_parse_color SimGearScene)
-
-endif(ENABLE_TESTS)
+if(TARGET SimGearScene AND ENABLE_TESTS)
+  add_simgear_autotest(test_parse_color parse_color_test.cxx)
+  target_link_libraries(test_parse_color SimGearScene)
+endif()

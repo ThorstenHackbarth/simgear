@@ -8,12 +8,9 @@ if (TARGET SimGearScene)
     install(FILES ${HEADERS} DESTINATION include/simgear/environment)
 endif()
 
-if(ENABLE_TESTS)
-
-add_simgear_autotest(test_metar test_metar.cxx)
-target_link_libraries(test_metar SimGearScene)
-
-add_simgear_autotest(test_precipitation test_precipitation.cxx)
-target_link_libraries(test_precipitation SimGearScene)
-
-endif(ENABLE_TESTS)
+if(TARGET SimGearScene AND ENABLE_TESTS)
+  add_simgear_autotest(test_metar test_metar.cxx)
+  target_link_libraries(test_metar SimGearScene)
+  add_simgear_autotest(test_precipitation test_precipitation.cxx)
+  target_link_libraries(test_precipitation SimGearScene)
+endif()

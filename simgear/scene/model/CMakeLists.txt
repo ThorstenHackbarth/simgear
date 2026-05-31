@@ -61,6 +61,6 @@ if (TARGET SimGearScene)
     install(FILES ${HEADERS} DESTINATION include/simgear/scene/model)
 endif()
 
-if(ENABLE_TESTS)
+if(TARGET SimGearScene AND ENABLE_TESTS)
   add_simgear_scene_autotest(test_animations animation_test.cxx)
-endif(ENABLE_TESTS)
+endif()

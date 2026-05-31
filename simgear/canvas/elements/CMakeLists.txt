@@ -22,4 +22,6 @@ if (TARGET SimGearScene)
     install(FILES ${HEADERS} DESTINATION include/simgear/canvas/elements)
 endif()
 
-add_simgear_scene_autotest(canvas_element canvas_element_test.cpp)
+if(TARGET SimGearScene AND ENABLE_TESTS)
+  add_simgear_scene_autotest(canvas_element canvas_element_test.cpp)
+endif()

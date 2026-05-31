@@ -20,9 +20,8 @@ if (TARGET SimGearScene)
     install(FILES ${HEADERS} DESTINATION include/simgear/canvas/events)
 endif()
 
-add_simgear_scene_autotest(canvas_event event_test.cpp)
-
-add_simgear_test(input_event_demo input_event_demo.cxx)
-target_link_libraries(input_event_demo
-  SimGearScene
-)
+if(TARGET SimGearScene AND ENABLE_TESTS)
+  add_simgear_scene_autotest(canvas_event event_test.cpp)
+  add_simgear_test(input_event_demo input_event_demo.cxx)
+  target_link_libraries(input_event_demo SimGearScene)
+endif()

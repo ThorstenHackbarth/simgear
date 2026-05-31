@@ -53,3 +53,5 @@ add_simgear_autotest(geometry_test SGGeometryTest.cxx)
 add_simgear_autotest(geodesy_test SGGeodesyTest.cxx)
 
 endif(ENABLE_TESTS)
+
+add_simgear_benchmark(bench_sgvec3 bench_sgvec3.cxx)

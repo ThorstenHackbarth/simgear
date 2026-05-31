@@ -39,3 +39,5 @@ add_simgear_autotest(test_propertyObject propertyObject_test.cxx)
 add_simgear_autotest(test_easing_functions easing_functions_test.cxx)
 
 endif(ENABLE_TESTS)
+
+add_simgear_benchmark(bench_props bench_props.cxx)
