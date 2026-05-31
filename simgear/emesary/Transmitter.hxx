@@ -11,10 +11,10 @@
  */
 
 #include <algorithm>
+#include <ranges>
 #include <string>
 #include <vector>
 #include <set>
-#include <vector>
 #include <atomic>
 #include <mutex>
 #include <cstddef>
@@ -63,18 +63,14 @@ namespace simgear
 			{
 				std::lock_guard<std::mutex> scopeLock(_lock);
 
-				RecipientList::iterator deleted_location = std::find(deleted_recipient_list.begin(), deleted_recipient_list.end(), r);
-				if (deleted_location != deleted_recipient_list.end())
-					deleted_recipient_list.erase(deleted_location);
+				if (auto it = std::ranges::find(deleted_recipient_list, r);
+				    it != deleted_recipient_list.end())
+					deleted_recipient_list.erase(it);
 
-				RecipientList::iterator location = std::find(recipient_list.begin(), recipient_list.end(), r);
-				if (location == recipient_list.end())
-				{
-					RecipientList::iterator location = std::find(new_recipient_list.begin(), new_recipient_list.end(), r);
-					if (location == new_recipient_list.end()) {
-						new_recipient_list.insert(new_recipient_list.begin(), r);
-						pendingAdditions++;
-					}
+				if (std::ranges::find(recipient_list, r) == recipient_list.end()
+				    && std::ranges::find(new_recipient_list, r) == new_recipient_list.end()) {
+					new_recipient_list.insert(new_recipient_list.begin(), r);
+					pendingAdditions++;
 				}
 			}
 
@@ -85,13 +81,9 @@ namespace simgear
 			{
 				std::lock_guard<std::mutex> scopeLock(_lock);
 
-				if (new_recipient_list.size())
-				{
-					RecipientList::iterator location = std::find(new_recipient_list.begin(), new_recipient_list.end(), r);
-
-					if (location != new_recipient_list.end())
-						new_recipient_list.erase(location);
-				}
+				if (auto it = std::ranges::find(new_recipient_list, r);
+				    it != new_recipient_list.end())
+					new_recipient_list.erase(it);
 				deleted_recipient_list.push_back(r);
 				r->OnDeRegisteredAtTransmitter(this);
 				pendingDeletions++;
@@ -112,41 +104,34 @@ namespace simgear
 
 					///
 					/// remove deleted recipients from the main list.
-					std::for_each(deleted_recipient_list.begin(), deleted_recipient_list.end(),
-						[this](IReceiverPtr r) {
-
-						RecipientList::iterator location = std::find(recipient_list.begin(), recipient_list.end(), r);
-						if (location != recipient_list.end()) {
-							recipient_list.erase(location);
-						}
+					std::ranges::for_each(deleted_recipient_list, [this](IReceiverPtr r) {
+						if (auto it = std::ranges::find(recipient_list, r);
+						    it != recipient_list.end())
+							recipient_list.erase(it);
 					});
 					recipientCount -= pendingDeletions;
-					deleted_recipient_list.erase(deleted_recipient_list.begin(), deleted_recipient_list.end());
+					deleted_recipient_list.clear();
 					pendingDeletions = 0; // can do this because we are guarded
 				}
 
 				if (pendingAdditions) {
 					/// firstly remove items from the new list that are already in the list
-					std::for_each(recipient_list.begin(), recipient_list.end(),
-						[this](IReceiverPtr r) {
-
-						RecipientList::iterator location = std::find(new_recipient_list.begin(), new_recipient_list.end(), r);
-						if (location != new_recipient_list.end()) {
-							new_recipient_list.erase(location);
+					std::ranges::for_each(recipient_list, [this](IReceiverPtr r) {
+						if (auto it = std::ranges::find(new_recipient_list, r);
+						    it != new_recipient_list.end()) {
+							new_recipient_list.erase(it);
 							pendingAdditions--;
 						}
 					});
 
-
-					std::for_each(new_recipient_list.begin(), new_recipient_list.end(),
-						[this](IReceiverPtr r) {
+					std::ranges::for_each(new_recipient_list, [this](IReceiverPtr r) {
 						r->OnRegisteredAtTransmitter(this);
 					});
 					recipient_list.insert(recipient_list.begin(),
 						std::make_move_iterator(new_recipient_list.begin()),
 						std::make_move_iterator(new_recipient_list.end()));
 
-					new_recipient_list.erase(new_recipient_list.begin(), new_recipient_list.end());
+					new_recipient_list.clear();
 					recipientCount += pendingAdditions;
 					pendingAdditions = 0;
 

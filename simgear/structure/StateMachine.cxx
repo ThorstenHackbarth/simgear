@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <ranges>
 #include <set>
 
 #include <simgear/debug/logstream.hxx>
@@ -301,7 +302,7 @@ void StateMachine::innerChangeState(State_ptr aState, Transition_ptr aTrans)
 void StateMachine::changeToState(State_ptr aState, bool aOnlyIfDifferent)
 {
     assert(aState != NULL);
-    if (std::find(d->_states.begin(), d->_states.end(), aState) == d->_states.end()) {
+    if (std::ranges::find(d->_states, aState) == d->_states.end()) {
         throw sg_exception("Requested change to state not in machine");
     }
 
@@ -383,12 +384,10 @@ StateMachine::State_ptr StateMachine::stateByIndex(unsigned int aIndex) const
 /** @todo: Perhaps return std::optional<int> or throw an error instead of -1?*/
 int StateMachine::indexOfState(State_ptr aState) const
 {
-    StatePtrVec::const_iterator it = std::find(d->_states.begin(), d->_states.end(), aState);
-    if (it == d->_states.end()) {
+    auto it = std::ranges::find(d->_states, aState);
+    if (it == d->_states.end())
         return -1;
-    }
-
-    return it - d->_states.begin();
+    return static_cast<int>(it - d->_states.begin());
 }
 
 StateMachine::State_ptr StateMachine::createState(const std::string& aName)
