@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <ranges>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/timing/timestamp.hxx>
@@ -483,13 +484,6 @@ void SGSubsystemGroup::updateMembersWithTiming(int loopCount, double delta_time_
                 if (overrunItems[member->name]) {
                     TimerStats sst;
                     member->reportTimingStats(&_lastTimerStats);
-                    //if (lvTimerStats[member->name] != _timerStats[member->name]) {
-                    //    SG_LOG(SG_EVENT, SG_ALERT,
-                    //        " +"<< std::setw(6) << std::left << (_timerStats[member->name] - lvTimerStats[member->name])
-                    //        << " total " << std::setw(6) << std::left << _timerStats[member->name]
-                    //        << " " << member->name
-                    //    );
-                    //}
                 }
             }
         }
@@ -497,17 +491,6 @@ void SGSubsystemGroup::updateMembersWithTiming(int loopCount, double delta_time_
 
     if (reportTimingStatsRequest) {
         reportTimingStats(nullptr);
-        //for (auto member : _members) {
-        //    member->mergeTimerStats(_timerStats);
-        //    if (_timerStats.size()) {
-        //        SG_LOG(SG_EVENT, SG_ALERT, "" << std::setw(6) << std::fixed << std::setprecision(2) << std::left << _timerStats[member->name]
-        //            << ": " << member->name);
-        //        for (auto item : _timerStats) {
-        //            if (item.second > 0)
-        //                SG_LOG(SG_EVENT, SG_ALERT, "  " << std::setw(6) << std::left << item.second << " " << item.first);
-        //        }
-        //    }
-        //}
     }
     _lastTimerStats.clear();
     _lastTimerStats.insert(_timerStats.begin(), _timerStats.end());
@@ -844,8 +827,6 @@ SGSubsystemGroup::Member::~Member ()
 }
 void SGSubsystemGroup::Member::mergeTimerStats(SGSubsystem::TimerStats &stats) {
     stats.insert(subsystem->_timerStats.begin(), subsystem->_timerStats.end());
-    //for (auto ts : subsystem->_timerStats)
-    //    ts.second = 0;
 }
 
 void
@@ -1373,25 +1354,24 @@ void SGSubsystemMgr::addDelegate(Delegate * d)
 void SGSubsystemMgr::removeDelegate(Delegate * d)
 {
     assert(d);
-    auto it = std::find(_delegates.begin(), _delegates.end(), d);
+    auto it = std::ranges::find(_delegates, d);
     if (it == _delegates.end()) {
         SG_LOG(SG_GENERAL, SG_DEV_ALERT, "removeDelegate: unknown delegate");
         return;
     }
-
     _delegates.erase(it);
 }
 
 void SGSubsystemMgr::notifyDelegatesWillChange(SGSubsystem* sub, State newState)
 {
-    std::for_each(_delegates.begin(), _delegates.end(), [sub, newState](Delegate* d)
-                  { d->willChange(sub, newState); });
+    std::ranges::for_each(_delegates, [sub, newState](Delegate* d)
+                          { d->willChange(sub, newState); });
 }
 
 void SGSubsystemMgr::notifyDelegatesDidChange(SGSubsystem* sub, State state)
 {
-    std::for_each(_delegates.begin(), _delegates.end(), [sub, state](Delegate* d)
-                  { d->didChange(sub, state); });
+    std::ranges::for_each(_delegates, [sub, state](Delegate* d)
+                          { d->didChange(sub, state); });
 }
 
 void SGSubsystemMgr::set_root_node(SGPropertyNode_ptr node)
